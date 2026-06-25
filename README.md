@@ -67,11 +67,14 @@ Structured-log workload:
 python3 src/redulink_proto_v0_5.py synthetic --variant logs --chunker fixed
 ```
 
-The implementation uses only the Python standard library.
+The core simulator and socket prototype use only the Python standard library.
+Figure generation uses either matplotlib or Pillow; CI installs Pillow from
+`requirements-dev.txt` for plot smoke tests.
 
 ## Tests
 
 ```bash
+python3 -m pip install -r requirements-dev.txt
 python3 -m unittest discover -s tests
 ```
 
