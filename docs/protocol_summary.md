@@ -2,17 +2,17 @@
 
 ## Scope
 
-ReduLink is a transport-adjacent payload-representation mechanism for cooperative encrypted endpoints. It does not modify the physical link rate and does not require transparent middlebox access to encrypted payloads.
+ReduLink is a transport-adjacent payload-representation mechanism for cooperative encrypted endpoints. It preserves the physical link rate and operates without transparent middlebox access to encrypted payloads.
 
-## Main invariant
+## Delivery invariant
 
-A reconstructed payload segment is deliverable only if all of the following hold:
+A reconstructed payload segment is deliverable only when:
 
-1. The frame epoch matches the active dictionary epoch.
-2. The referenced chunk identifier is present in the receiver dictionary.
-3. The reference is authenticated under the connection context.
-4. The reconstructed byte sequence is delivered at the intended stream offset.
-5. The reconstruction respects bounded expansion limits.
+1. the frame epoch matches the active dictionary epoch;
+2. the referenced chunk is present in the receiver dictionary;
+3. the reference authenticates under the connection context;
+4. the reconstructed bytes map to the intended stream offset; and
+5. the reconstruction remains within the configured expansion bound.
 
 ## Frame sketch
 
@@ -50,20 +50,20 @@ REDULINK_DICT_ACK
 
 1. Split outgoing payload into fixed or content-defined chunks.
 2. Compute `chunk_id = H(epoch || stream_context || chunk)`.
-3. If the receiver is known or assumed to have the chunk, send a REF frame.
-4. Otherwise send a FULL frame and admit the chunk into the local dictionary.
-5. If a MISS arrives, retransmit the corresponding chunk as FULL.
+3. Send REF when the receiver is known or expected to hold the chunk.
+4. Otherwise send FULL and admit the chunk to the local dictionary.
+5. Retransmit FULL after MISS.
 
 ## Receiver behavior
 
-1. Validate FULL frame integrity and admit the chunk into the receiver dictionary.
-2. Validate REF frame epoch, authentication, expansion bounds, and dictionary presence.
-3. If valid, reconstruct the payload bytes.
-4. If not resolvable, emit MISS and do not deliver guessed bytes.
+1. Validate FULL integrity and admit the chunk to the receiver dictionary.
+2. Validate REF epoch, authentication, expansion bound, and dictionary presence.
+3. Reconstruct payload bytes only after successful validation.
+4. Emit MISS when a reference cannot be resolved.
 
-## QUIC integration position
+## QUIC integration
 
-ReduLink should be interpreted as a negotiated representation layer carried by cooperative endpoints. It is not a replacement for QUIC packet numbers, ACKs, congestion control, TLS handshake behavior, or stream semantics. Congestion accounting should be performed over transmitted wire bytes, while application delivery is performed over reconstructed bytes.
+ReduLink is a negotiated representation layer carried by cooperative endpoints. It does not replace QUIC packet numbers, ACKs, congestion control, TLS handshake behavior, or stream semantics. Congestion control is charged by transmitted wire bytes. Application delivery uses reconstructed bytes.
 
 ## Security defaults
 
@@ -73,9 +73,9 @@ ReduLink should be interpreted as a negotiated representation layer carried by c
 - LRU dictionary eviction.
 - Per-origin or per-tenant dictionary quotas.
 - Bounded expansion ratio.
-- Mandatory fallback on reference miss.
-- Adaptive disablement when hit rate is too low or CPU cost is too high.
+- Mandatory FULL fallback on reference miss.
+- Adaptive disablement when hit rate is low or processing cost is high.
 
-## Evaluation interpretation
+## Evaluation status
 
-The v0.5 artifact is a proof-of-concept simulator and encoder/decoder prototype. It demonstrates byte-exact reconstruction and models effective throughput under conservative frame overhead assumptions. It is not production trace validation and should be extended with larger public corpora such as OCI images, git packs, package repositories, VM snapshots, logs, and backup streams.
+The v0.5 implementation demonstrates byte-exact reconstruction and effective-throughput modeling under conservative frame-overhead assumptions. The current measurements are suitable for method validation. Broader performance claims require larger public corpora, for example OCI images, git packs, package repositories, VM snapshots, structured logs, and backup streams.
