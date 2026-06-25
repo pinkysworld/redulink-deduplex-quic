@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 title: "ReduLink / Deduplex-QUIC: Authenticated Redundancy-Suppressed Transmission for Effective Bandwidth Expansion over Encrypted WANs"
-message: "If you use this research artifact, please cite it."
+message: "If you use ReduLink, please cite it."
 type: software
 authors:
   - family-names: Nguyen
@@ -9,7 +9,7 @@ authors:
 year: 2026
 version: "0.5"
 repository-code: "https://github.com/pinkysworld/redulink-deduplex-quic"
-abstract: "ReduLink is a research prototype and manuscript artifact for authenticated redundancy-suppressed transmission over encrypted WANs. It models effective reconstructed payload throughput gains from replacing repeated chunks with authenticated references under endpoint-controlled dictionary state."
+abstract: "ReduLink studies authenticated redundancy-suppressed transmission over encrypted WANs. It models effective reconstructed payload throughput gains from replacing repeated chunks with authenticated references under endpoint-controlled dictionary state."
 keywords:
   - QUIC
   - redundancy elimination
