@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-ReduLink v0.5 reproducibility prototype.
+ReduLink v0.5 encoder/decoder model.
 
-A small, standard-library-only proof of concept for authenticated
-redundancy-suppressed transmission. It is not a QUIC implementation. It models
-ReduLink's payload representation layer: split bytes into chunks, transmit FULL
-frames for new chunks, transmit REF frames for repeated chunks, and reconstruct
-byte-identical output at the receiver.
+This script models ReduLink's payload representation layer. It splits input
+bytes into chunks, emits FULL frames for new chunks, emits REF frames for chunks
+already available to the receiver, and verifies byte-exact reconstruction.
 
-The model is deliberately conservative: REF frames still have overhead, FULL
-frames have framing overhead, and random data should not improve.
+The accounting is conservative: FULL and REF frames include fixed framing
+overhead, and random data should not produce useful savings.
 """
 
 from __future__ import annotations
@@ -87,11 +85,7 @@ def fixed_chunks(data: bytes, size: int = DEFAULT_CHUNK) -> List[bytes]:
 
 
 def cdc_chunks(data: bytes, target: int = DEFAULT_CHUNK, min_size: int = 2048, max_size: int = 32768) -> List[bytes]:
-    """Simple rolling content-defined chunking.
-
-    This is intentionally compact, not performance-optimized. A boundary is cut
-    when the rolling hash matches a mask after min_size, or at max_size.
-    """
+    """Return simple rolling-hash content-defined chunks."""
     if not data:
         return []
     mask = target - 1
@@ -212,7 +206,7 @@ def cmd_artifact(args: argparse.Namespace) -> None:
     if args.mode == 'cold':
         warm = b''
     else:
-        # Warm/update-like model: receiver already has an earlier, related prefix.
+        # Warm mode uses an earlier related prefix as receiver dictionary state.
         cut = max(1, int(len(data) * args.warm_fraction))
         warm = data[:cut]
         data = data[cut:]
@@ -245,7 +239,7 @@ def cmd_synthetic(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description='ReduLink v0.5 proof-of-concept simulator')
+    p = argparse.ArgumentParser(description='ReduLink v0.5 encoder/decoder model')
     sub = p.add_subparsers(required=True)
 
     common = argparse.ArgumentParser(add_help=False)
