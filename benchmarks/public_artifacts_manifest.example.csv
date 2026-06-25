@@ -1,4 +1,4 @@
-label,source_url,warm_path,update_path,path,sha256,bytes,license_note,retrieved_utc
-ubuntu-base-example,https://cdimage.ubuntu.com/ubuntu-base/releases/,/data/oci/ubuntu-base-22.04,/data/oci/ubuntu-base-24.04,,fill-me,fill-me,Ubuntu image terms,YYYY-MM-DDTHH:MM:SSZ
-linux-kernel-example,https://cdn.kernel.org/pub/linux/kernel/,,/data/tarballs/linux-6.9,,fill-me,fill-me,GPL-2.0-only,YYYY-MM-DDTHH:MM:SSZ
-git-pack-example,https://github.com/example/project.git,/data/git-packs/project-old,/data/git-packs/project-new,,fill-me,fill-me,project license,YYYY-MM-DDTHH:MM:SSZ
+label,source_url,warm_url,update_url,warm_path,update_path,path,sha256,bytes,content_relation,license_note,retrieved_utc
+ubuntu-base-example,https://cdimage.ubuntu.com/ubuntu-base/releases/,https://example.org/old,https://example.org/new,/data/oci/ubuntu-base-22.04,/data/oci/ubuntu-base-24.04,,warm:sha256;update:sha256,warm:123;update:456,changed,Ubuntu image terms,YYYY-MM-DDTHH:MM:SSZ
+linux-kernel-example,https://cdn.kernel.org/pub/linux/kernel/,https://example.org/linux-6.8,https://example.org/linux-6.9,/data/tarballs/linux-6.8,/data/tarballs/linux-6.9,,warm:sha256;update:sha256,warm:123;update:456,changed,GPL-2.0-only,YYYY-MM-DDTHH:MM:SSZ
+git-pack-example,https://github.com/example/project.git,https://example.org/old.gitpack,https://example.org/new.gitpack,/data/git-packs/project-old,/data/git-packs/project-new,,warm:sha256;update:sha256,warm:123;update:456,changed,project license,YYYY-MM-DDTHH:MM:SSZ

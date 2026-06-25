@@ -16,10 +16,11 @@ Output:
 results/synthetic_suite.csv
 ```
 
-This suite includes raw bytes, gzip, zstd when the `zstd` CLI is installed, an
-rsync-style rolling block reuse baseline, ReduLink fixed chunking, ReduLink CDC,
-gzip-before-ReduLink, zstd-before-ReduLink when available, and
-ReduLink-before-gzip on the modeled frame stream.
+This suite includes raw bytes, gzip, zstd when the `zstd` CLI is installed, a
+fixed-block reuse approximation inspired by rsync-family delta transfer,
+ReduLink fixed chunking, ReduLink CDC, gzip-before-ReduLink,
+zstd-before-ReduLink when available, and ReduLink-before-gzip on the modeled
+frame stream.
 
 ## Public artifact suite
 
@@ -66,8 +67,16 @@ results/public_artifact_suite.csv.metadata.json
 ```
 
 The file `benchmarks/public_artifacts_manifest.example.csv` shows the expected
-manifest columns. Fill in exact source URLs, SHA256 hashes, byte sizes, license
-notes, and retrieval timestamps before using a public-artifact table in a paper.
+manifest columns. Fill in exact source URLs, SHA256 hashes, byte sizes,
+content-relation labels, license notes, and retrieval timestamps before using a
+public-artifact table in a paper.
+
+## Cost columns
+
+The baseline runner records `cpu_ms`, `throughput_mib_s`, and `peak_kib`.
+These are local runner measurements, not machine-independent constants.
+`peak_kib` is a coarse process maximum RSS from `getrusage`; use it to expose
+resource scale, not to compare implementations across machines.
 
 ## Plot generation
 

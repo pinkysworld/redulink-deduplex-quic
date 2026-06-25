@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ReduLink v0.5 encoder/decoder model.
+ReduLink encoder/decoder artifact model.
 
 This script models ReduLink's payload representation layer. It splits input
 bytes into chunks, emits FULL frames for new chunks, emits REF frames for chunks
@@ -51,22 +51,28 @@ def cid(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()[:32]
 
 
-def iter_files(path: Path) -> Iterable[Path]:
+def iter_files(path: Path) -> Iterable[tuple[Path, str]]:
     if path.is_file():
-        yield path
+        yield path, path.name
         return
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not d.startswith('.') and d not in {'__pycache__', '.git'}]
         for name in sorted(files):
             p = Path(root) / name
             if p.is_file() and p.stat().st_size > 0:
-                yield p
+                yield p, p.relative_to(path).as_posix()
 
 
 def read_artifact(path: Path, limit_mib: int | None = None) -> bytes:
+    if path.is_file():
+        data = path.read_bytes()
+        if limit_mib is not None:
+            data = data[:limit_mib * 1024 * 1024]
+        return data
+
     parts: List[bytes] = []
     remaining = None if limit_mib is None else limit_mib * 1024 * 1024
-    for file in iter_files(path):
+    for file, relative_name in iter_files(path):
         data = file.read_bytes()
         if remaining is not None:
             if remaining <= 0:
@@ -74,7 +80,7 @@ def read_artifact(path: Path, limit_mib: int | None = None) -> bytes:
             data = data[:remaining]
             remaining -= len(data)
         parts.append(b'\n---REDULINK-FILE-BOUNDARY---\n')
-        parts.append(str(file).encode('utf-8', 'replace'))
+        parts.append(relative_name.encode('utf-8', 'replace'))
         parts.append(b'\n')
         parts.append(data)
     return b''.join(parts)
@@ -245,7 +251,7 @@ def cmd_synthetic(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description='ReduLink v0.5 encoder/decoder model')
+    p = argparse.ArgumentParser(description='ReduLink encoder/decoder artifact model')
     sub = p.add_subparsers(required=True)
 
     common = argparse.ArgumentParser(add_help=False)

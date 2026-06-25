@@ -8,9 +8,12 @@ import csv
 import gzip
 import io
 import json
+import platform
+import resource
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -35,6 +38,9 @@ HEADER = [
     "ref_frames",
     "reconstruction_ok",
     "comparable",
+    "cpu_ms",
+    "throughput_mib_s",
+    "peak_kib",
     "notes",
 ]
 
@@ -58,13 +64,13 @@ def zstd_bytes(data: bytes) -> bytes | None:
 
 
 def rsync_block_reuse(update: bytes, warm: bytes, block_size: int) -> tuple[int, int, int]:
-    """Return modeled rsync-like wire bytes, literal runs, and matched blocks.
+    """Return fixed-block reuse bytes, literal runs, and matched blocks.
 
     The receiver exposes fixed-block signatures for the warm artifact. The
     sender scans the update byte stream and emits a reference when an old block
     appears at any offset; otherwise it coalesces unmatched bytes into literal
-    runs. This approximates rsync's offset-resynchronizing behavior without
-    implementing its exact rolling checksum protocol.
+    runs. This is a simple rsync-family comparator, not the rsync protocol and
+    not a rolling-checksum implementation.
     """
     literal_run_overhead = 20
     token_overhead = 16
@@ -112,9 +118,11 @@ def write_metadata(output: Path) -> None:
     zstd = shutil.which("zstd")
     metadata = {
         "python": sys.version.split()[0],
+        "platform": platform.platform(),
         "gzip_module": "python-stdlib",
         "zstd_path": zstd or "",
         "zstd_version": "",
+        "cost_columns": "cpu_ms and throughput_mib_s are local wall-clock measurements; peak_kib is process maximum resident set size from getrusage and is coarse/cumulative.",
     }
     if zstd:
         proc = subprocess.run([zstd, "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -160,13 +168,36 @@ def split_warm(data: bytes, warm_fraction: float) -> tuple[bytes, bytes]:
     return data[:cut], data[cut:]
 
 
+def measure(func):
+    start = time.perf_counter()
+    result = func()
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if platform.system() == "Darwin":
+        maxrss = maxrss / 1024
+    return result, elapsed_ms, float(maxrss)
+
+
+def cost_fields(input_len: int, cpu_ms: float | None, peak_kib: float | None) -> dict[str, str]:
+    if cpu_ms is None or peak_kib is None:
+        return {"cpu_ms": "", "throughput_mib_s": "", "peak_kib": ""}
+    seconds = max(cpu_ms / 1000, 1e-9)
+    throughput = (input_len / (1024 * 1024)) / seconds if input_len else 0.0
+    return {
+        "cpu_ms": f"{cpu_ms:.3f}",
+        "throughput_mib_s": f"{throughput:.3f}",
+        "peak_kib": f"{peak_kib:.1f}",
+    }
+
+
 def metric_row(family: str, artifact: str, mode: str, chunker: str, method: str,
                input_len: int, wire_len: int, notes: str = "",
                chunks: int = 0, full: int = 0, ref: int = 0,
-               ok: bool = True, comparable: bool = True) -> dict[str, str]:
+               ok: bool = True, comparable: bool = True,
+               cpu_ms: float | None = None, peak_kib: float | None = None) -> dict[str, str]:
     saving = max(0.0, 1.0 - (wire_len / input_len)) if input_len else 0.0
     multiplier = (input_len / wire_len) if wire_len else 1.0
-    return {
+    row = {
         "family": family,
         "artifact": artifact,
         "mode": mode,
@@ -183,11 +214,14 @@ def metric_row(family: str, artifact: str, mode: str, chunker: str, method: str,
         "comparable": str(comparable),
         "notes": notes,
     }
+    row.update(cost_fields(input_len, cpu_ms, peak_kib))
+    return row
 
 
 def stats_row(family: str, artifact: str, mode: str, chunker: str, method: str,
-              stats: redulink.Stats, notes: str = "", comparable: bool = True) -> dict[str, str]:
-    return {
+              stats: redulink.Stats, notes: str = "", comparable: bool = True,
+              cpu_ms: float | None = None, peak_kib: float | None = None) -> dict[str, str]:
+    row = {
         "family": family,
         "artifact": artifact,
         "mode": mode,
@@ -204,6 +238,8 @@ def stats_row(family: str, artifact: str, mode: str, chunker: str, method: str,
         "comparable": str(comparable),
         "notes": notes,
     }
+    row.update(cost_fields(stats.input_bytes, cpu_ms, peak_kib))
+    return row
 
 
 def frame_stream_bytes(frames: list[redulink.Frame]) -> bytes:
@@ -230,12 +266,14 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
     rows: list[dict[str, str]] = []
     rows.append(metric_row(family, artifact, "single-object", "none", "raw", len(data), len(data)))
 
-    gz = gzip_bytes(data)
-    rows.append(metric_row(family, artifact, "single-object", "none", "gzip-6", len(data), len(gz)))
+    gz, gz_ms, gz_peak = measure(lambda: gzip_bytes(data))
+    rows.append(metric_row(family, artifact, "single-object", "none", "gzip-6", len(data), len(gz),
+                           cpu_ms=gz_ms, peak_kib=gz_peak))
 
-    zstd = zstd_bytes(data)
+    zstd, zstd_ms, zstd_peak = measure(lambda: zstd_bytes(data))
     if zstd is not None:
-        rows.append(metric_row(family, artifact, "single-object", "none", "zstd-3", len(data), len(zstd)))
+        rows.append(metric_row(family, artifact, "single-object", "none", "zstd-3", len(data), len(zstd),
+                               cpu_ms=zstd_ms, peak_kib=zstd_peak))
     else:
         rows.append(metric_row(family, artifact, "single-object", "none", "zstd-3", len(data), len(data),
                                ok=False, notes="zstd command unavailable; row records raw byte count placeholder"))
@@ -245,37 +283,54 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
     else:
         warm, update = warm_update
 
-    rsync_wire, rsync_full, rsync_ref = rsync_block_reuse(update, warm, chunk_size)
+    (rsync_wire, rsync_full, rsync_ref), rsync_ms, rsync_peak = measure(
+        lambda: rsync_block_reuse(update, warm, chunk_size)
+    )
     rows.append(metric_row(
         family,
         artifact,
         "warm-update-like",
         "fixed",
-        "rsync-block-reuse",
+        "fixed-block-reuse",
         len(update),
         rsync_wire,
         chunks=rsync_full + rsync_ref,
         full=rsync_full,
         ref=rsync_ref,
-        notes="fixed-block rsync-style reuse baseline against warm artifact",
+        cpu_ms=rsync_ms,
+        peak_kib=rsync_peak,
+        notes="fixed-block reuse approximation against warm artifact; not wire-compatible rsync",
     ))
 
     for chunker in ("fixed", "cdc"):
-        cold = redulink.run_bytes(data, chunker=chunker, chunk_size=chunk_size)
-        rows.append(stats_row(family, artifact, "cold-intra-artifact", chunker, "redulink", cold))
+        cold, cold_ms, cold_peak = measure(
+            lambda: redulink.run_bytes(data, chunker=chunker, chunk_size=chunk_size)
+        )
+        rows.append(stats_row(family, artifact, "cold-intra-artifact", chunker, "redulink", cold,
+                              cpu_ms=cold_ms, peak_kib=cold_peak))
 
-        warm_stats = redulink.run_bytes(update, chunker=chunker, chunk_size=chunk_size, warm=warm)
-        rows.append(stats_row(family, artifact, "warm-update-like", chunker, "redulink", warm_stats))
+        warm_stats, warm_ms, warm_peak = measure(
+            lambda: redulink.run_bytes(update, chunker=chunker, chunk_size=chunk_size, warm=warm)
+        )
+        rows.append(stats_row(family, artifact, "warm-update-like", chunker, "redulink", warm_stats,
+                              cpu_ms=warm_ms, peak_kib=warm_peak))
 
     gz_warm = gzip_bytes(warm)
     gz_update = gzip_bytes(update)
-    gz_then_rl = redulink.run_bytes(gz_update, chunker="cdc", chunk_size=chunk_size, warm=gz_warm)
+    gz_then_rl, gzrl_ms, gzrl_peak = measure(
+        lambda: redulink.run_bytes(gz_update, chunker="cdc", chunk_size=chunk_size, warm=gz_warm)
+    )
     rows.append(stats_row(family, artifact, "warm-update-like", "cdc", "gzip-then-redulink", gz_then_rl,
-                          notes="ReduLink applied after gzip compression"))
+                          notes="ReduLink applied after gzip compression",
+                          cpu_ms=gzrl_ms, peak_kib=gzrl_peak))
 
-    frames, rl_stats = redulink.encode(update, chunker="cdc", chunk_size=chunk_size, warm_dictionary=warm)
-    reconstructed = redulink.decode(frames, chunker="cdc", chunk_size=chunk_size, warm_dictionary=warm)
-    compressed_frame_stream = gzip_bytes(frame_stream_bytes(frames))
+    def encode_decode_compress():
+        frames, rl_stats = redulink.encode(update, chunker="cdc", chunk_size=chunk_size, warm_dictionary=warm)
+        reconstructed = redulink.decode(frames, chunker="cdc", chunk_size=chunk_size, warm_dictionary=warm)
+        compressed_frame_stream = gzip_bytes(frame_stream_bytes(frames))
+        return frames, rl_stats, reconstructed, compressed_frame_stream
+
+    (frames, rl_stats, reconstructed, compressed_frame_stream), rlgz_ms, rlgz_peak = measure(encode_decode_compress)
     rows.append(metric_row(
         family,
         artifact,
@@ -289,6 +344,8 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
         ref=rl_stats.ref_frames,
         ok=(reconstructed == update),
         comparable=False,
+        cpu_ms=rlgz_ms,
+        peak_kib=rlgz_peak,
         notes="gzip applied to modeled ReduLink frame stream",
     ))
 
@@ -296,9 +353,12 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
         zwarm = zstd_bytes(warm)
         zupdate = zstd_bytes(update)
         if zwarm is not None and zupdate is not None:
-            zr = redulink.run_bytes(zupdate, chunker="cdc", chunk_size=chunk_size, warm=zwarm)
+            zr, zr_ms, zr_peak = measure(
+                lambda: redulink.run_bytes(zupdate, chunker="cdc", chunk_size=chunk_size, warm=zwarm)
+            )
             rows.append(stats_row(family, artifact, "warm-update-like", "cdc", "zstd-then-redulink", zr,
-                                  notes="ReduLink applied after zstd compression"))
+                                  notes="ReduLink applied after zstd compression",
+                                  cpu_ms=zr_ms, peak_kib=zr_peak))
 
     return rows
 

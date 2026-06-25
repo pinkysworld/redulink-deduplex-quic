@@ -1,6 +1,6 @@
 # Manuscript
 
-This repository accompanies the v0.5 draft:
+This repository accompanies the current ReduLink draft:
 
 **ReduLink / Deduplex-QUIC: Authenticated Redundancy-Suppressed Transmission for Effective Bandwidth Expansion over Encrypted WANs**
 
@@ -22,12 +22,12 @@ prototypes/redulink_socket_prototype.py
 
 ## Status
 
-- Protocol design: v0.5
+- Protocol design: current draft
 - Encoder/decoder model: included
 - Selected artifact measurements: included
 - Small fetched public-corpora benchmark: included
 - Paper-facing evidence tables: included
-- rsync-style rolling block reuse baseline: included
+- fixed-block reuse approximation baseline: included
 - Minimal socket prototype: included
 - Baseline comparison runner: included
 - Reproducible synthetic benchmark suite: included
@@ -48,8 +48,8 @@ represented in the repository:
    logs, and backup or replication streams.
 2. Baselines are explicit. The benchmark CSVs compare raw bytes, gzip, zstd when
    available, ReduLink fixed chunking, ReduLink CDC, gzip-before-ReduLink,
-   zstd-before-ReduLink when available, and ReduLink-before-gzip on the modeled
-   frame stream.
+   zstd-before-ReduLink when available, ReduLink-before-gzip on the modeled
+   frame stream, and local wall-clock/RSS cost columns.
 3. Robustness is testable. Unit tests cover byte-exact reconstruction, random
    negative controls, warm-dictionary gains, safe reference-miss failure, and
    both chunkers. GitHub Actions runs the suite automatically.
@@ -72,8 +72,9 @@ Suggested claim language for the paper:
 > We evaluate ReduLink on controlled synthetic workloads and provide
 > reproducible commands for public artifact families. The model is checked by
 > automated reconstruction and failure tests, and its evaluation compares raw
-> transfer, conventional compression, rsync-style block reuse, ReduLink fixed
-> chunking, ReduLink CDC, and compression/ReduLink composition cases.
+> transfer, conventional compression, a fixed-block reuse approximation,
+> ReduLink fixed chunking, ReduLink CDC, and compression/ReduLink composition
+> cases, with local cost columns reported separately from byte savings.
 
 Security scope language to retain:
 

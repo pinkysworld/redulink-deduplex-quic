@@ -1,7 +1,12 @@
 # Submission artifacts
 
-This directory contains the current manuscript artifacts for the public-corpora,
-rsync-baseline, and prototype revision:
+This directory contains manuscript artifacts for the public-corpora, baseline,
+and prototype revisions. The current strengthened version is:
+
+- `ReduLink_Deduplex_QUIC_full_draft_v0_8_peer_review_strengthened.docx`
+- `ReduLink_Deduplex_QUIC_full_draft_v0_8_peer_review_strengthened.pdf`
+
+The prior v0.7 artifact is retained for comparison:
 
 - `ReduLink_Deduplex_QUIC_full_draft_v0_7_public_corpora_rsync_prototype.docx`
 - `ReduLink_Deduplex_QUIC_full_draft_v0_7_public_corpora_rsync_prototype.pdf`

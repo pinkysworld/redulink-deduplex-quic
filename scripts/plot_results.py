@@ -81,6 +81,7 @@ def plot_grouped(rows: list[dict[str, str]], metric: str, title: str, ylabel: st
         "raw:none",
         "gzip-6:none",
         "zstd-3:none",
+        "fixed-block-reuse:fixed",
         "rsync-block-reuse:fixed",
         "redulink:fixed",
         "redulink:cdc",

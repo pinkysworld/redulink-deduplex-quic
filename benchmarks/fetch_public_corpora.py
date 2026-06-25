@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch small pinned public corpora for ReduLink benchmark smoke results."""
+"""Fetch pinned public corpora for ReduLink benchmark smoke results."""
 
 from __future__ import annotations
 
@@ -25,8 +25,15 @@ PAIRS = [
     PublicPair(
         label="cpython-http-server",
         source_url="https://github.com/python/cpython",
-        warm_url="https://raw.githubusercontent.com/python/cpython/v3.12.0/Lib/http/server.py",
-        update_url="https://raw.githubusercontent.com/python/cpython/v3.12.1/Lib/http/server.py",
+        warm_url="https://raw.githubusercontent.com/python/cpython/v3.11.0/Lib/http/server.py",
+        update_url="https://raw.githubusercontent.com/python/cpython/v3.12.0/Lib/http/server.py",
+        license_note="Python Software Foundation License",
+    ),
+    PublicPair(
+        label="cpython-pathlib",
+        source_url="https://github.com/python/cpython",
+        warm_url="https://raw.githubusercontent.com/python/cpython/v3.11.0/Lib/pathlib.py",
+        update_url="https://raw.githubusercontent.com/python/cpython/v3.12.0/Lib/pathlib.py",
         license_note="Python Software Foundation License",
     ),
     PublicPair(
@@ -35,6 +42,20 @@ PAIRS = [
         warm_url="https://raw.githubusercontent.com/torvalds/linux/v6.8/Documentation/admin-guide/kernel-parameters.txt",
         update_url="https://raw.githubusercontent.com/torvalds/linux/v6.9/Documentation/admin-guide/kernel-parameters.txt",
         license_note="GPL-2.0-only documentation in Linux source tree",
+    ),
+    PublicPair(
+        label="nginx-changes",
+        source_url="https://github.com/nginx/nginx",
+        warm_url="https://raw.githubusercontent.com/nginx/nginx/release-1.25.0/docs/xml/nginx/changes.xml",
+        update_url="https://raw.githubusercontent.com/nginx/nginx/release-1.25.1/docs/xml/nginx/changes.xml",
+        license_note="2-clause BSD-like nginx license",
+    ),
+    PublicPair(
+        label="redis-readme",
+        source_url="https://github.com/redis/redis",
+        warm_url="https://raw.githubusercontent.com/redis/redis/7.2/README.md",
+        update_url="https://raw.githubusercontent.com/redis/redis/7.4/README.md",
+        license_note="BSD-3-Clause for Redis 7.2; Redis 7.4 source is RSALv2/SSPLv1/AGPLv3 tri-licensed",
     ),
     PublicPair(
         label="ietf-quic-rfc",
@@ -78,6 +99,7 @@ def main() -> None:
             "path": "",
             "sha256": f"warm:{warm_sha};update:{update_sha}",
             "bytes": f"warm:{warm_bytes};update:{update_bytes}",
+            "content_relation": "identical" if warm_sha == update_sha else "changed",
             "license_note": pair.license_note,
             "retrieved_utc": retrieved,
         })

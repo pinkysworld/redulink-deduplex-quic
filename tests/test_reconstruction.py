@@ -1,4 +1,5 @@
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -39,6 +40,14 @@ class ReconstructionTests(unittest.TestCase):
                 stats = redulink.run_bytes(payload, chunker=chunker, chunk_size=2048)
                 self.assertTrue(stats.reconstruction_ok)
                 self.assertEqual(stats.input_bytes, len(payload))
+
+    def test_read_artifact_single_file_uses_raw_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "warm.txt"
+            payload = b"public corpus bytes\n"
+            path.write_bytes(payload)
+
+            self.assertEqual(redulink.read_artifact(path), payload)
 
 
 if __name__ == "__main__":

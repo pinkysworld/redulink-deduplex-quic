@@ -9,12 +9,12 @@ The mechanism does not change the physical link rate. It improves effective reco
 ## Repository contents
 
 ```text
-src/redulink_proto_v0_5.py                         Encoder/decoder model
+src/redulink_proto_v0_5.py                         Encoder/decoder artifact model
 tests/                                             Reconstruction and safety tests
 benchmarks/                                        Reproducible benchmark suites
 prototypes/redulink_socket_prototype.py            Minimal socket prototype
 scripts/plot_results.py                            Figure generation from CSV
-results/paper_real_artifact_cdc_selected.csv       Selected v0.5 measurements
+results/paper_real_artifact_cdc_selected.csv       Selected earlier artifact measurements
 results/public_artifact_suite.csv                  Fetched public-corpora results
 docs/protocol_summary.md                           Protocol summary
 docs/threat_model.md                               Threat model and security scope
@@ -33,7 +33,7 @@ ReduLink uses four logical frame types:
 FULL(epoch, stream_id, offset, chunk_id, payload, auth_tag)
 REF(epoch, stream_id, offset, original_length, chunk_id, nonce, auth_tag)
 MISS(epoch, stream_id, offset, chunk_id)
-DICT_ACK(epoch, chunk_id)
+DICT_ACK(epoch, chunk_id, dictionary_generation)
 ```
 
 FULL frames carry new chunks. REF frames identify chunks already available to the receiver. MISS frames request fallback when a reference cannot be resolved. DICT_ACK frames support conservative dictionary synchronization.
@@ -101,10 +101,11 @@ bash benchmarks/run_public_artifacts.sh \
 ```
 
 The benchmark CSVs compare raw bytes, gzip, zstd when available, ReduLink fixed
-chunking, ReduLink CDC, an rsync-style rolling block reuse baseline, and
-compression/ReduLink composition cases. The public artifact runner accepts
-manifest-based reproducible corpora rather than hiding large downloads inside
-the script.
+chunking, ReduLink CDC, a fixed-block reuse approximation inspired by
+rsync-family delta transfer, and compression/ReduLink composition cases. They
+also include local wall-clock and process-RSS cost columns. The public artifact
+runner accepts manifest-based reproducible corpora rather than hiding large
+downloads inside the script.
 
 Fetch the small public-corpora fixture and run it:
 
@@ -121,7 +122,7 @@ python3 scripts/plot_results.py results/synthetic_suite.csv --output-dir figures
 
 ## Measurements
 
-Selected v0.5 measurements are provided in:
+Selected measurements are provided in:
 
 ```text
 results/paper_real_artifact_cdc_selected.csv
@@ -142,9 +143,9 @@ dictionary state.
 
 The Python implementation is a throughput/reconstruction model. It does not
 implement QUIC packetization, cryptographic authentication tags, replay windows,
-0-RTT policy, production dictionary manifests, or cross-tenant privacy controls.
-Those requirements are specified in `docs/protocol_summary.md` and scoped in
-`docs/threat_model.md`.
+0-RTT policy, production dictionary manifests, congestion-fairness experiments,
+or cross-tenant privacy controls. Those requirements are specified in
+`docs/protocol_summary.md` and scoped in `docs/threat_model.md`.
 
 ## Prototype
 
@@ -155,11 +156,13 @@ python3 prototypes/redulink_socket_prototype.py demo
 ```
 
 It sends modeled FULL/REF frames over a TCP socket and verifies byte-exact
-receiver reconstruction. It is not a QUIC implementation.
+receiver reconstruction. It does not exercise QUIC packet protection, ACK/loss
+recovery, stream final-size handling, flow control, congestion fairness, 0-RTT,
+migration, or extension-frame parsing.
 
 ## Manuscript
 
-This repository accompanies the v0.5 draft:
+This repository accompanies the current ReduLink draft:
 
 **ReduLink / Deduplex-QUIC: Authenticated Redundancy-Suppressed Transmission for Effective Bandwidth Expansion over Encrypted WANs**
 

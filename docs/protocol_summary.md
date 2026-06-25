@@ -5,10 +5,10 @@ cooperative encrypted endpoints. It is intentionally narrower than a complete
 transport specification: QUIC packetization, packet numbers, ACK processing,
 TLS, and congestion-control algorithms remain QUIC responsibilities.
 
-The v0.5 model uses one consistent logical frame vocabulary: `FULL`, `REF`,
-`MISS`, and `DICT_ACK`. Earlier manuscript sketches used `DEDU_*` names; those
-are now treated as presentation aliases only and should not be mixed into the
-normative text.
+The current Python artifact uses one consistent logical frame vocabulary:
+`FULL`, `REF`, `MISS`, and `DICT_ACK`. Earlier manuscript sketches used
+`DEDU_*` names; those are now treated as historical aliases only and should not
+be mixed into normative text.
 
 ## A.1 Terminology
 
@@ -34,9 +34,11 @@ normative text.
 ## A.2 Deduplex-QUIC Integration Profile
 
 ReduLink can be carried either as an application mapping inside QUIC STREAM data
-or as negotiated QUIC extension frames. The paper's Deduplex-QUIC profile models
-the second form because it makes stream offset, flow-control, and loss-repair
-semantics explicit.
+or as negotiated QUIC extension frames. The paper's Deduplex-QUIC profile is the
+second form: negotiated QUIC extension frames that are stream-data-equivalent
+and carry reconstructed stream offsets. The repository artifact is a ReduLink
+representation-layer model and endpoint reconstruction prototype; it is not yet
+a Deduplex-QUIC implementation.
 
 Negotiation uses a transport-parameter-style capability block:
 
@@ -56,13 +58,20 @@ redulink_parameters {
 ```
 
 The conservative default is 1-RTT only: references are disabled in 0-RTT unless
-the application authenticates a warm dictionary manifest and accepts replay
-risk. Unknown ReduLink frame types follow QUIC extension-frame behavior: peers
-that have not negotiated ReduLink must treat them as protocol errors or carry
-ReduLink only inside application data. ReduLink frames are ack-eliciting when
-they carry stream-reconstruction consequences. Congestion control accounts for
-transmitted frame bytes; stream and connection flow control account for
-reconstructed bytes.
+the application authenticates a warm dictionary manifest, binds it to a fresh
+epoch salt, and accepts replay risk. Unknown ReduLink frame types follow QUIC
+extension-frame behavior: peers that have not negotiated ReduLink must treat
+them as protocol errors or carry ReduLink only inside application data.
+ReduLink frames are ack-eliciting when they carry stream-reconstruction
+consequences. QUIC ACKs acknowledge receipt of packets and frames only; they do
+not prove dictionary presence, reconstructed-byte delivery, or application
+consumption. Semantic dictionary state is carried by `REDULINK_DICT_ACK`, and
+semantic repair is requested by `REDULINK_MISS`.
+
+Congestion control and QUIC loss recovery account for transmitted packet bytes.
+Stream and connection flow control account for reconstructed bytes. A REF that
+would exceed `MAX_STREAM_DATA`, `MAX_DATA`, final-size constraints, or local
+burst policy is invalid even if its wire encoding is small.
 
 ## A.3 Frame Types
 
@@ -101,16 +110,19 @@ REDULINK_DICT_ACK {
 }
 ```
 
+`stream_offset` always denotes the offset in the original reconstructed
+application byte stream, never an offset in encoded ReduLink frame bytes.
+
 `REDULINK_FULL` admits new bytes to the receiver dictionary after integrity and
 context validation. `REDULINK_REF` reconstructs bytes only when the referenced
 chunk is present and authenticated for the active context. `REDULINK_MISS`
 forces conservative FULL fallback. `REDULINK_DICT_ACK` allows senders to avoid
 speculative references when conservative synchronization is required.
 
-The v0.5 simulator uses conservative model overheads of 24 bytes for `FULL`
-metadata and 32 bytes for `REF` metadata. These constants are accounting inputs,
-not a final QUIC wire encoding. A final encoding must recompute overhead from
-varint lengths, connection ID policy, authentication-tag choice, and any
+The current Python artifact uses conservative model overheads of 24 bytes for
+`FULL` metadata and 32 bytes for `REF` metadata. These constants are accounting
+inputs, not a final QUIC wire encoding. A final encoding must recompute overhead
+from varint lengths, connection ID policy, authentication-tag choice, and any
 extension-frame type assignments.
 
 ## A.4 Sender State Machine
@@ -142,7 +154,9 @@ stable -> evicted_or_expired
    deduplication is enabled, `stream_id` is replaced by an authenticated origin
    dictionary identifier.
 4. If receiver state is known or expected to contain `chunk_id` under the active
-   dictionary generation, emit `REDULINK_REF`.
+   dictionary generation, emit `REDULINK_REF`. In `conservative-acked` mode,
+   this requires a prior `REDULINK_DICT_ACK(epoch_id, chunk_id,
+   dictionary_generation)`.
 5. Otherwise emit `REDULINK_FULL` and admit the chunk locally.
 6. Track observed hit rate, MISS rate, CPU cost, and expansion risk.
 7. Disable references or reset the epoch when hit rate is too low, MISS rate is
@@ -172,9 +186,16 @@ Additional receiver rules:
   validation failure.
 - A REF for a gap may be buffered only within `max_pending_reconstructed_bytes`;
   otherwise it is rejected or repaired with MISS.
+- If a `REDULINK_FULL` that would populate a dictionary is lost, later REF
+  frames depending on that chunk MUST NOT deliver bytes speculatively. The
+  receiver either buffers within `max_pending_reconstructed_bytes` until repair
+  arrives, or emits `REDULINK_MISS`.
 - RESET_STREAM and STOP_SENDING discard pending reconstruction state for that
   stream. A repair FULL must target the same reconstructed offset and cannot
   change QUIC final-size semantics.
+- RESET_STREAM final size is expressed in reconstructed bytes. Duplicate
+  REF/FULL frames are idempotent only if they reconstruct identical bytes at
+  the same stream offset.
 - Connection migration does not transfer dictionary state unless the QUIC
   connection context and epoch remain valid.
 
@@ -189,11 +210,15 @@ requires it.
 
 `DICT_ACK` acknowledges that a validated FULL chunk was admitted to the receiver
 dictionary for a specific epoch and dictionary generation. It is idempotent and
-may be retransmitted. A sender may rely on it only until the receiver advertises
-eviction, rotates the epoch, changes dictionary generation, or exceeds an
-agreed lifetime. If eviction is not deterministic or advertised, the sender must
-use a short epoch lifetime, conservative reference budget, or speculative mode
-with MISS fallback.
+may be retransmitted. In `conservative-acked` mode, a sender may reference only
+chunks for which it has received `REDULINK_DICT_ACK(epoch_id, chunk_id,
+dictionary_generation)`. In speculative mode, the sender may reference expected
+receiver state, but any MISS immediately reduces the reference budget and may
+force a return to conservative mode. A sender may rely on DICT_ACK only until
+the receiver advertises eviction, rotates the epoch, changes dictionary
+generation, or exceeds an agreed lifetime. If eviction is not deterministic or
+advertised, the sender must use a short epoch lifetime, conservative reference
+budget, or speculative mode with MISS fallback.
 
 Warm or origin dictionaries require an authenticated manifest:
 
@@ -268,6 +293,9 @@ previously admitted chunks.
 `MAX_DATA` and `MAX_STREAM_DATA` are consumed by reconstructed bytes. A REF that
 would exceed stream credit is blocked or rejected even if its wire encoding is
 small. Congestion-window consumption and loss recovery use transmitted bytes.
+Implementations must also bound pending reconstructed bytes, pace delivery into
+the application, and reject REF frames that would create an application burst
+outside local memory or scheduling policy.
 
 ## A.10 Failure Cases
 
@@ -283,12 +311,15 @@ small. Congestion-window consumption and loss recovery use transmitted bytes.
 - **Middlebox deployment attempt**: encrypted payloads prevent transparent
   application unless endpoints cooperate.
 
-## A.11 Evaluation Status
+## A.11 Artifact and Evaluation Status
 
-The v0.5 implementation demonstrates byte-exact reconstruction and
+The current Python artifact demonstrates byte-exact reconstruction and
 effective-throughput modeling under conservative frame-overhead assumptions.
-The repository now includes automated tests, baseline comparison commands,
-selected artifact measurements, public-artifact benchmark hooks, and CSV-driven
-plot generation. Broader performance claims still require larger public corpora
-such as OCI layers, git packs, package repositories, VM snapshots, structured
-logs, and backup streams.
+The socket prototype validates endpoint cooperation over a reliable localhost
+transport only; it does not exercise QUIC packet protection, ACK/loss recovery,
+stream final-size handling, flow control, congestion fairness, 0-RTT, migration,
+or extension-frame parsing. The repository includes automated tests, baseline
+comparison commands, selected artifact measurements, public-artifact benchmark
+hooks, local CPU/RSS cost columns, and CSV-driven plot generation. Broader
+performance claims still require larger public corpora such as OCI layers, git
+packs, package repositories, VM snapshots, structured logs, and backup streams.

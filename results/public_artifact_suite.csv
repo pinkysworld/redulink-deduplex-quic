@@ -1,34 +1,67 @@
-family,artifact,mode,chunker,method,input_bytes,wire_bytes,saving_rate,effective_multiplier,chunks,full_frames,ref_frames,reconstruction_ok,comparable,notes
-public-artifact,cpython-http-server,single-object,none,raw,48597,48597,0.000000,1.000000,0,0,0,True,True,
-public-artifact,cpython-http-server,single-object,none,gzip-6,48597,14910,0.693191,3.259356,0,0,0,True,True,
-public-artifact,cpython-http-server,single-object,none,zstd-3,48597,15970,0.671379,3.043018,0,0,0,True,True,
-public-artifact,cpython-http-server,warm-update-like,fixed,rsync-block-reuse,48597,15933,0.672140,3.050085,6,2,4,True,True,fixed-block rsync-style reuse baseline against warm artifact
-public-artifact,cpython-http-server,cold-intra-artifact,fixed,redulink,48597,48741,0.000000,0.997046,6,6,0,True,True,
-public-artifact,cpython-http-server,warm-update-like,fixed,redulink,48597,48741,0.000000,0.997046,6,6,0,True,True,
-public-artifact,cpython-http-server,cold-intra-artifact,cdc,redulink,48597,48693,0.000000,0.998028,4,4,0,True,True,
-public-artifact,cpython-http-server,warm-update-like,cdc,redulink,48597,4249,0.912567,11.437279,4,1,3,True,True,
-public-artifact,cpython-http-server,warm-update-like,cdc,gzip-then-redulink,14910,14934,0.000000,0.998393,1,1,0,True,True,ReduLink applied after gzip compression
-public-artifact,cpython-http-server,warm-update-like,cdc,redulink-then-gzip,48597,2094,0.956911,23.207736,4,1,3,True,False,gzip applied to modeled ReduLink frame stream
-public-artifact,cpython-http-server,warm-update-like,cdc,zstd-then-redulink,15970,16018,0.000000,0.997003,2,2,0,True,True,ReduLink applied after zstd compression
-public-artifact,linux-kernel-parameters,single-object,none,raw,272777,272777,0.000000,1.000000,0,0,0,True,True,
-public-artifact,linux-kernel-parameters,single-object,none,gzip-6,272777,93618,0.656797,2.913724,0,0,0,True,True,
-public-artifact,linux-kernel-parameters,single-object,none,zstd-3,272777,93880,0.655836,2.905592,0,0,0,True,True,
-public-artifact,linux-kernel-parameters,warm-update-like,fixed,rsync-block-reuse,272777,264641,0.029827,1.030744,3,2,1,True,True,fixed-block rsync-style reuse baseline against warm artifact
-public-artifact,linux-kernel-parameters,cold-intra-artifact,fixed,redulink,272777,273593,0.000000,0.997017,34,34,0,True,True,
-public-artifact,linux-kernel-parameters,warm-update-like,fixed,redulink,272777,273593,0.000000,0.997017,34,34,0,True,True,
-public-artifact,linux-kernel-parameters,cold-intra-artifact,cdc,redulink,272777,273473,0.000000,0.997455,29,29,0,True,True,
-public-artifact,linux-kernel-parameters,warm-update-like,cdc,redulink,272777,273473,0.000000,0.997455,29,29,0,True,True,
-public-artifact,linux-kernel-parameters,warm-update-like,cdc,gzip-then-redulink,93618,93930,0.000000,0.996678,13,13,0,True,True,ReduLink applied after gzip compression
-public-artifact,linux-kernel-parameters,warm-update-like,cdc,redulink-then-gzip,272777,94862,0.652236,2.875514,29,29,0,True,False,gzip applied to modeled ReduLink frame stream
-public-artifact,linux-kernel-parameters,warm-update-like,cdc,zstd-then-redulink,93880,94192,0.000000,0.996688,13,13,0,True,True,ReduLink applied after zstd compression
-public-artifact,ietf-quic-rfc,single-object,none,raw,126250,126250,0.000000,1.000000,0,0,0,True,True,
-public-artifact,ietf-quic-rfc,single-object,none,gzip-6,126250,39239,0.689196,3.217462,0,0,0,True,True,
-public-artifact,ietf-quic-rfc,single-object,none,zstd-3,126250,40505,0.679168,3.116899,0,0,0,True,True,
-public-artifact,ietf-quic-rfc,warm-update-like,fixed,rsync-block-reuse,126250,126270,0.000000,0.999842,1,1,0,True,True,fixed-block rsync-style reuse baseline against warm artifact
-public-artifact,ietf-quic-rfc,cold-intra-artifact,fixed,redulink,126250,126634,0.000000,0.996968,16,16,0,True,True,
-public-artifact,ietf-quic-rfc,warm-update-like,fixed,redulink,126250,126634,0.000000,0.996968,16,16,0,True,True,
-public-artifact,ietf-quic-rfc,cold-intra-artifact,cdc,redulink,126250,126562,0.000000,0.997535,13,13,0,True,True,
-public-artifact,ietf-quic-rfc,warm-update-like,cdc,redulink,126250,126562,0.000000,0.997535,13,13,0,True,True,
-public-artifact,ietf-quic-rfc,warm-update-like,cdc,gzip-then-redulink,39239,39335,0.000000,0.997559,4,4,0,True,True,ReduLink applied after gzip compression
-public-artifact,ietf-quic-rfc,warm-update-like,cdc,redulink-then-gzip,126250,39750,0.685149,3.176101,13,13,0,True,False,gzip applied to modeled ReduLink frame stream
-public-artifact,ietf-quic-rfc,warm-update-like,cdc,zstd-then-redulink,40505,40649,0.000000,0.996457,6,6,0,True,True,ReduLink applied after zstd compression
+family,artifact,mode,chunker,method,input_bytes,wire_bytes,saving_rate,effective_multiplier,chunks,full_frames,ref_frames,reconstruction_ok,comparable,cpu_ms,throughput_mib_s,peak_kib,notes
+public-artifact,cpython-http-server,single-object,none,raw,48516,48516,0.000000,1.000000,0,0,0,True,True,,,,
+public-artifact,cpython-http-server,single-object,none,gzip-6,48516,14856,0.693792,3.265751,0,0,0,True,True,1.853,24.963,26624.0,
+public-artifact,cpython-http-server,single-object,none,zstd-3,48516,15907,0.672129,3.049978,0,0,0,True,True,36.297,1.275,26704.0,
+public-artifact,cpython-http-server,warm-update-like,fixed,fixed-block-reuse,48516,40380,0.167697,1.201486,3,2,1,True,True,14.565,3.177,26720.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+public-artifact,cpython-http-server,cold-intra-artifact,fixed,redulink,48516,48660,0.000000,0.997041,6,6,0,True,True,0.357,129.710,26752.0,
+public-artifact,cpython-http-server,warm-update-like,fixed,redulink,48516,48660,0.000000,0.997041,6,6,0,True,True,0.185,249.762,26800.0,
+public-artifact,cpython-http-server,cold-intra-artifact,cdc,redulink,48516,48612,0.000000,0.998025,4,4,0,True,True,14.844,3.117,26800.0,
+public-artifact,cpython-http-server,warm-update-like,cdc,redulink,48516,48612,0.000000,0.998025,4,4,0,True,True,48.086,0.962,26832.0,
+public-artifact,cpython-http-server,warm-update-like,cdc,gzip-then-redulink,14856,14928,0.000000,0.995177,3,3,0,True,True,14.176,0.999,26992.0,ReduLink applied after gzip compression
+public-artifact,cpython-http-server,warm-update-like,cdc,redulink-then-gzip,48516,15017,0.690473,3.230738,4,4,0,True,False,49.889,0.927,27104.0,gzip applied to modeled ReduLink frame stream
+public-artifact,cpython-http-server,warm-update-like,cdc,zstd-then-redulink,15907,15931,0.000000,0.998494,1,1,0,True,True,21.141,0.718,27168.0,ReduLink applied after zstd compression
+public-artifact,cpython-pathlib,single-object,none,raw,51149,51149,0.000000,1.000000,0,0,0,True,True,,,,
+public-artifact,cpython-pathlib,single-object,none,gzip-6,51149,12569,0.754267,4.069457,0,0,0,True,True,2.118,23.035,27168.0,
+public-artifact,cpython-pathlib,single-object,none,zstd-3,51149,13647,0.733191,3.748003,0,0,0,True,True,33.275,1.466,27216.0,
+public-artifact,cpython-pathlib,warm-update-like,fixed,fixed-block-reuse,51149,51169,0.000000,0.999609,1,1,0,True,True,19.369,2.518,27216.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+public-artifact,cpython-pathlib,cold-intra-artifact,fixed,redulink,51149,51317,0.000000,0.996726,7,7,0,True,True,0.228,213.749,27216.0,
+public-artifact,cpython-pathlib,warm-update-like,fixed,redulink,51149,51317,0.000000,0.996726,7,7,0,True,True,0.224,217.766,27216.0,
+public-artifact,cpython-pathlib,cold-intra-artifact,cdc,redulink,51149,51293,0.000000,0.997193,6,6,0,True,True,17.710,2.754,27216.0,
+public-artifact,cpython-pathlib,warm-update-like,cdc,redulink,51149,51293,0.000000,0.997193,6,6,0,True,True,52.447,0.930,27248.0,
+public-artifact,cpython-pathlib,warm-update-like,cdc,gzip-then-redulink,12569,12593,0.000000,0.998094,1,1,0,True,True,12.542,0.956,27328.0,ReduLink applied after gzip compression
+public-artifact,cpython-pathlib,warm-update-like,cdc,redulink-then-gzip,51149,12816,0.749438,3.991027,6,6,0,True,False,53.926,0.905,27360.0,gzip applied to modeled ReduLink frame stream
+public-artifact,cpython-pathlib,warm-update-like,cdc,zstd-then-redulink,13647,13695,0.000000,0.996495,2,2,0,True,True,14.142,0.920,27408.0,ReduLink applied after zstd compression
+public-artifact,linux-kernel-parameters,single-object,none,raw,272692,272692,0.000000,1.000000,0,0,0,True,True,,,,
+public-artifact,linux-kernel-parameters,single-object,none,gzip-6,272692,93548,0.656946,2.914996,0,0,0,True,True,19.525,13.319,27824.0,
+public-artifact,linux-kernel-parameters,single-object,none,zstd-3,272692,93817,0.655960,2.906637,0,0,0,True,True,40.782,6.377,27824.0,
+public-artifact,linux-kernel-parameters,warm-update-like,fixed,fixed-block-reuse,272692,264556,0.029836,1.030753,3,2,1,True,True,110.666,2.350,28048.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+public-artifact,linux-kernel-parameters,cold-intra-artifact,fixed,redulink,272692,273508,0.000000,0.997017,34,34,0,True,True,0.599,434.276,28096.0,
+public-artifact,linux-kernel-parameters,warm-update-like,fixed,redulink,272692,273508,0.000000,0.997017,34,34,0,True,True,0.888,292.722,28480.0,
+public-artifact,linux-kernel-parameters,cold-intra-artifact,cdc,redulink,272692,273364,0.000000,0.997542,28,28,0,True,True,90.636,2.869,28704.0,
+public-artifact,linux-kernel-parameters,warm-update-like,cdc,redulink,272692,273364,0.000000,0.997542,28,28,0,True,True,258.930,1.004,28848.0,
+public-artifact,linux-kernel-parameters,warm-update-like,cdc,gzip-then-redulink,93548,93812,0.000000,0.997186,11,11,0,True,True,79.437,1.123,29040.0,ReduLink applied after gzip compression
+public-artifact,linux-kernel-parameters,warm-update-like,cdc,redulink-then-gzip,272692,94747,0.652549,2.878107,28,28,0,True,False,241.370,1.077,29680.0,gzip applied to modeled ReduLink frame stream
+public-artifact,linux-kernel-parameters,warm-update-like,cdc,zstd-then-redulink,93817,94057,0.000000,0.997448,10,10,0,True,True,77.239,1.158,29680.0,ReduLink applied after zstd compression
+public-artifact,nginx-changes,single-object,none,raw,828922,828922,0.000000,1.000000,0,0,0,True,True,,,,
+public-artifact,nginx-changes,single-object,none,gzip-6,828922,153493,0.814828,5.400390,0,0,0,True,True,27.614,28.628,30144.0,
+public-artifact,nginx-changes,single-object,none,zstd-3,828922,155396,0.812532,5.334256,0,0,0,True,True,42.294,18.691,30144.0,
+public-artifact,nginx-changes,warm-update-like,fixed,fixed-block-reuse,828922,11362,0.986293,72.955642,102,2,100,True,True,3.295,239.894,30480.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+public-artifact,nginx-changes,cold-intra-artifact,fixed,redulink,828922,831370,0.000000,0.997055,102,102,0,True,True,2.090,378.225,30944.0,
+public-artifact,nginx-changes,warm-update-like,fixed,redulink,828922,831370,0.000000,0.997055,102,102,0,True,True,3.442,229.686,31984.0,
+public-artifact,nginx-changes,cold-intra-artifact,cdc,redulink,828922,830194,0.000000,0.998468,53,53,0,True,True,237.680,3.326,32288.0,
+public-artifact,nginx-changes,warm-update-like,cdc,redulink,828922,15603,0.981177,53.125809,53,1,52,True,True,621.301,1.272,33552.0,
+public-artifact,nginx-changes,warm-update-like,cdc,gzip-then-redulink,153493,153925,0.000000,0.997193,18,18,0,True,True,119.028,1.230,33552.0,ReduLink applied after gzip compression
+public-artifact,nginx-changes,warm-update-like,cdc,redulink-then-gzip,828922,5575,0.993274,148.685561,53,1,52,True,False,617.516,1.280,33872.0,gzip applied to modeled ReduLink frame stream
+public-artifact,nginx-changes,warm-update-like,cdc,zstd-then-redulink,155396,155828,0.000000,0.997228,18,18,0,True,True,121.575,1.219,34032.0,ReduLink applied after zstd compression
+public-artifact,redis-readme,single-object,none,raw,23845,23845,0.000000,1.000000,0,0,0,True,True,,,,
+public-artifact,redis-readme,single-object,none,gzip-6,23845,9072,0.619543,2.628417,0,0,0,True,True,1.035,21.969,34032.0,
+public-artifact,redis-readme,single-object,none,zstd-3,23845,9370,0.607046,2.544824,0,0,0,True,True,28.119,0.809,34032.0,
+public-artifact,redis-readme,warm-update-like,fixed,fixed-block-reuse,23845,23865,0.000000,0.999162,1,1,0,True,True,6.461,3.519,34032.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+public-artifact,redis-readme,cold-intra-artifact,fixed,redulink,23845,23917,0.000000,0.996990,3,3,0,True,True,0.137,166.140,34032.0,
+public-artifact,redis-readme,warm-update-like,fixed,redulink,23845,23917,0.000000,0.996990,3,3,0,True,True,0.098,231.749,34032.0,
+public-artifact,redis-readme,cold-intra-artifact,cdc,redulink,23845,23965,0.000000,0.994993,5,5,0,True,True,6.002,3.789,34032.0,
+public-artifact,redis-readme,warm-update-like,cdc,redulink,23845,15236,0.361040,1.565043,5,3,2,True,True,18.408,1.235,34032.0,
+public-artifact,redis-readme,warm-update-like,cdc,gzip-then-redulink,9072,9144,0.000000,0.992126,3,3,0,True,True,7.128,1.214,34032.0,ReduLink applied after gzip compression
+public-artifact,redis-readme,warm-update-like,cdc,redulink-then-gzip,23845,6265,0.737261,3.806065,5,3,2,True,False,20.295,1.120,34032.0,gzip applied to modeled ReduLink frame stream
+public-artifact,redis-readme,warm-update-like,cdc,zstd-then-redulink,9370,9418,0.000000,0.994903,2,2,0,True,True,6.851,1.304,34032.0,ReduLink applied after zstd compression
+public-artifact,ietf-quic-rfc,single-object,none,raw,126175,126175,0.000000,1.000000,0,0,0,True,True,,,,
+public-artifact,ietf-quic-rfc,single-object,none,gzip-6,126175,39177,0.689503,3.220640,0,0,0,True,True,6.256,19.235,34032.0,
+public-artifact,ietf-quic-rfc,single-object,none,zstd-3,126175,40447,0.679437,3.119514,0,0,0,True,True,28.945,4.157,34032.0,
+public-artifact,ietf-quic-rfc,warm-update-like,fixed,fixed-block-reuse,126175,126195,0.000000,0.999842,1,1,0,True,True,39.246,3.066,34032.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+public-artifact,ietf-quic-rfc,cold-intra-artifact,fixed,redulink,126175,126559,0.000000,0.996966,16,16,0,True,True,0.356,337.847,34032.0,
+public-artifact,ietf-quic-rfc,warm-update-like,fixed,redulink,126175,126559,0.000000,0.996966,16,16,0,True,True,1.002,120.145,34032.0,
+public-artifact,ietf-quic-rfc,cold-intra-artifact,cdc,redulink,126175,126487,0.000000,0.997533,13,13,0,True,True,31.810,3.783,34032.0,
+public-artifact,ietf-quic-rfc,warm-update-like,cdc,redulink,126175,126487,0.000000,0.997533,13,13,0,True,True,244.857,0.491,34048.0,
+public-artifact,ietf-quic-rfc,warm-update-like,cdc,gzip-then-redulink,39177,39321,0.000000,0.996338,6,6,0,True,True,65.952,0.567,34048.0,ReduLink applied after gzip compression
+public-artifact,ietf-quic-rfc,warm-update-like,cdc,redulink-then-gzip,126175,39680,0.685516,3.179814,13,13,0,True,False,270.400,0.445,34064.0,gzip applied to modeled ReduLink frame stream
+public-artifact,ietf-quic-rfc,warm-update-like,cdc,zstd-then-redulink,40447,40591,0.000000,0.996452,6,6,0,True,True,71.719,0.538,34064.0,ReduLink applied after zstd compression
