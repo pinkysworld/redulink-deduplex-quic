@@ -164,6 +164,8 @@ def decode(frames: List[Frame], *, warm_dictionary: bytes = b'', chunker: str = 
     out: List[bytes] = []
     for fr in frames:
         if fr.kind == 'FULL':
+            if len(fr.payload) != fr.length:
+                raise ValueError('FULL frame length mismatch')
             if cid(fr.payload) != fr.cid:
                 raise ValueError('FULL frame failed chunk-id validation')
             touch_lru(dictionary, fr.cid, fr.payload, max_dict_chunks)
@@ -171,7 +173,10 @@ def decode(frames: List[Frame], *, warm_dictionary: bytes = b'', chunker: str = 
         elif fr.kind == 'REF':
             if fr.cid not in dictionary:
                 raise ValueError('REF miss: receiver lacks referenced chunk')
-            out.append(dictionary[fr.cid])
+            chunk = dictionary[fr.cid]
+            if len(chunk) != fr.length:
+                raise ValueError('REF frame length mismatch')
+            out.append(chunk)
         else:
             raise ValueError(f'unknown frame kind: {fr.kind}')
     return b''.join(out)
@@ -215,8 +220,8 @@ def cmd_artifact(args: argparse.Namespace) -> None:
 
 
 def cmd_random(args: argparse.Namespace) -> None:
-    random.seed(args.seed)
-    data = os.urandom(args.size_mib * 1024 * 1024)
+    rng = random.Random(args.seed)
+    data = bytes(rng.getrandbits(8) for _ in range(args.size_mib * 1024 * 1024))
     stats = run_bytes(data, chunker=args.chunker, chunk_size=args.chunk_size, miss_rate=args.miss_rate)
     print_stats('random-negative-control', stats)
 
@@ -233,7 +238,8 @@ def cmd_synthetic(args: argparse.Namespace) -> None:
     elif args.variant == 'updates':
         data = data + data[: len(data) // 2]
     elif args.variant == 'mixed':
-        data = data + os.urandom(len(data) // 4)
+        rng = random.Random(args.seed)
+        data = data + bytes(rng.getrandbits(8) for _ in range(len(data) // 4))
     stats = run_bytes(data, chunker=args.chunker, chunk_size=args.chunk_size, miss_rate=args.miss_rate)
     print_stats(args.variant, stats)
 

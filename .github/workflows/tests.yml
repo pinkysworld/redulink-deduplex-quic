@@ -1,0 +1,22 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Unit tests
+        run: python -m unittest discover -s tests
+      - name: Benchmark smoke test
+        run: bash benchmarks/run_synthetic_suite.sh --smoke
+      - name: Plot selected-result CSV
+        run: python scripts/plot_results.py results/paper_real_artifact_cdc_selected.csv --output-dir /tmp/redulink-figures
+      - name: Socket prototype demo
+        run: python prototypes/redulink_socket_prototype.py demo

@@ -1,0 +1,34 @@
+family,artifact,mode,chunker,method,input_bytes,wire_bytes,saving_rate,effective_multiplier,chunks,full_frames,ref_frames,reconstruction_ok,comparable,notes
+synthetic,logs,single-object,none,raw,2578182,2578182,0.000000,1.000000,0,0,0,True,True,
+synthetic,logs,single-object,none,gzip-6,2578182,145905,0.943408,17.670279,0,0,0,True,True,
+synthetic,logs,single-object,none,zstd-3,2578182,66540,0.974191,38.746348,0,0,0,True,True,
+synthetic,logs,warm-update-like,fixed,rsync-block-reuse,2578182,35466,0.986244,72.694468,312,1,311,True,True,fixed-block rsync-style reuse baseline against warm artifact
+synthetic,logs,cold-intra-artifact,fixed,redulink,2578182,2585742,0.000000,0.997076,315,315,0,True,True,
+synthetic,logs,warm-update-like,fixed,redulink,2578182,40518,0.984284,63.630535,315,4,311,True,True,
+synthetic,logs,cold-intra-artifact,cdc,redulink,2578182,2580078,0.000000,0.999265,79,79,0,True,True,
+synthetic,logs,warm-update-like,cdc,redulink,2578182,57558,0.977675,44.792766,79,2,77,True,True,
+synthetic,logs,warm-update-like,cdc,gzip-then-redulink,145905,57265,0.607519,2.547891,7,2,5,True,True,ReduLink applied after gzip compression
+synthetic,logs,warm-update-like,cdc,redulink-then-gzip,2578182,3979,0.998457,647.947223,79,2,77,True,False,gzip applied to modeled ReduLink frame stream
+synthetic,logs,warm-update-like,cdc,zstd-then-redulink,66540,11182,0.831951,5.950635,5,1,4,True,True,ReduLink applied after zstd compression
+synthetic,updates,single-object,none,raw,2575182,2575182,0.000000,1.000000,0,0,0,True,True,
+synthetic,updates,single-object,none,gzip-6,2575182,146143,0.943249,17.620974,0,0,0,True,True,
+synthetic,updates,single-object,none,zstd-3,2575182,66633,0.974125,38.647247,0,0,0,True,True,
+synthetic,updates,warm-update-like,fixed,rsync-block-reuse,2575182,40682,0.984202,63.300280,313,3,310,True,True,fixed-block rsync-style reuse baseline against warm artifact
+synthetic,updates,cold-intra-artifact,fixed,redulink,2575182,2582742,0.000000,0.997073,315,315,0,True,True,
+synthetic,updates,warm-update-like,fixed,redulink,2575182,1314222,0.489659,1.959473,315,160,155,True,True,
+synthetic,updates,cold-intra-artifact,cdc,redulink,2575182,2577078,0.000000,0.999264,79,79,0,True,True,
+synthetic,updates,warm-update-like,cdc,redulink,2575182,1332198,0.482678,1.933032,79,41,38,True,True,
+synthetic,updates,warm-update-like,cdc,gzip-then-redulink,146143,90335,0.381873,1.617789,10,6,4,True,True,ReduLink applied after gzip compression
+synthetic,updates,warm-update-like,cdc,redulink-then-gzip,2575182,79042,0.969306,32.579920,79,41,38,True,False,gzip applied to modeled ReduLink frame stream
+synthetic,updates,warm-update-like,cdc,zstd-then-redulink,66633,38964,0.415245,1.710117,7,4,3,True,True,ReduLink applied after zstd compression
+synthetic,mixed,single-object,none,raw,3187727,3187727,0.000000,1.000000,0,0,0,True,True,
+synthetic,mixed,single-object,none,gzip-6,3187727,148543,0.953402,21.459961,0,0,0,True,True,
+synthetic,mixed,single-object,none,zstd-3,3187727,66840,0.979032,47.691906,0,0,0,True,True,
+synthetic,mixed,warm-update-like,fixed,rsync-block-reuse,3187727,645011,0.797658,4.942128,312,1,311,True,True,fixed-block rsync-style reuse baseline against warm artifact
+synthetic,mixed,cold-intra-artifact,fixed,redulink,3187727,3197087,0.000000,0.997072,390,390,0,True,True,
+synthetic,mixed,warm-update-like,fixed,redulink,3187727,651863,0.795509,4.890179,390,79,311,True,True,
+synthetic,mixed,cold-intra-artifact,cdc,redulink,3187727,3190079,0.000000,0.999263,98,98,0,True,True,
+synthetic,mixed,warm-update-like,cdc,redulink,3187727,667559,0.790585,4.775199,98,21,77,True,True,
+synthetic,mixed,warm-update-like,cdc,gzip-then-redulink,148543,59927,0.596568,2.478732,8,3,5,True,True,ReduLink applied after gzip compression
+synthetic,mixed,warm-update-like,cdc,redulink-then-gzip,3187727,7872,0.997531,404.944995,98,21,77,True,False,gzip applied to modeled ReduLink frame stream
+synthetic,mixed,warm-update-like,cdc,zstd-then-redulink,66840,11482,0.828217,5.821285,5,1,4,True,True,ReduLink applied after zstd compression

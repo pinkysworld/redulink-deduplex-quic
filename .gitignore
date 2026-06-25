@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 results/real_artifact_results.csv
 results/loss_sweep_results.csv
+data/public_corpora/

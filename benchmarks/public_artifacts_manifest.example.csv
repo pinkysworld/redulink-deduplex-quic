@@ -1,0 +1,4 @@
+label,source_url,warm_path,update_path,path,sha256,bytes,license_note,retrieved_utc
+ubuntu-base-example,https://cdimage.ubuntu.com/ubuntu-base/releases/,/data/oci/ubuntu-base-22.04,/data/oci/ubuntu-base-24.04,,fill-me,fill-me,Ubuntu image terms,YYYY-MM-DDTHH:MM:SSZ
+linux-kernel-example,https://cdn.kernel.org/pub/linux/kernel/,,/data/tarballs/linux-6.9,,fill-me,fill-me,GPL-2.0-only,YYYY-MM-DDTHH:MM:SSZ
+git-pack-example,https://github.com/example/project.git,/data/git-packs/project-old,/data/git-packs/project-new,,fill-me,fill-me,project license,YYYY-MM-DDTHH:MM:SSZ
