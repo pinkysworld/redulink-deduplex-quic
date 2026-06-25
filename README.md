@@ -11,9 +11,8 @@ ReduLink is **not** faster Ethernet and does not claim to increase the physical 
 ```text
 src/redulink_proto_v0_5.py                         Minimal encoder/decoder prototype
 results/paper_real_artifact_cdc_selected.csv       Selected v0.5 artifact results
-paper/ReduLink_Deduplex_QUIC_full_draft_v0_5.pdf   Manuscript PDF
-paper/ReduLink_Deduplex_QUIC_full_draft_v0_5.docx  Manuscript DOCX
-docs/ReduLink_Deduplex_QUIC_v0_5_reproducibility_package.zip
+docs/protocol_summary.md                           Compact protocol and evaluation summary
+paper/README.md                                    Manuscript status note
 LICENSE
 CITATION.cff
 ```
@@ -56,6 +55,12 @@ Run a negative control:
 python3 src/redulink_proto_v0_5.py random --size-mib 8 --chunker cdc
 ```
 
+Run a synthetic structured-log workload:
+
+```bash
+python3 src/redulink_proto_v0_5.py synthetic --variant logs --chunker fixed
+```
+
 The script is intentionally standard-library-only.
 
 ## Example selected v0.5 results
@@ -71,6 +76,8 @@ results/paper_real_artifact_cdc_selected.csv
 This repository corresponds to the v0.5 manuscript draft:
 
 **ReduLink / Deduplex-QUIC: Authenticated Redundancy-Suppressed Transmission for Effective Bandwidth Expansion over Encrypted WANs**
+
+The repository currently publishes the runnable artifact, selected data, citation metadata, and protocol summary. The full DOCX/PDF manuscript draft can be attached separately as a release artifact or uploaded manually if desired.
 
 The evaluation should be interpreted as a reproducible proof of concept, not as production trace validation. The next intended step is testing larger public corpora such as OCI/container layers, git packs, package repositories, VM snapshots, logs, and backup streams.
 
