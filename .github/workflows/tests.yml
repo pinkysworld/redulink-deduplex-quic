@@ -19,7 +19,7 @@ jobs:
       - name: Unit tests
         run: python -m unittest discover -s tests
       - name: Benchmark smoke test
-        run: bash benchmarks/run_synthetic_suite.sh --smoke
+        run: bash benchmarks/run_synthetic_suite.sh --smoke --output /tmp/redulink-smoke.csv
       - name: Target-class generated artifact check
         run: |
           bash benchmarks/run_target_class_suite.sh
