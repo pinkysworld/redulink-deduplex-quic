@@ -1,158 +1,51 @@
-# ReduLink
+# ReduLink journal-ready artifact package
 
-Authenticated redundancy-suppressed transmission for effective reconstructed throughput over encrypted WANs.
+This package accompanies the manuscript **ReduLink: Authenticated Reference Substitution for Redundancy-Suppressed Transfers over Encrypted QUIC Streams** by Michél Nguyen, University of the People, ORCID 0000-0001-6834-4422.
 
-ReduLink is an endpoint-controlled representation-layer model for replacing repeated payload chunks with compact authenticated references under negotiated dictionary state. The repository also describes a candidate Deduplex-QUIC integration profile, but the runnable artifact is not a QUIC implementation.
+The artifact implements a scoped, endpoint-controlled ReduLink representation layer and evaluates it through offline reconstruction, authenticated frame validation, native aioquic QUIC stream mapping, deterministic loss, scaling, component-cost measurements, external public source-release snapshots, and portable bottleneck-emulation analysis. The implementation is intentionally scoped as a **native QUIC stream mapping**, not as custom QUIC extension-frame parsing.
 
-The mechanism does not change physical link rate. It can improve effective reconstructed payload throughput only when byte-identical chunks survive across receiver warm state, chunk boundaries, and framing overhead. The evaluation deliberately includes positive, weak, and negative cases.
+## Key files
 
-## Repository contents
+- Manuscript DOCX: `paper/submission/ReduLink_journal_ready_v2_3.docx`
+- Manuscript PDF: `paper/submission/ReduLink_journal_ready_v2_3.pdf`
+- Core model: `src/redulink_model.py`
+- Authenticated model: `src/redulink_secure.py`
+- Binary stream format: `src/redulink_wire.py`
+- Exporter-style artifact key schedule: `src/redulink_key_schedule.py`
+- Native aioquic prototype: `prototypes/redulink_aioquic_experiment.py`
+- Real-workload manifest runner: `benchmarks/run_real_workload_manifest.py`
+- External public corpus fetcher: `benchmarks/fetch_external_public_corpora.py`
+- Scaling experiment: `benchmarks/run_aioquic_scaling_experiment.py`
+- Bottleneck emulation: `benchmarks/run_quic_bottleneck_emulation.py`
+- Internal peer review notes: `docs/internal_peer_review_v2_2.md`
+- Evidence hierarchy: `docs/evidence_hierarchy_v2_3.md`
 
-```text
-src/redulink_model.py                              Canonical encoder/decoder artifact model
-src/redulink_proto_v0_5.py                         Backward-compatible wrapper
-tests/                                             Reconstruction, safety, plotting, and prototype tests
-benchmarks/                                        Reproducible benchmark suites and manifests
-prototypes/redulink_socket_prototype.py            Minimal TCP endpoint-reconstruction prototype
-scripts/summarize_benchmark_evidence.py            Paper evidence-table generator
-scripts/plot_results.py                            General figure generation from CSV
-scripts/plot_warm_update_summary.py                Paper-facing warm/update summary plot
-results/                                           Generated CSV evidence
-figures/                                           Generated plots
-docs/protocol_summary.md                           Protocol appendix and candidate Deduplex-QUIC profile
-docs/threat_model.md                               Threat model and security scope
-paper/                                             Manuscript notes and evidence tables
-paper/submission/                                  Rendered DOCX/PDF drafts
-.github/workflows/tests.yml                        CI test workflow
-LICENSE
-CITATION.cff
-```
+## Quick validation
 
-## Scope
-
-Implemented:
-
-- fixed and content-defined chunking model,
-- FULL/REF byte-exact reconstruction,
-- fail-closed REF miss behavior,
-- wire-byte accounting with frame overhead,
-- random and compressed negative controls,
-- public fixture and deterministic target-class benchmark suites,
-- localhost TCP endpoint reconstruction prototype.
-
-Not implemented:
-
-- QUIC packetization, extension-frame parsing, ACK/loss recovery, flow control, migration, or 0-RTT behavior,
-- cryptographic authentication tags, QUIC exporter binding, replay windows, or production manifests,
-- congestion-fairness or line-rate performance experiments,
-- cross-tenant privacy enforcement.
-
-## Run the model
-
-Directory or file input:
-
-```bash
-python3 src/redulink_model.py artifact --path /path/to/data --chunker cdc --mode warm
-```
-
-Random-data negative control:
-
-```bash
-python3 src/redulink_model.py random --size-mib 8 --chunker cdc
-```
-
-Structured-log workload:
-
-```bash
-python3 src/redulink_model.py synthetic --variant logs --chunker fixed
-```
-
-The old `src/redulink_proto_v0_5.py` entrypoint remains as a compatibility wrapper.
-
-## Tests
-
-Fast unit/prototype tests pass from a clean checkout. The public-corpus validation test skips with an instruction if optional fetched corpora are absent.
+Install dependencies first:
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests
 ```
 
-For full artifact-data validation, fetch the pinned public fixture first:
+Then run:
 
 ```bash
-python3 benchmarks/fetch_public_corpora.py
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests
-```
-
-## Reproducible benchmarks
-
-Synthetic suite:
-
-```bash
-bash benchmarks/run_synthetic_suite.sh
-```
-
-Pinned public fixture:
-
-```bash
-python3 benchmarks/fetch_public_corpora.py
-bash benchmarks/run_public_artifacts.sh --manifest benchmarks/public_artifacts_manifest.csv
-```
-
-Deterministic target-class generated fixtures:
-
-```bash
-bash benchmarks/run_target_class_suite.sh
+python3 -m unittest discover -s tests
+python3 scripts/check_manuscript_citations.py
+python3 benchmarks/generate_target_corpora.py
 python3 benchmarks/check_generated_artifacts.py
+python3 benchmarks/run_component_performance.py
+python3 benchmarks/fetch_external_public_corpora.py
+python3 benchmarks/run_real_workload_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/external_public_suite.csv
+python3 benchmarks/run_aioquic_scaling_experiment.py
+python3 benchmarks/run_quic_bottleneck_emulation.py
 ```
 
-Optional block-size sensitivity runs:
+Most tests that require aioquic skip when aioquic is unavailable, so non-QUIC artifact checks remain reviewable in minimal environments.
 
-```bash
-bash benchmarks/run_block_size_sensitivity.sh
-```
+## Scope
 
-Regenerate paper tables and figures:
+Implemented: byte-exact FULL/REF reconstruction, authenticated frame validation, replay/tamper rejection, semantic MISS/FULL repair, compact binary stream encoding, native aioquic stream mapping, deterministic loss proxy, component-cost reporting, deterministic workload fixtures, pinned public text fixtures, external public source-release snapshots, reviewer-supplied workload manifest runner, scaling measurements, and bottleneck-emulation analysis over measured QUIC stream payload bytes.
 
-```bash
-python3 scripts/plot_results.py results/synthetic_suite.csv --output-dir figures
-python3 scripts/plot_results.py results/public_artifact_suite.csv --output-dir figures/public_artifacts
-python3 scripts/plot_results.py results/target_class_suite.csv --output-dir figures/target_class
-python3 scripts/summarize_benchmark_evidence.py
-python3 scripts/plot_warm_update_summary.py
-```
-
-## Evidence interpretation
-
-The strongest current evidence is that ReduLink can suppress transmitted bytes for suitable warm-state workloads, especially aligned/page-like VM or backup data and selected public changed-version artifacts. It is weak or negative for random data, independent compressed data, and generated cases where chunk identity does not survive. Fixed-block reuse often beats ReduLink on aligned update-like data; ReduLink's contribution is not a superior delta algorithm, but a scoped reference-substitution model with explicit transport, dictionary, miss-repair, privacy, and accounting semantics.
-
-Timing columns are local wall-clock runner measurements (`wall_ms`, `throughput_mib_s_local`, `runner_peak_kib`). They are not production performance or line-rate claims.
-
-## Prototype
-
-```bash
-python3 prototypes/redulink_socket_prototype.py demo
-```
-
-The prototype sends modeled FULL/REF frames over localhost TCP and verifies byte-exact reconstruction. It does not exercise QUIC behavior.
-
-## Manuscript
-
-Current submission title:
-
-**ReduLink: Authenticated Redundancy-Suppressed Transmission for Effective Reconstructed Throughput over Encrypted WANs**
-
-Subtitle/scope:
-
-**A representation-layer model and candidate Deduplex-QUIC profile**
-
-Rendered drafts are under `paper/submission/`. The v0.9 revision synchronizes the manuscript with target-class evidence, corrected artifact tests, fixed socket accounting, and updated protocol/security framing.
-
-## Citation
-
-Use `CITATION.cff`.
-
-## License
-
-The code is released under the MIT License. Manuscript text remains with the author unless separately licensed.
+Not implemented: custom QUIC extension frames, QUIC transport-parameter negotiation, direct TLS exporter extraction from aioquic internals, 0-RTT dictionary enforcement inside the transport, migration-policy enforcement, production-scale OCI/VM/Git-pack corpora, and kernel netem/tc multi-flow congestion experiments.

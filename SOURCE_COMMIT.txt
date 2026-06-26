@@ -1,0 +1,4 @@
+derived-from: ReduLink_systems_ready_v2_2_2026-06-26.zip
+package: ReduLink_journal_ready_v2_3_2026-06-26
+manuscript: paper/submission/ReduLink_journal_ready_v2_3.docx
+source-repository: https://github.com/pinkysworld/redulink-deduplex-quic

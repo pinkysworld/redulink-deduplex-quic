@@ -1,0 +1,5 @@
+method,loss_every,input_bytes,stream_payload_bytes,effective_multiplier,reconstruction_ok,semantic_misses,repair_full_frames,client_elapsed_ms,proxy_dropped
+raw-quic-stream,0,98304,98304,1.0,True,0,0,138.292,0
+redulink-binary-quic-stream,0,98304,30816,3.190031,True,13,13,111.135,0
+raw-quic-stream,9,98304,98304,1.0,True,0,0,284.203,16
+redulink-binary-quic-stream,9,98304,30816,3.190031,True,13,13,218.76,6

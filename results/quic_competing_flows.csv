@@ -1,0 +1,5 @@
+method,input_bytes,encoded_stream_payload_bytes,reconstructed_bytes,elapsed_ms,effective_multiplier,reconstruction_ok,semantic_misses,repair_full_frames,note
+raw-quic-stream,98304,98304,98304,286.07,1.0,True,0,0,concurrent round 1; shared localhost schedule; rate_hint_mbps=25.0
+redulink-binary-quic-stream,98304,29793,98304,139.761,3.299567,True,13,13,concurrent round 1; shared localhost schedule; rate_hint_mbps=25.0
+raw-quic-stream,98304,98304,98304,227.625,1.0,True,0,0,concurrent round 2; shared localhost schedule; rate_hint_mbps=25.0
+redulink-binary-quic-stream,98304,29793,98304,133.025,3.299567,True,13,13,concurrent round 2; shared localhost schedule; rate_hint_mbps=25.0

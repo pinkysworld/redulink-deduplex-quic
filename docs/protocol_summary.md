@@ -36,9 +36,7 @@ be mixed into normative text.
 ReduLink can be carried either as an application mapping inside QUIC STREAM data
 or as negotiated QUIC extension frames. The paper's Deduplex-QUIC profile is the
 second form: negotiated QUIC extension frames that are stream-data-equivalent
-and carry reconstructed stream offsets. The repository artifact is a ReduLink
-representation-layer model and endpoint reconstruction prototype; it is not yet
-a Deduplex-QUIC implementation.
+and carry reconstructed stream offsets. The repository artifact is a ReduLink representation-layer model, endpoint reconstruction prototype, authenticated UDP prototype, and native aioquic stream-mapping prototype. The aioquic prototype is a native QUIC application-data mapping, not yet a custom Deduplex-QUIC extension-frame implementation.
 
 Negotiation uses a transport-parameter-style capability block:
 
@@ -73,6 +71,14 @@ Congestion control and QUIC loss recovery account for transmitted packet bytes.
 Stream and connection flow control account for reconstructed bytes. A REF that
 would exceed `MAX_STREAM_DATA`, `MAX_DATA`, final-size constraints, or local
 burst policy is invalid even if its wire encoding is small.
+
+
+
+## A.2.1 Current aioquic Stream-Mapping Prototype
+
+The current package includes `prototypes/redulink_aioquic_experiment.py` and `src/redulink_wire.py`. The prototype starts a real aioquic server and client over localhost UDP, performs a QUIC handshake with a self-signed test certificate, opens a bidirectional QUIC stream, sends authenticated ReduLink FULL/REF messages using compact length-prefixed binary stream data, receives semantic MISS reports, sends authenticated FULL repairs, and verifies byte-exact reconstruction.
+
+This validates a practical pre-encryption application mapping. The optional JSON mode is retained only as a readable baseline; the default artifact path uses compact binary encoding and also runs through a deterministic lossy UDP proxy.: ReduLink can be carried inside QUIC STREAM data without middleboxes seeing plaintext. It exercises native QUIC stream delivery, TLS packet protection, ACK/loss machinery inside aioquic, and encrypted UDP packetization. It does not assign custom QUIC extension-frame type codes, modify aioquic packet parsing, negotiate ReduLink transport parameters, enable 0-RTT references, or derive ReduLink keys from a QUIC TLS exporter. Those steps remain required for the stricter Deduplex-QUIC extension-frame profile.
 
 ## A.3 Frame Types
 
@@ -333,3 +339,38 @@ comparison commands, selected artifact measurements, public-artifact benchmark
 hooks, local CPU/RSS cost columns, and CSV-driven plot generation. Broader
 performance claims still require larger public corpora such as OCI layers, git
 packs, package repositories, VM snapshots, structured logs, and backup streams.
+
+
+## A.11 Artifact Coverage
+
+The runnable artifact validates the representation-layer subset of this appendix:
+
+- byte-exact FULL/REF reconstruction,
+- fail-closed REF handling on missing dictionary entries,
+- semantic MISS/FULL repair after dictionary mismatch,
+- conservative wire-byte accounting,
+- deterministic positive, weak, and negative target-class fixtures,
+- a TCP endpoint reconstruction smoke test.
+
+The artifact does not implement QUIC packetization, packet numbers, ACK ranges,
+TLS exporter-derived keys, replay windows, congestion controllers, 0-RTT
+references, migration policy, or cross-tenant privacy enforcement. These remain
+implementation requirements for a production Deduplex-QUIC profile.
+
+## A.11 Local UDP Prototype Boundary
+
+The repository includes `prototypes/redulink_udp_repair_experiment.py` as a
+small real-socket endpoint experiment. It sends modeled FULL and REF datagrams
+over localhost UDP, starts the receiver with an incomplete warm dictionary,
+observes MISS replies for unavailable references, repairs those misses with FULL
+payloads, and uses timeout-based retransmission when a deterministic drop rule
+suppresses selected datagrams. The prototype validates endpoint interaction and
+reconstruction behavior over UDP, but it deliberately leaves QUIC packet number
+spaces, QUIC ACK frames, TLS exporter binding, congestion control, stream
+multiplexing, and migration to future Deduplex-QUIC work.
+
+## Current artifact additions
+
+The package includes an exporter-style ReduLink key schedule (`src/redulink_key_schedule.py`). In a production Deduplex-QUIC profile, the input keying material should be obtained from QUIC TLS exporter bytes. In this artifact, the key schedule uses HKDF over an explicit experiment secret plus ALPN, epoch, scope, connection context, and stream context. This gives reviewers runnable context-separation tests without claiming access to private aioquic TLS exporter internals.
+
+The version also adds a real workload manifest runner. This is intended to let external reviewers add frozen OCI layers, package update files, Git snapshots, disk images, or log corpora without changing ReduLink code. The included deterministic journal fixtures remain self-contained smoke evidence rather than production traces.

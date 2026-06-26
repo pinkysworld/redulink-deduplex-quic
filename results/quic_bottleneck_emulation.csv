@@ -1,0 +1,13 @@
+rate_mbps,rtt_ms,method,input_bytes,encoded_stream_bytes,completion_ms_emulated,encoded_goodput_mbps_emulated,reconstructed_goodput_mbps_emulated,model,encoded_rate_jain_index_scenario,reconstructed_rate_jain_index_scenario
+10.0,10.0,raw-quic-stream,98304,98304,113.296,6.941392,6.941392,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.940781,0.910874
+10.0,10.0,redulink-binary-quic-stream,98304,30816,59.306,4.156909,13.26067,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.940781,0.910874
+10.0,50.0,raw-quic-stream,98304,98304,153.296,5.130153,5.130153,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.892092,0.956312
+10.0,50.0,redulink-binary-quic-stream,98304,30816,99.306,2.482519,7.919312,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.892092,0.956312
+25.0,10.0,raw-quic-stream,98304,98304,51.318,15.324562,15.324562,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.918615,0.933694
+25.0,10.0,redulink-binary-quic-stream,98304,30816,29.722,8.294395,26.459379,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.918615,0.933694
+25.0,50.0,raw-quic-stream,98304,98304,91.318,8.611977,8.611977,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.851347,0.982334
+25.0,50.0,redulink-binary-quic-stream,98304,30816,69.722,3.535859,11.2795,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.851347,0.982334
+100.0,10.0,raw-quic-stream,98304,98304,20.33,38.684086,38.684086,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.861054,0.977091
+100.0,10.0,redulink-binary-quic-stream,98304,30816,14.931,16.511638,52.672639,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.861054,0.977091
+100.0,50.0,raw-quic-stream,98304,98304,60.33,13.035591,13.035591,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.807803,0.997811
+100.0,50.0,redulink-binary-quic-stream,98304,30816,54.931,4.487994,14.316839,fluid fair-share bottleneck over measured QUIC stream payload bytes,0.807803,0.997811

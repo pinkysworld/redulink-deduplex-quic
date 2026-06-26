@@ -2,47 +2,46 @@
 
 Current submission title:
 
-**ReduLink: Authenticated Redundancy-Suppressed Transmission for Effective Reconstructed Throughput over Encrypted WANs**
-
-Scope subtitle:
-
-**A representation-layer model and candidate Deduplex-QUIC profile**
+**ReduLink: Authenticated Reference Substitution for Redundancy-Suppressed Transfers over Encrypted QUIC Streams**
 
 ## Status
 
-- Protocol design: candidate profile, not production QUIC implementation.
-- Artifact model: included as `src/redulink_model.py`.
-- Backward-compatible wrapper: `src/redulink_proto_v0_5.py`.
-- Unit/prototype tests: included and clean from a fresh checkout.
-- Public fixture: pinned, checksum-verifiable, small text/version pairs.
-- Target-class suite: deterministic generated warm/update fixtures with positive, weak, and negative cases.
-- Evidence tables: generated from CSV by `scripts/summarize_benchmark_evidence.py`.
-- Figures: generated from CSV by `scripts/plot_results.py` and `scripts/plot_warm_update_summary.py`.
-- Production-scale QUIC validation: pending.
+- Protocol design: scoped endpoint representation layer over encrypted QUIC streams.
+- Current implementation: native aioquic stream mapping with compact binary FULL, REF, MISS, and repair messages.
+- Custom Deduplex-QUIC extension frames: future work.
+- Artifact model: `src/redulink_model.py`.
+- Authenticated model and key schedule: `src/redulink_secure.py`, `src/redulink_key_schedule.py`.
+- Native QUIC prototype: `prototypes/redulink_aioquic_experiment.py`.
+- Deterministic journal fixtures: `benchmarks/generate_journal_corpora.py`, `results/journal_workload_suite.csv`.
+- External public source-release suite: `benchmarks/fetch_external_public_corpora.py`, `results/external_public_suite.csv`.
+- Evidence tables: `paper/evidence_tables.md`.
+- Manuscript builder: `scripts/build_manuscript_v2_3.py`.
 
 ## Files
 
 ```text
-paper/submission/ReduLink_full_draft_v0_9_submission_ready.docx
-paper/submission/ReduLink_full_draft_v0_9_submission_ready.pdf
+paper/submission/ReduLink_journal_ready_v2_3.docx
+paper/submission/ReduLink_journal_ready_v2_3.pdf
 paper/evidence_tables.md
-results/target_class_suite.csv
-results/target_class_warm_update_summary.csv
-results/public_artifact_suite.csv
-results/synthetic_suite.csv
-figures/target_class/redulink_vs_baseline_warm_update.png
+results/journal_workload_suite.csv
+results/external_public_suite.csv
+results/quic_flow_comparison.csv
+results/quic_competing_flows.csv
+results/quic_bottleneck_emulation.csv
 docs/protocol_summary.md
 docs/threat_model.md
+docs/reference_audit.md
+docs/internal_peer_review_v2_2.md
 ```
 
 ## Claim Language To Preserve
 
-ReduLink is not a faster physical link, a universal accelerator, a compression replacement, a delta-transfer replacement, or a completed QUIC implementation. The contribution is a scoped protocol model for authenticated reference substitution in cooperative endpoints, with explicit reconstruction invariants, miss repair, dictionary privacy boundaries, expansion limits, and reproducible evidence showing both useful and weak target classes.
+ReduLink is not a faster physical link, a universal accelerator, a compression replacement, a full rsync/zsync replacement, or a completed custom QUIC extension implementation. The contribution is a scoped protocol model and artifact for authenticated reference substitution in cooperative endpoints, with explicit reconstruction invariants, miss repair, dictionary privacy boundaries, expansion limits, and reproducible evidence showing both useful and weak workload classes.
 
-## Evaluation Framing
+The strongest empirical claim is narrow:
 
-The central evidence table should be the target-class evidence matrix, not the older synthetic multiplier table. The strongest empirical claim is narrow:
+> ReduLink helps when byte-identical chunks survive across warm dictionary state and chunk boundaries. It is strong for aligned/page-like state and selected versioned artifacts, but it is not generally effective for all software updates, source releases, container layers, logs, or related text.
 
-> ReduLink helps when byte-identical chunks survive across warm dictionary state and chunk boundaries. It is especially strong for aligned/page-like backup or VM workloads and selectively useful for some versioned artifacts, but it is not generally effective for all software updates, container layers, logs, or related text.
+## Current Additions
 
-The public fixture is a pinned smoke/credibility fixture, not production trace validation. Larger public corpora remain needed for OCI layers, git packs, package metadata, VM/backup snapshots, and structured log archives.
+This package adds a longer journal manuscript, an external public source-release corpus from Click, Redis, and nginx, a reproducible manuscript builder, explicit stream-payload versus packet-byte accounting language, expanded related work, expanded security/privacy discussion, and a clearer fairness evidence ladder.

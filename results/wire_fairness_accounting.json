@@ -1,0 +1,18 @@
+{
+  "application_bytes_raw": 49152,
+  "experiment": "wire_byte_fairness_accounting",
+  "fairness_rule": "bottleneck service and congestion accounting use encoded wire bytes, not reconstructed bytes",
+  "raw_wire_bytes": 50496,
+  "raw_wire_bytes_without_scheduler": 50496,
+  "raw_wire_share": 0.9167755991285403,
+  "reconstructed_bytes_redulink": 49152,
+  "redulink_effective_app_multiplier": 10.722513,
+  "redulink_model_wire_bytes": 4584,
+  "redulink_ref_frames": 45,
+  "redulink_uses_less_wire_than_raw": true,
+  "redulink_wire_bytes": 4584,
+  "redulink_wire_share": 0.0832244008714597,
+  "rounds": 16,
+  "wire_share_raw": 0.916776,
+  "wire_share_redulink": 0.083224
+}

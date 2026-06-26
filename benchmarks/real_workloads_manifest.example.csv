@@ -1,0 +1,5 @@
+label,warm_path,update_path,notes
+oci-nginx-example,/path/to/nginx-old-layer.tar,/path/to/nginx-new-layer.tar,pinned OCI layer tar files or unpacked layers converted to tar
+package-update-example,/path/to/package-old.deb,/path/to/package-new.deb,two real package versions
+repo-snapshot-example,/path/to/repo-old.tar,/path/to/repo-new.tar,two repository snapshots or packfiles
+vm-snapshot-example,/path/to/vm-snapshot-old.raw,/path/to/vm-snapshot-new.raw,reproducible disk snapshots

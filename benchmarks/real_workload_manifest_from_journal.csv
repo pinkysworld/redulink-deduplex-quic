@@ -1,0 +1,7 @@
+label,workload,old_path,new_path,chunker,chunk_size
+scripted-disk-snapshot,scripted-disk-snapshot,data/journal_corpora/scripted-disk-snapshot/warm.bin,data/journal_corpora/scripted-disk-snapshot/update.bin,fixed,4096
+scripted-oci-layer,scripted-oci-layer,data/journal_corpora/scripted-oci-layer/warm.bin,data/journal_corpora/scripted-oci-layer/update.bin,fixed,4096
+scripted-package-metadata,scripted-package-metadata,data/journal_corpora/scripted-package-metadata/warm.bin,data/journal_corpora/scripted-package-metadata/update.bin,fixed,4096
+scripted-repository-snapshot,scripted-repository-snapshot,data/journal_corpora/scripted-repository-snapshot/warm.bin,data/journal_corpora/scripted-repository-snapshot/update.bin,fixed,4096
+scripted-structured-logs,scripted-structured-logs,data/journal_corpora/scripted-structured-logs/warm.bin,data/journal_corpora/scripted-structured-logs/update.bin,fixed,4096
+independent-compressed-negative,independent-compressed-negative,data/journal_corpora/independent-compressed-negative/warm.bin,data/journal_corpora/independent-compressed-negative/update.bin,fixed,4096

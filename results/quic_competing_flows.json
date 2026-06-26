@@ -1,0 +1,60 @@
+{
+  "all_reconstructed": true,
+  "encoded_rate_jain_index": 0.918606,
+  "experiment": "concurrent_aioquic_raw_vs_redulink_stream_mapping",
+  "loss_every": 9,
+  "rate_hint_mbps": 25.0,
+  "reconstructed_rate_jain_index": 0.914004,
+  "rounds": 2,
+  "rows": [
+    {
+      "effective_multiplier": 1.0,
+      "elapsed_ms": 286.07,
+      "encoded_stream_payload_bytes": 98304,
+      "input_bytes": 98304,
+      "method": "raw-quic-stream",
+      "note": "concurrent round 1; shared localhost schedule; rate_hint_mbps=25.0",
+      "reconstructed_bytes": 98304,
+      "reconstruction_ok": true,
+      "repair_full_frames": 0,
+      "semantic_misses": 0
+    },
+    {
+      "effective_multiplier": 3.299567,
+      "elapsed_ms": 139.761,
+      "encoded_stream_payload_bytes": 29793,
+      "input_bytes": 98304,
+      "method": "redulink-binary-quic-stream",
+      "note": "concurrent round 1; shared localhost schedule; rate_hint_mbps=25.0",
+      "reconstructed_bytes": 98304,
+      "reconstruction_ok": true,
+      "repair_full_frames": 13,
+      "semantic_misses": 13
+    },
+    {
+      "effective_multiplier": 1.0,
+      "elapsed_ms": 227.625,
+      "encoded_stream_payload_bytes": 98304,
+      "input_bytes": 98304,
+      "method": "raw-quic-stream",
+      "note": "concurrent round 2; shared localhost schedule; rate_hint_mbps=25.0",
+      "reconstructed_bytes": 98304,
+      "reconstruction_ok": true,
+      "repair_full_frames": 0,
+      "semantic_misses": 0
+    },
+    {
+      "effective_multiplier": 3.299567,
+      "elapsed_ms": 133.025,
+      "encoded_stream_payload_bytes": 29793,
+      "input_bytes": 98304,
+      "method": "redulink-binary-quic-stream",
+      "note": "concurrent round 2; shared localhost schedule; rate_hint_mbps=25.0",
+      "reconstructed_bytes": 98304,
+      "reconstruction_ok": true,
+      "repair_full_frames": 13,
+      "semantic_misses": 13
+    }
+  ],
+  "scope": "localhost concurrent QUIC stream smoke test, not a full congestion-control study"
+}

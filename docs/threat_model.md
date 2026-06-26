@@ -2,10 +2,7 @@
 
 This document separates security requirements from the current Python model. The
 current Python code is a payload-representation and accounting model. It
-verifies byte-exact reconstruction and selected fail-closed conditions, but it
-is not a production QUIC implementation and does not implement cryptographic key
-schedule integration, replay windows, packetization, or production privacy
-policy.
+verifies byte-exact reconstruction and selected fail-closed conditions, but the core model itself is not a production QUIC implementation. The current package includes a native aioquic stream-mapping prototype, but production key-schedule integration, custom extension-frame parsing, replay-window policy, and production privacy enforcement remain future work.
 
 ## Assumptions
 
@@ -21,7 +18,7 @@ policy.
 | Property | Claim | Required mechanism | Current artifact status |
 |---|---|---|---|
 | Integrity | Receiver output equals sender input or fails closed. | FULL/REF authentication, chunk-id validation, offset binding, length binding. | Modeled by reconstruction and mismatch tests; production crypto is not implemented. |
-| Context binding | REF cannot be replayed across connection, epoch, stream, offset, origin, or dictionary scope. | QUIC exporter-derived keys, epoch id, stream id, offset, dictionary id, nonce, replay window. | Specified in protocol text; not implemented in the Python model. |
+| Context binding | REF cannot be replayed across connection, epoch, stream, offset, origin, or dictionary scope. | QUIC exporter-derived keys, epoch id, stream id, offset, dictionary id, nonce, replay window. | HMAC binding and nonce rejection are implemented in the artifact; exporter-derived keys and production replay windows remain pending. |
 | Dictionary safety | Receiver admits only authenticated FULL chunks or signed warm-manifest chunks. | Authenticated FULL, manifest commitment, admission policy, eviction policy. | FULL chunk-id checks are modeled; manifest policy is not implemented. |
 | Expansion bound | A small REF cannot trigger unbounded receiver work or delivery. | Per-frame, per-stream, and per-epoch reconstructed-byte caps. | Basic accounting and length checks are modeled; full QUIC flow-control enforcement is not. |
 | Privacy scope | REF success must not reveal private cross-user content possession in public mode. | Per-connection default, no global cross-user dictionary, explicit per-origin/tenant policy. | Policy is specified; cross-tenant enforcement is not implemented. |
@@ -85,11 +82,12 @@ deployment accepts the overhead.
 
 ## Not Yet Implemented In The Python Model
 
-- Cryptographic authentication tags and QUIC exporter integration.
-- Replay windows and reference nonce cache.
+- QUIC TLS exporter-derived ReduLink keys.
+- Custom QUIC extension-frame parser integration.
+- Production replay-window policy beyond artifact nonce rejection.
 - Cross-tenant dictionary isolation enforcement.
 - Production MISS frame retransmission timers.
-- QUIC packet loss, ACK, final-size, migration, and 0-RTT behavior.
+- QUIC final-size, migration, and 0-RTT reference policy.
 - Real congestion-fairness experiments against competing flows.
 
 ## Related Security Literature To Cite
@@ -100,3 +98,33 @@ deployment accepts the overhead.
   Deduplicated Storage."
 - Modern content-defined chunking side-channel work should be cited where the
   manuscript discusses chosen-content or chunk-boundary leakage.
+
+
+## Artifact Repair Coverage
+
+The artifact includes `prototypes/redulink_semantic_repair_demo.py`, which models a
+dictionary-mismatch case: the sender emits REF, the receiver lacks the referenced
+chunk, the receiver would emit MISS, and the sender repairs with FULL. This
+checks the fail-closed repair invariant at the representation layer. It does not
+prove QUIC loss recovery, replay-window correctness, or cryptographic binding.
+
+## Authenticated artifact additions
+
+The artifact includes `src/redulink_secure.py` and `prototypes/redulink_authenticated_udp_experiment.py`. These components implement artifact-level HMAC binding for epoch, scope, stream id, reconstructed offset, chunk id, length, nonce, and payload hash. The authenticated UDP experiment includes two negative probes: a tampered tag and a replayed nonce. Both are rejected before normal authenticated repair traffic is accepted.
+
+This strengthens the artifact evidence for fail-closed authentication behavior. It does not claim production QUIC security. A production profile should derive keys from the QUIC TLS exporter or equivalent connection-secret material, maintain replay windows appropriate to the transport, and account for key updates, 0-RTT policy, connection migration, and endpoint memory compromise.
+
+## Wire-byte accounting addition
+
+The artifact includes `benchmarks/run_wire_fairness_accounting.py`. The experiment checks the core accounting rule: bottleneck service and congestion accounting use encoded wire bytes, not reconstructed bytes. It is not a competing-flow QUIC congestion-control experiment.
+
+
+## Native QUIC stream-mapping evidence
+
+The package includes `prototypes/redulink_aioquic_experiment.py`. The experiment uses the aioquic library to run a real QUIC client and server over localhost UDP. ReduLink messages are carried inside a TLS-protected bidirectional QUIC stream. The server intentionally lacks some warm-dictionary entries, reports semantic MISS messages, and reconstructs the update after authenticated FULL repair messages.
+
+Security interpretation: this demonstrates compatibility with native QUIC stream transport and packet protection, but it does not yet bind ReduLink tags to a QUIC TLS exporter and does not implement custom QUIC extension frames. Therefore, it reduces the transport-deployability gap but does not close the production-security gap.
+
+## Key-schedule note
+
+The artifact includes an HKDF-based exporter-style ReduLink key schedule. Tests verify that derived ReduLink secrets change when ALPN, epoch, scope, or connection context changes. This strengthens the artifact's context-binding evidence. It is still not a substitute for a production QUIC TLS exporter hook, because aioquic stream-mapping code in this package does not modify QUIC internals.

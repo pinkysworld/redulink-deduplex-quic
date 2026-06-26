@@ -18,6 +18,8 @@ jobs:
         run: python benchmarks/fetch_public_corpora.py
       - name: Unit tests
         run: python -m unittest discover -s tests
+      - name: Manuscript citation check
+        run: python scripts/check_manuscript_citations.py
       - name: Benchmark smoke test
         run: bash benchmarks/run_synthetic_suite.sh --smoke --output /tmp/redulink-smoke.csv
       - name: Target-class generated artifact check
@@ -32,3 +34,28 @@ jobs:
           python scripts/plot_warm_update_summary.py
       - name: Socket prototype demo
         run: python prototypes/redulink_socket_prototype.py demo
+
+      - name: Semantic repair demo
+        run: python prototypes/redulink_semantic_repair_demo.py --output results/semantic_repair_demo.json
+
+      - name: UDP semantic repair experiment
+        run: python prototypes/redulink_udp_repair_experiment.py --output results/udp_repair_experiment.json
+
+      - name: Authenticated UDP repair experiment
+        run: python prototypes/redulink_authenticated_udp_experiment.py --output results/authenticated_udp_experiment.json
+
+      - name: Wire-byte fairness accounting experiment
+        run: python benchmarks/run_wire_fairness_accounting.py
+      - name: Native aioquic stream-mapping and lossy proxy experiments
+        run: bash benchmarks/run_aioquic_experiment.sh
+
+      - name: Journal workload suite
+        run: bash benchmarks/run_journal_workload_suite.sh
+      - name: Component performance smoke
+        run: python benchmarks/run_component_performance.py --size 524288
+      - name: QUIC raw versus ReduLink stream comparison
+        run: python benchmarks/run_quic_flow_comparison.py --loss-every 0
+      - name: Native aioquic scaling smoke
+        run: python benchmarks/run_aioquic_scaling_experiment.py --blocks 96
+      - name: Portable QUIC bottleneck emulation
+        run: python benchmarks/run_quic_bottleneck_emulation.py

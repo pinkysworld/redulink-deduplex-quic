@@ -1,0 +1,7 @@
+{
+  "python": "3.13.0b2",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "size": 2097152,
+  "chunk_size": 4096,
+  "interpretation": "Local Python timings expose cost drivers. Production claims require native chunking and transport integration."
+}

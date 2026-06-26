@@ -155,3 +155,24 @@ measurement schema used by `results/paper_real_artifact_cdc_selected.csv`.
 Rows such as `redulink-then-gzip` compress a text serialization of modeled
 frames and are marked `comparable=False`. They remain useful for diagnostics but
 are excluded from plots and best-method summaries.
+
+## UDP endpoint repair experiment
+
+Run the localhost UDP endpoint experiment with semantic MISS repair and
+retransmission:
+
+```bash
+bash benchmarks/run_udp_repair_experiment.sh
+```
+
+The command writes `results/udp_repair_experiment.json`.
+
+## Wire-byte fairness accounting
+
+The benchmark suite includes `run_wire_fairness_accounting.py` and the native aioquic stream-mapping experiment. This is a deterministic accounting sanity check: a ReduLink-encoded flow and a raw UDP-like competitor are served by encoded wire bytes. The result demonstrates that reconstructed application bytes do not inflate bottleneck service share.
+
+```bash
+python3 benchmarks/run_wire_fairness_accounting.py
+```
+
+This is not a competing-flow QUIC congestion-control experiment.

@@ -159,6 +159,7 @@ def md_public_coverage() -> list[str]:
         "| Corpus family | Current fixture | Scale | Positive cases | Negative/weak cases | Production trace? | Limitation |",
         "|---|---|---:|---|---|---|---|",
         "| Text version pairs | Yes | 23 KB-829 KB | nginx, redis | cpython, linux-parameters, RFC pair | No | Small, text-only, smoke-level public fixture. |",
+        "| Public source-release snapshots | Yes | 0.95 MB-15.53 MB updates | None at fixed 4 KiB | Click, Redis, nginx | No | External public corpus, but not production traces. |",
         "| OCI/container layers | No | - | - | - | No | Needed for claimed container workloads. |",
         "| Git packs | No | - | - | - | No | Needed for repository synchronization claims. |",
         "| Package repository metadata | No | - | - | - | No | Needed for software-update claims. |",
@@ -236,7 +237,7 @@ def main() -> None:
     write_summary_csv(summary_rows)
 
     lines = [
-        "# v0.9 Evidence Tables",
+        "# Version 2.3 Evidence Tables",
         "",
         "These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.",
         "",
@@ -247,14 +248,37 @@ def main() -> None:
         "| Representation model | FULL/REF byte reconstruction, accounting, miss failure. | `src/redulink_model.py`, `tests/`. |",
         "| Controlled target fixtures | Target-class behavior under deterministic generated warm/update pairs. | `benchmarks/generate_target_corpora.py`, `results/target_class_suite.csv`. |",
         "| Frozen public fixture | Reviewer-runnable pinned public text/version pairs. | `benchmarks/public_artifacts_manifest.csv`, `results/public_artifact_suite.csv`. |",
-        "| Prototype | Endpoint cooperation over localhost TCP. | `prototypes/redulink_socket_prototype.py`. |",
-        "| Pending transport validation | Real QUIC loss, flow control, congestion fairness, migration, 0-RTT. | Not implemented. |",
+        "| Prototype | Endpoint cooperation over localhost TCP/UDP and native QUIC stream mapping. | `prototypes/redulink_socket_prototype.py`, `prototypes/redulink_udp_repair_experiment.py`, `prototypes/redulink_authenticated_udp_experiment.py`, `prototypes/redulink_aioquic_experiment.py`. |",
+        "| Pending transport validation | Custom QUIC extension frames, competing-flow congestion fairness, migration, 0-RTT, exporter-derived keys. | Not implemented. |",
         "",
     ]
     lines.extend(md_target_table(summary_rows))
     lines.extend(md_public_coverage())
     lines.extend(md_public_excerpt(public_rows))
     lines.extend(md_synthetic_excerpt(synthetic_rows))
+
+    # Native aioquic stream-mapping result, if present.
+    aioquic_path = ROOT / "results" / "aioquic_native_experiment.json"
+    if aioquic_path.exists():
+        import json
+        q = json.loads(aioquic_path.read_text(encoding="utf-8"))
+        lines.extend([
+            "## Native aioquic Stream-Mapping Result",
+            "",
+            "Source: `results/aioquic_native_experiment.json`. This experiment uses a real aioquic client/server handshake and bidirectional QUIC stream on localhost. ReduLink messages are carried inside QUIC STREAM data; custom extension frames are not implemented.",
+            "",
+            "| Metric | Value |",
+            "|---|---:|",
+            f"| Input bytes | {int(q['input_bytes']):,} |",
+            f"| Initial FULL / REF frames | {q['client_full_frames_initial']} / {q['client_ref_frames_initial']} |",
+            f"| Semantic misses | {q['semantic_misses']} |",
+            f"| Repair FULL frames | {q['client_repair_full_frames_sent']} |",
+            f"| QUIC stream payload bytes after repair | {int(q['quic_stream_payload_total_bytes']):,} |",
+            f"| Effective stream-payload multiplier after repair | {float(q['quic_stream_payload_multiplier_after_repair']):.3f}x |",
+            f"| Reconstruction | {'byte-exact' if q['reconstruction_ok'] else 'failed'} |",
+            f"| aioquic version | {q['aioquic_version']} |",
+            "",
+        ])
     lines.extend([
         "## Fixed-Block Baseline Definition",
         "",

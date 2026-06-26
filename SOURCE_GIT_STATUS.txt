@@ -1,0 +1,1 @@
+clean journal package generated from v2.2 ZIP; no local git repository included in package folder

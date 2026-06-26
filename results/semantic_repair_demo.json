@@ -1,0 +1,15 @@
+{
+  "delivered_full_frames": 28,
+  "delivered_ref_frames": 4,
+  "effective_multiplier_after_repair": 1.110254,
+  "initial_full_frames": 26,
+  "initial_ref_frames": 6,
+  "initial_wire_bytes": 27218,
+  "input_bytes": 32546,
+  "misses": 2,
+  "receiver_missing_fraction": 0.25,
+  "reconstruction_ok": true,
+  "repair_full_frames": 2,
+  "repair_wire_bytes": 2096,
+  "total_wire_bytes": 29314
+}

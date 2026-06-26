@@ -1,0 +1,2 @@
+experiment,reconstructed_bytes_redulink,application_bytes_raw,redulink_model_wire_bytes,raw_wire_bytes_without_scheduler,redulink_ref_frames,redulink_effective_app_multiplier,wire_share_redulink,wire_share_raw,redulink_uses_less_wire_than_raw,fairness_rule,rounds,redulink_wire_bytes,raw_wire_bytes,redulink_wire_share,raw_wire_share
+wire_byte_fairness_accounting,49152,49152,4584,50496,45,10.722513,0.083224,0.916776,True,"bottleneck service and congestion accounting use encoded wire bytes, not reconstructed bytes",16,4584,50496,0.0832244008714597,0.9167755991285403

@@ -1,0 +1,4 @@
+payload_blocks,input_bytes,stream_payload_bytes,stream_payload_multiplier,semantic_misses,repair_full_frames,client_elapsed_ms,reconstruction_ok,loss_every
+96,98304,30816,3.190031,13,13,123.954,True,0
+512,524288,138922,3.773974,73,73,192.879,True,0
+1024,1048576,271006,3.869198,146,146,260.416,True,0

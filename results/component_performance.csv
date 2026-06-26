@@ -1,0 +1,9 @@
+component,input_bytes,wall_ms,throughput_mib_s_local,runner_peak_kib,result_summary,notes
+fixed_chunking,2097152,0.321,6237.000,37376.0,"{""chunks"": 512}",local Python artifact timing; not production line-rate evidence
+cdc_chunking,2097152,267.099,7.488,38768.0,"{""chunks"": 64}",local Python artifact timing; not production line-rate evidence
+model_fixed_encode_decode,1573964,2.207,680.015,38912.0,"{""chunks"": 385, ""effective_multiplier"": 19.969094138543518, ""full_frames"": 17, ""input_bytes"": 1573964, ""reconstruction_ok"": true, ""ref_frames"": 368, ""saving_rate"": 0.9499226157650366, ""wire_bytes"": 78820}",local Python artifact timing; not production line-rate evidence
+model_cdc_encode_decode,1573964,443.970,3.381,40464.0,"{""chunks"": 49, ""effective_multiplier"": 2.987669412702631, ""full_frames"": 17, ""input_bytes"": 1573964, ""reconstruction_ok"": true, ""ref_frames"": 32, ""saving_rate"": 0.6652909469339832, ""wire_bytes"": 526820}",local Python artifact timing; not production line-rate evidence
+secure_hmac_encode_roundtrip,1573964,7.811,192.181,40720.0,"{""auth_failures"": 0, ""chunks"": 385, ""effective_multiplier"": 17.84620617715089, ""full_frames"": 17, ""input_bytes"": 1573964, ""ref_frames"": 368, ""replay_rejections"": 0, ""roundtrip_reconstruction_checked"": true, ""roundtrip_reconstruction_ok"": true, ""saving_rate"": 0.9439656815530724, ""wire_bytes"": 88196}",local Python artifact timing; not production line-rate evidence
+secure_hmac_decode,1573964,2.985,502.899,40720.0,"{""bytes"": 1573964, ""roundtrip_reconstruction_checked"": true}",local Python artifact timing; not production line-rate evidence
+binary_wire_encode,1573964,0.320,4696.898,40720.0,"{""bytes"": 108216}",local Python artifact timing; not production line-rate evidence
+binary_wire_decode,1573964,0.612,2451.193,40720.0,"{""messages"": 385}",local Python artifact timing; not production line-rate evidence

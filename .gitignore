@@ -1,8 +1,9 @@
 __pycache__/
 *.pyc
 .DS_Store
-results/real_artifact_results.csv
-results/loss_sweep_results.csv
+render_*/
 data/public_corpora/
 data/target_corpora/
-render_*/
+data/external_public_corpora/
+results/real_artifact_results.csv
+results/loss_sweep_results.csv
