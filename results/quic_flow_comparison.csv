@@ -1,5 +1,5 @@
-method,loss_every,input_bytes,stream_payload_bytes,effective_multiplier,reconstruction_ok,semantic_misses,repair_full_frames,client_elapsed_ms,proxy_dropped
-raw-quic-stream,0,98304,98304,1.0,True,0,0,138.292,0
-redulink-binary-quic-stream,0,98304,30816,3.190031,True,13,13,111.135,0
-raw-quic-stream,9,98304,98304,1.0,True,0,0,284.203,16
-redulink-binary-quic-stream,9,98304,30816,3.190031,True,13,13,218.76,6
+method,loss_every,input_bytes,stream_payload_bytes,udp_payload_bytes_seen,udp_payload_multiplier_seen,approx_ipv4_udp_bytes_seen,approx_ipv4_udp_multiplier_seen,effective_multiplier,reconstruction_ok,semantic_misses,repair_full_frames,client_elapsed_ms,proxy_dropped
+raw-quic-stream,0,98304,98304,106157,0.926025,108901,0.902691,1.0,True,0,0,103.619,0
+redulink-binary-quic-stream,0,98304,30816,36568,2.688252,37800,2.600635,3.190031,True,13,13,99.482,0
+raw-quic-stream,9,98304,98304,121772,0.807279,125776,0.78158,1.0,True,0,0,272.586,15
+redulink-binary-quic-stream,9,98304,30816,39809,2.469391,41265,2.382261,3.190031,True,13,13,129.484,5

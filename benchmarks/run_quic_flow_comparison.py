@@ -39,7 +39,8 @@ def _pack_stats(stats: dict) -> bytes:
     return len(payload).to_bytes(4, "big") + payload
 
 
-async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 4096) -> dict:
+async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 4096,
+                        account_datagrams: bool = False) -> dict:
     expected = hashlib.sha256(data).hexdigest()
     with tempfile.TemporaryDirectory(prefix="redulink-raw-quic-") as tmp:
         cert, key = write_self_signed_cert(Path(tmp))
@@ -75,7 +76,7 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
         proxy_transport = None
         proxy_protocol = None
         port = server_port
-        if loss_every > 0:
+        if loss_every > 0 or account_datagrams:
             loop = asyncio.get_running_loop()
             proxy_protocol = LossyUdpProxy(("127.0.0.1", server_port), loss_every=loss_every)
             proxy_transport, _ = await loop.create_datagram_endpoint(lambda: proxy_protocol, local_addr=("127.0.0.1", 0))
@@ -109,11 +110,21 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
         })
         if proxy_protocol is not None:
             stats.update(proxy_protocol.stats())
+            c2s = stats["proxy_client_to_server_udp_payload_bytes_seen"]
+            s2c = stats["proxy_server_to_client_udp_payload_bytes_seen"]
+            datagrams = stats["proxy_client_to_server_datagrams_seen"] + stats["proxy_server_to_client_datagrams_seen"]
+            stats.update({
+                "udp_payload_bytes_seen_total": c2s + s2c,
+                "udp_payload_multiplier_seen": round(len(data) / (c2s + s2c), 6) if (c2s + s2c) else 0,
+                "approx_ipv4_udp_bytes_seen_total": c2s + s2c + 28 * datagrams,
+                "approx_ipv4_udp_multiplier_seen": round(len(data) / (c2s + s2c + 28 * datagrams), 6) if datagrams else 0,
+                "packet_accounting_note": "UDP payload bytes observed by local proxy; IPv4/UDP total adds 28 bytes per datagram and excludes link-layer overhead.",
+            })
         return stats
 
 
-def run_raw(data: bytes, *, loss_every: int = 0) -> dict:
-    return asyncio.run(run_raw_async(data, loss_every=loss_every))
+def run_raw(data: bytes, *, loss_every: int = 0, account_datagrams: bool = False) -> dict:
+    return asyncio.run(run_raw_async(data, loss_every=loss_every, account_datagrams=account_datagrams))
 
 
 def row(method: str, loss: int, stats: dict) -> dict[str, str]:
@@ -122,6 +133,10 @@ def row(method: str, loss: int, stats: dict) -> dict[str, str]:
         "loss_every": str(loss),
         "input_bytes": str(stats.get("input_bytes", 0)),
         "stream_payload_bytes": str(stats.get("quic_stream_payload_total_bytes", stats.get("client_to_server_stream_payload_bytes_observed", 0))),
+        "udp_payload_bytes_seen": str(stats.get("udp_payload_bytes_seen_total", "")),
+        "udp_payload_multiplier_seen": str(stats.get("udp_payload_multiplier_seen", "")),
+        "approx_ipv4_udp_bytes_seen": str(stats.get("approx_ipv4_udp_bytes_seen_total", "")),
+        "approx_ipv4_udp_multiplier_seen": str(stats.get("approx_ipv4_udp_multiplier_seen", "")),
         "effective_multiplier": str(stats.get("effective_stream_payload_multiplier", stats.get("quic_stream_payload_multiplier_after_repair", 0))),
         "reconstruction_ok": str(stats.get("reconstruction_ok", False)),
         "semantic_misses": str(stats.get("semantic_misses", 0)),
@@ -142,9 +157,16 @@ def main() -> None:
     results = []
     losses = args.loss_every if args.loss_every is not None else [0, 9]
     for loss in losses:
-        raw = run_raw(data, loss_every=loss)
+        raw = run_raw(data, loss_every=loss, account_datagrams=True)
         results.append({"method": "raw-quic-stream", "loss_every": loss, "stats": raw})
-        rl = run_redulink(chunk_size=1024, missing_every=7, wire_format="binary", loss_every=loss, payload_blocks=args.payload_blocks)
+        rl = run_redulink(
+            chunk_size=1024,
+            missing_every=7,
+            wire_format="binary",
+            loss_every=loss,
+            payload_blocks=args.payload_blocks,
+            account_datagrams=True,
+        )
         results.append({"method": "redulink-binary-quic-stream", "loss_every": loss, "stats": rl})
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
     args.output_json.write_text(json.dumps({"results": results}, indent=2, sort_keys=True) + "\n")

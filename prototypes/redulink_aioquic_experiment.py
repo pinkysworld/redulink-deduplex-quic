@@ -345,6 +345,10 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
         self.s2c_seen = 0
         self.c2s_dropped = 0
         self.s2c_dropped = 0
+        self.c2s_payload_bytes_seen = 0
+        self.s2c_payload_bytes_seen = 0
+        self.c2s_payload_bytes_forwarded = 0
+        self.s2c_payload_bytes_forwarded = 0
 
     def connection_made(self, transport: Any) -> None:
         self.transport = transport
@@ -352,17 +356,21 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
     def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         if addr == self.server_addr:
             self.s2c_seen += 1
+            self.s2c_payload_bytes_seen += len(data)
             if self.loss_every and self.s2c_seen % self.loss_every == 0:
                 self.s2c_dropped += 1
                 return
             if self.client_addr is not None:
+                self.s2c_payload_bytes_forwarded += len(data)
                 self.transport.sendto(data, self.client_addr)
         else:
             self.client_addr = addr
             self.c2s_seen += 1
+            self.c2s_payload_bytes_seen += len(data)
             if self.loss_every and self.c2s_seen % self.loss_every == 0:
                 self.c2s_dropped += 1
                 return
+            self.c2s_payload_bytes_forwarded += len(data)
             self.transport.sendto(data, self.server_addr)
 
     def stats(self) -> dict[str, int]:
@@ -371,10 +379,16 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
             "proxy_server_to_client_datagrams_seen": self.s2c_seen,
             "proxy_client_to_server_datagrams_dropped": self.c2s_dropped,
             "proxy_server_to_client_datagrams_dropped": self.s2c_dropped,
+            "proxy_client_to_server_udp_payload_bytes_seen": self.c2s_payload_bytes_seen,
+            "proxy_server_to_client_udp_payload_bytes_seen": self.s2c_payload_bytes_seen,
+            "proxy_client_to_server_udp_payload_bytes_forwarded": self.c2s_payload_bytes_forwarded,
+            "proxy_server_to_client_udp_payload_bytes_forwarded": self.s2c_payload_bytes_forwarded,
         }
 
 
-async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every: int, wire_format: str = "binary", loss_every: int = 0) -> dict[str, Any]:
+async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every: int,
+                    wire_format: str = "binary", loss_every: int = 0,
+                    account_datagrams: bool = False) -> dict[str, Any]:
     global WIRE_FORMAT
     WIRE_FORMAT = wire_format
     master_secret = b"redulink-aioquic-artifact-master-secret"
@@ -430,7 +444,7 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         server_port = int(server._transport.get_extra_info("sockname")[1])
         proxy_transport = None
         proxy_protocol = None
-        if loss_every > 0:
+        if loss_every > 0 or account_datagrams:
             loop = asyncio.get_running_loop()
             proxy_protocol = LossyUdpProxy(("127.0.0.1", server_port), loss_every=loss_every)
             proxy_transport, _ = await loop.create_datagram_endpoint(lambda: proxy_protocol, local_addr=("127.0.0.1", 0))
@@ -509,14 +523,34 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         "datagram_loss_every": loss_every,
         "redulink_key_derivation": "HKDF exporter-style artifact key schedule; production profile should use QUIC TLS exporter bytes",
     })
-    if loss_every > 0 and proxy_protocol is not None:
+    if proxy_protocol is not None:
         stats.update(proxy_protocol.stats())
+        c2s = stats["proxy_client_to_server_udp_payload_bytes_seen"]
+        s2c = stats["proxy_server_to_client_udp_payload_bytes_seen"]
+        datagrams = stats["proxy_client_to_server_datagrams_seen"] + stats["proxy_server_to_client_datagrams_seen"]
+        stats.update({
+            "udp_payload_bytes_seen_total": c2s + s2c,
+            "udp_payload_multiplier_seen": round(len(data) / (c2s + s2c), 6) if (c2s + s2c) else 0,
+            "approx_ipv4_udp_bytes_seen_total": c2s + s2c + 28 * datagrams,
+            "approx_ipv4_udp_multiplier_seen": round(len(data) / (c2s + s2c + 28 * datagrams), 6) if datagrams else 0,
+            "packet_accounting_note": "UDP payload bytes observed by local proxy; IPv4/UDP total adds 28 bytes per datagram and excludes link-layer overhead.",
+        })
     return stats
 
 
-def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_format: str = "binary", loss_every: int = 0, payload_blocks: int = 96) -> dict[str, Any]:
+def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_format: str = "binary",
+                   loss_every: int = 0, payload_blocks: int = 96,
+                   account_datagrams: bool = False) -> dict[str, Any]:
     warm, data = demo_payload(payload_blocks)
-    return asyncio.run(run_async(warm=warm, data=data, chunk_size=chunk_size, missing_every=missing_every, wire_format=wire_format, loss_every=loss_every))
+    return asyncio.run(run_async(
+        warm=warm,
+        data=data,
+        chunk_size=chunk_size,
+        missing_every=missing_every,
+        wire_format=wire_format,
+        loss_every=loss_every,
+        account_datagrams=account_datagrams,
+    ))
 
 
 def main() -> None:

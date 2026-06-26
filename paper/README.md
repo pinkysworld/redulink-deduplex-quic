@@ -14,14 +14,16 @@ Current submission title:
 - Native QUIC prototype: `prototypes/redulink_aioquic_experiment.py`.
 - Deterministic journal fixtures: `benchmarks/generate_journal_corpora.py`, `results/journal_workload_suite.csv`.
 - External public source-release suite: `benchmarks/fetch_external_public_corpora.py`, `results/external_public_suite.csv`.
+- Real rsync source-release baseline: `benchmarks/run_rsync_baseline_manifest.py`, `results/rsync_baseline_external_public.csv`.
+- Local QUIC datagram-byte accounting: `results/quic_flow_comparison.csv`.
 - Evidence tables: `paper/evidence_tables.md`.
-- Manuscript builder: `scripts/build_manuscript_v2_3.py`.
+- Manuscript builder: `scripts/build_manuscript_v2_4.py`.
 
 ## Files
 
 ```text
-paper/submission/ReduLink_journal_ready_v2_3.docx
-paper/submission/ReduLink_journal_ready_v2_3.pdf
+paper/submission/ReduLink_journal_ready_v2_4.docx
+paper/submission/ReduLink_journal_ready_v2_4.pdf
 paper/evidence_tables.md
 results/journal_workload_suite.csv
 results/external_public_suite.csv
@@ -44,4 +46,4 @@ The strongest empirical claim is narrow:
 
 ## Current Additions
 
-This package adds a longer journal manuscript, an external public source-release corpus from Click, Redis, and nginx, a reproducible manuscript builder, explicit stream-payload versus packet-byte accounting language, expanded related work, expanded security/privacy discussion, and a clearer fairness evidence ladder.
+This package adds a longer journal manuscript, hash-pinned external public source-release corpora from Click, Redis, and nginx, real rsync baseline runs on those source-release pairs, local UDP datagram-byte accounting for the aioquic flow comparison, a reproducible manuscript builder, explicit stream-payload versus packet-byte accounting language, expanded related work, expanded security/privacy discussion, and a clearer fairness evidence ladder.

@@ -51,6 +51,11 @@ jobs:
 
       - name: Journal workload suite
         run: bash benchmarks/run_journal_workload_suite.sh
+      - name: Hash-pinned external source-release suite
+        run: |
+          python benchmarks/fetch_external_public_corpora.py
+          python benchmarks/run_real_workload_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/external_public_suite.csv
+          python benchmarks/run_rsync_baseline_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/rsync_baseline_external_public.csv
       - name: Component performance smoke
         run: python benchmarks/run_component_performance.py --size 524288
       - name: QUIC raw versus ReduLink stream comparison

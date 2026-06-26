@@ -1,1 +1,2 @@
-clean journal package generated from v2.2 ZIP; no local git repository included in package folder
+v2.4 journal package generated from the v2.3 working package after addressing the hard peer-review findings.
+The package folder is a standalone submission artifact; the synchronized Git repository is https://github.com/pinkysworld/redulink-deduplex-quic.

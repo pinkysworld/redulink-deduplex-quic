@@ -8,9 +8,9 @@ authors:
     orcid: "https://orcid.org/0000-0001-6834-4422"
     affiliation: "University of the People"
 year: 2026
-version: "2.3"
+version: "2.4"
 repository-code: "https://github.com/pinkysworld/redulink-deduplex-quic"
-abstract: "ReduLink studies authenticated reference substitution for redundancy-suppressed transfers over encrypted QUIC streams. It provides a representation-layer model, authenticated UDP endpoint prototype, native aioquic compact-binary stream mapping, deterministic loss testing, raw QUIC comparison, scripted journal workload fixtures, independently curated public source-release snapshots, component-cost measurements, wire-byte fairness accounting, native aioquic scaling, and portable bottleneck-emulation analysis for replacing repeated chunks with authenticated references under endpoint-controlled dictionary state."
+abstract: "ReduLink studies authenticated reference substitution for redundancy-suppressed transfers over encrypted QUIC streams. It provides a representation-layer model, authenticated UDP endpoint prototype, native aioquic compact-binary stream mapping, deterministic loss testing, raw QUIC comparison, local UDP datagram-byte accounting, scripted journal workload fixtures, hash-pinned public source-release snapshots, real rsync baseline runs, component-cost measurements, wire-byte fairness accounting, native aioquic scaling, and portable bottleneck-emulation analysis for replacing repeated chunks with authenticated references under endpoint-controlled dictionary state."
 keywords:
   - QUIC
   - redundancy elimination

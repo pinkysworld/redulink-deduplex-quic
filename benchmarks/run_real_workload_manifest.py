@@ -40,6 +40,14 @@ def read_bytes(path: Path) -> bytes:
 
 
 def fixed_block_reuse(old: bytes, new: bytes, *, chunk_size: int) -> int:
+    """Simple exact-block reuse approximation used by the manifest runner.
+
+    This intentionally differs from `run_baseline_comparison.py`'s byte-scanning
+    fixed-block comparator. Here each update block either emits a 32-byte
+    reference token or a 32-byte literal header plus literal bytes. The result is
+    a coarse exact-block sanity check, not rsync and not the journal fixture's
+    coalesced-literal baseline.
+    """
     known = {hashlib.sha256(old[i:i + chunk_size]).digest() for i in range(0, len(old), chunk_size)}
     wire = 0
     for i in range(0, len(new), chunk_size):
@@ -85,6 +93,7 @@ def run_one(row: dict[str, str]) -> dict[str, str]:
         "secure_reconstruction_ok": str(secure_stats.reconstruction_ok),
         "fixed_block_reuse_wire_bytes": str(reuse_wire),
         "fixed_block_reuse_multiplier": f"{(len(new) / reuse_wire) if reuse_wire else 0:.6f}",
+        "fixed_block_reuse_parameters": "exact 4096-byte block membership; 32-byte match token; 32-byte literal header per block; no rolling checksum; not rsync",
         "redulink_elapsed_ms": f"{elapsed_ms:.3f}",
         "secure_elapsed_ms": f"{secure_elapsed_ms:.3f}",
     }

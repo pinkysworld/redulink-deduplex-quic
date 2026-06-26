@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the ReduLink v2.3 journal manuscript DOCX from package evidence."""
+"""Build the ReduLink v2.4 journal manuscript DOCX from package evidence."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from docx.shared import Inches, Pt
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v2_3.docx"
+OUT = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v2_4.docx"
 
 
 def rows(path: str) -> list[dict[str, str]]:
@@ -80,7 +80,9 @@ def exact(data: list[dict[str, str]], **kwargs: str) -> dict[str, str]:
 
 def build() -> None:
     journal = rows("results/journal_workload_suite.csv")
+    public = rows("results/public_artifact_suite.csv")
     external = rows("results/external_public_suite.csv")
+    rsync_external = rows("results/rsync_baseline_external_public.csv")
     quic = rows("results/quic_flow_comparison.csv")
     component = rows("results/component_performance.csv")
     competing = rows("results/quic_competing_flows.csv")
@@ -132,7 +134,7 @@ def build() -> None:
         "page-like snapshots and selected aligned update shapes, weak for shifted metadata and "
         "structured logs, and neutral or negative on independently curated public source-release "
         "pairs. The evidence therefore supports a conditional systems claim: authenticated "
-        "reference substitution is deployable over encrypted endpoint transport and can increase "
+        "reference substitution is compatible with encrypted endpoint stream transport and can increase "
         "effective reconstructed throughput for warm-state workloads, but it is not a universal "
         "replacement for compression, delta transfer, rsync, or congestion-control validation."
     )
@@ -243,7 +245,7 @@ def build() -> None:
     )
     add_paragraph(
         doc,
-        "The remaining gap is a deployable QUIC path. QUIC extension frames and transport "
+        "The remaining gap is a production QUIC path. QUIC extension frames and transport "
         "parameters would be cleaner than application-stream messages, but they require stack "
         "changes and new interoperability testing. The current paper takes a narrower journal "
         "step: implement and measure the semantics over native encrypted QUIC streams first, "
@@ -419,7 +421,7 @@ def build() -> None:
     )
     add_paragraph(
         doc,
-        "The v2.3 package adds independently curated public source-release pairs from Click, "
+        "The current package adds independently curated public source-release pairs from Click, "
         "Redis, and nginx. These are real public artifacts with pinned URLs and archive hashes. "
         "They are still source-release snapshots, not production network traces, OCI registry "
         "layers, VM backups, or Git pack transfers. Their value is that they are external and "
@@ -493,6 +495,33 @@ def build() -> None:
         "overbroad claim: ordinary related source releases do not automatically contain enough "
         "boundary-stable byte identity to justify reference substitution."
     )
+    rsync_table = []
+    for r in rsync_external:
+        rl = next(row for row in external if row["label"] == r["label"])
+        rsync_table.append([
+            r["label"],
+            fmt_int(r["new_payload_bytes"]),
+            fmt_x(rl["redulink_multiplier"]),
+            fmt_x(r["rsync_effective_multiplier_control_plus_data"]),
+            fmt_int(r["rsync_control_plus_data_bytes"]),
+            "rsync substantially stronger on this file/tree delta.",
+        ])
+    add_caption(doc, "Table 9. Real rsync baseline on external public source-release pairs.")
+    add_table(
+        doc,
+        ["Public pair", "New payload", "ReduLink fixed", "rsync total", "rsync bytes", "Interpretation"],
+        rsync_table,
+    )
+    positive = exact(public, artifact="nginx-changes", mode="warm-update-like", method="redulink", chunker="cdc")
+    positive_fb = exact(public, artifact="nginx-changes", mode="warm-update-like", method="fixed-block-reuse", chunker="fixed")
+    add_paragraph(
+        doc,
+        "The package still contains a positive public fixture: the pinned nginx changes.xml pair "
+        f"reconstructs with a ReduLink CDC multiplier of {float(positive['effective_multiplier']):.2f}x "
+        f"and a fixed-block multiplier of {float(positive_fb['effective_multiplier']):.2f}x. "
+        "This is evidence for public byte-stable text artifacts, not for production source-tree, "
+        "OCI, VM, or transport traces."
+    )
     add_heading(doc, "8.2 Negative Results and Why ReduLink Loses", 2)
     add_paragraph(
         doc,
@@ -511,6 +540,7 @@ def build() -> None:
         "credible as a generic text-diff or compression replacement."
     )
 
+    doc.add_page_break()
     add_heading(doc, "9. Native QUIC Flow Comparison", 1)
     quic_rows = []
     for r in quic:
@@ -524,11 +554,23 @@ def build() -> None:
             r["repair_full_frames"],
             "OK" if r["reconstruction_ok"] == "True" else "FAIL",
         ])
-    add_caption(doc, "Table 9. Raw QUIC versus ReduLink binary stream mapping.")
+    add_caption(doc, "Table 10. Raw QUIC versus ReduLink binary stream mapping.")
     add_table(
         doc,
-        ["Method", "Loss every", "Input", "Stream payload", "Multiplier", "MISS", "Repair", "Recon."],
-        quic_rows,
+        ["Method", "Loss", "Stream bytes", "Stream x", "UDP payload", "Approx IPv4+UDP", "Packet-layer x", "Recon."],
+        [
+            [
+                r["method"],
+                r["loss_every"],
+                fmt_int(r["stream_payload_bytes"]),
+                fmt_x(r["effective_multiplier"]),
+                fmt_int(r.get("udp_payload_bytes_seen", "0") or 0),
+                fmt_int(r.get("approx_ipv4_udp_bytes_seen", "0") or 0),
+                fmt_x(r.get("approx_ipv4_udp_multiplier_seen", "0") or 0),
+                "OK" if r["reconstruction_ok"] == "True" else "FAIL",
+            ]
+            for r in quic
+        ],
     )
     fig = ROOT / "figures" / "quic_flow_comparison.png"
     if fig.exists():
@@ -539,18 +581,21 @@ def build() -> None:
         "The native aioquic comparison transfers the same 98,304-byte update as raw QUIC and as "
         "ReduLink binary stream mapping. Raw QUIC uses 98,304 stream-payload bytes, while the "
         "ReduLink stream mapping uses about 30 KiB after semantic repairs, yielding about a "
-        "3.19x stream-payload multiplier in the comparison CSV. Under deterministic proxy loss, "
+        "3.19x stream-payload multiplier in the comparison CSV. With local proxy-observed UDP "
+        "payload bytes and an approximate 28-byte IPv4/UDP header per datagram, the no-loss "
+        "ReduLink multiplier is about 2.60x rather than 3.19x. Under deterministic proxy loss, "
         "both paths reconstruct byte-exactly, and ReduLink repairs semantic misses with FULL "
         "messages rather than delivering incorrect bytes."
     )
     add_paragraph(
         doc,
-        "This is stream-payload evidence. It does not count QUIC packet headers, UDP/IP headers, "
-        "TLS record expansion, or packet coalescing effects. The correct interpretation is that "
-        "the application placed fewer bytes into QUIC STREAM frames, not that the full path-byte "
-        "cost has been measured with packet capture."
+        "This is still not a full packet-capture study. The proxy observes UDP payload datagrams "
+        "on localhost and the IPv4/UDP column adds a simple 28-byte per-datagram estimate; it "
+        "excludes link-layer overhead and does not replace tcpdump/tc/netem validation. The "
+        "correct interpretation is that the application placed fewer bytes into QUIC STREAM "
+        "frames and fewer observed UDP payload bytes in this local experiment."
     )
-    add_caption(doc, "Table 10. Accounting layers.")
+    add_caption(doc, "Table 11. Accounting layers.")
     add_table(
         doc,
         ["Layer", "Definition", "Measured here?"],
@@ -559,15 +604,17 @@ def build() -> None:
             ["Reconstructed bytes", "Bytes delivered after FULL/REF validation.", "Yes"],
             ["ReduLink encoded bytes", "Modeled FULL/REF message bytes.", "Yes"],
             ["QUIC stream payload bytes", "Bytes submitted as stream data.", "Yes"],
-            ["QUIC packet bytes", "Encrypted QUIC datagrams on UDP.", "No"],
-            ["UDP/IP/path bytes", "Full on-path bytes including lower headers.", "No"],
+            ["UDP payload datagram bytes", "QUIC datagram payload bytes observed by local proxy.", "Yes"],
+            ["Approx IPv4+UDP bytes", "UDP payload plus 28 bytes per datagram.", "Estimated"],
+            ["Full link/path bytes", "Includes link-layer overhead and real capture effects.", "No"],
         ],
     )
     add_paragraph(
         doc,
-        "The paper therefore uses M_stream = input_bytes / stream_payload_bytes for aioquic "
-        "comparisons. A later packet-capture study should report M_packet = input_bytes / "
-        "packet_bytes and include competing flows under tc/netem or Mininet."
+        "The paper reports both M_stream = input_bytes / stream_payload_bytes and a local "
+        "M_udp_est = input_bytes / approximate_ipv4_udp_bytes. A later packet-capture study "
+        "should report full M_packet = input_bytes / captured_path_bytes and include competing "
+        "flows under tc/netem or Mininet."
     )
 
     add_heading(doc, "10. Component-Cost Results", 1)
@@ -583,7 +630,7 @@ def build() -> None:
     ]:
         r = next(row for row in component if row["component"] == name)
         comp_rows.append([name, fmt_int(r["input_bytes"]), r["wall_ms"], r["throughput_mib_s_local"], r["notes"]])
-    add_caption(doc, "Table 11. Local Python component-cost measurements.")
+    add_caption(doc, "Table 12. Local Python component-cost measurements.")
     add_table(doc, ["Component", "Input", "Wall ms", "MiB/s local", "Scope"], comp_rows)
     add_paragraph(
         doc,
@@ -603,13 +650,14 @@ def build() -> None:
         "receives congestion credit for reconstructed bytes would be unfair. The current artifact "
         "supports the accounting rule but does not complete the congestion-control study."
     )
-    add_caption(doc, "Table 12. Fairness evidence ladder.")
+    add_caption(doc, "Table 13. Fairness evidence ladder.")
     add_table(
         doc,
         ["Evidence", "File", "Supports", "Does not support"],
         [
             ["Wire-byte accounting", "results/wire_fairness_accounting.csv", f"ReduLink wire share {float(fairness['redulink_wire_share']):.3f} uses encoded bytes.", "Real QUIC congestion dynamics."],
             ["Concurrent localhost QUIC smoke", "results/quic_competing_flows.csv", f"ReduLink stream payload {fmt_int(competing[0]['input_bytes'])} reconstructed with lower encoded stream bytes.", "Controlled bottleneck or fairness under queueing."],
+            ["Local datagram accounting", "results/quic_flow_comparison.csv", "Observed UDP payload bytes and approximate IPv4/UDP byte estimate.", "Link-layer capture or real bottleneck queues."],
             ["Portable bottleneck emulation", "results/quic_bottleneck_emulation.csv", "Fluid fair-share model over measured stream payload bytes.", "Kernel tc/netem, ACK pacing, or loss coupling."],
             ["Needed next", "not included", "Packet capture plus multi-flow netem/Mininet.", "Current package cannot claim this."],
         ],
@@ -632,7 +680,7 @@ def build() -> None:
         "release suite records codeload URLs, archive sizes, archive SHA-256 values, extracted "
         "paths, and per-pair reconstruction results."
     )
-    add_caption(doc, "Table 13. Reproducibility commands.")
+    add_caption(doc, "Table 14. Reproducibility commands.")
     add_table(
         doc,
         ["Purpose", "Command"],
@@ -643,6 +691,7 @@ def build() -> None:
             ["Journal fixtures", "bash benchmarks/run_journal_workload_suite.sh"],
             ["External public corpora", "python3 benchmarks/fetch_external_public_corpora.py"],
             ["External public suite", "python3 benchmarks/run_real_workload_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/external_public_suite.csv"],
+            ["Real rsync baseline", "python3 benchmarks/run_rsync_baseline_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/rsync_baseline_external_public.csv"],
             ["QUIC flow comparison", "python3 benchmarks/run_quic_flow_comparison.py"],
         ],
     )
@@ -651,9 +700,9 @@ def build() -> None:
     limitations = [
         "The implementation is a native QUIC stream mapping, not custom QUIC extension-frame parsing.",
         "The new external corpus consists of source-release snapshots; it is not a substitute for OCI registry layers, VM backups, Git pack traces, package repository metadata, or production logs.",
-        "The fixed-block baseline is an rsync-family approximation, not the full rsync protocol or zsync.",
+        "The package now includes a real rsync baseline for source-release pairs; ReduLink does not beat rsync on those pairs and should not be framed as a delta-transfer replacement.",
         "The Python CDC implementation is not line-rate and should not be interpreted as production performance.",
-        "Fairness is supported by accounting, raw-flow comparison, concurrent localhost smoke tests, and bottleneck emulation, but not by a full tc/netem or Mininet multi-flow congestion-control study.",
+        "Fairness is supported by accounting, raw-flow comparison, local datagram-byte accounting, concurrent localhost smoke tests, and bottleneck emulation, but not by a full tc/netem or Mininet multi-flow congestion-control study.",
         "The artifact HKDF schedule should be replaced by direct QUIC TLS exporter integration in a production implementation.",
         "0-RTT dictionary policy, connection migration, transport-parameter negotiation, packet capture, and memory-exhaustion controls remain open implementation work.",
     ]
@@ -673,7 +722,7 @@ def build() -> None:
         doc,
         "ReduLink demonstrates that authenticated reference substitution can increase effective "
         "reconstructed throughput for selected redundant warm-state workloads over encrypted "
-        "endpoint transports. The current artifact provides native aioquic stream mapping, "
+        "endpoint stream transports. The current artifact provides native aioquic stream mapping, "
         "compact binary messages, authenticated fail-closed semantics, public and deterministic "
         "workload evidence, negative controls, local component measurements, and reproducibility "
         "checks. The strongest results occur when byte-stable chunks survive between warm and "
@@ -684,7 +733,7 @@ def build() -> None:
         "The appropriate journal claim is therefore precise rather than expansive. ReduLink is a "
         "credible endpoint-layer mechanism and evaluation artifact for redundancy-suppressed "
         "encrypted transfers. It is not yet a production QUIC extension, a universal accelerator, "
-        "or a replacement for rsync, compression, or congestion-control experiments. That "
+        "or a replacement for rsync, compression, packet-capture studies, or congestion-control experiments. That "
         "boundary makes the contribution more defensible and gives a clear path for the next "
         "systems revision."
     )

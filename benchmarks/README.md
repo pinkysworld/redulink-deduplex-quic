@@ -73,6 +73,27 @@ manifest columns. Fill in exact source URLs, SHA256 hashes, byte sizes,
 content-relation labels, license notes, and retrieval timestamps before using a
 public-artifact table in a paper.
 
+## External source-release and rsync baselines
+
+The v2.4 package includes hash-pinned Click, Redis, and nginx source-release
+pairs plus a real rsync baseline:
+
+```bash
+python3 benchmarks/fetch_external_public_corpora.py
+python3 benchmarks/run_real_workload_manifest.py \
+  --manifest benchmarks/external_public_manifest.csv \
+  --output results/external_public_suite.csv
+python3 benchmarks/run_rsync_baseline_manifest.py \
+  --manifest benchmarks/external_public_manifest.csv \
+  --output results/rsync_baseline_external_public.csv
+```
+
+`fetch_external_public_corpora.py` verifies pinned archive SHA-256 values before
+writing the manifest. `run_rsync_baseline_manifest.py` uses the system `rsync`
+binary with `--no-whole-file` against a temporary receiver copy and records
+rsync's own `--stats` byte counters. These rows are reported separately from
+the modeled fixed-block baselines.
+
 ## Target-class generated suite
 
 The target-class suite creates deterministic generated warm/update pairs for

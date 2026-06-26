@@ -1,6 +1,6 @@
-# Reference and Citation Audit, Version 2.3
+# Reference and Citation Audit, Version 2.4
 
-Scope: `paper/submission/ReduLink_journal_ready_v2_3.docx`, reference list, and visible in-text numeric citations.
+Scope: `paper/submission/ReduLink_journal_ready_v2_4.docx`, reference list, and visible in-text numeric citations.
 
 Automated check:
 
@@ -25,3 +25,5 @@ Manual audit notes:
 - Reference [18] documents aioquic as a Python QUIC/HTTP/3 implementation and supports the native aioquic stream-mapping experiment.
 
 No uncited references or dangling citation numbers were found by the checker.
+
+Open bibliography strengthening item: add full metadata for modern rsync/zsync/xdelta-style delta-transfer comparators and QUIC measurement papers if this is submitted to a high-selectivity systems journal.

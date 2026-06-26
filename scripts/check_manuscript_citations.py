@@ -17,7 +17,7 @@ _systems_candidates = sorted(_submission.glob("ReduLink_systems_ready_v*.docx"))
 DOCX = (
     _journal_candidates[-1]
     if _journal_candidates
-    else (_systems_candidates[-1] if _systems_candidates else _submission / "ReduLink_journal_ready_v2_3.docx")
+    else (_systems_candidates[-1] if _systems_candidates else _submission / "ReduLink_journal_ready_v2_4.docx")
 )
 
 
