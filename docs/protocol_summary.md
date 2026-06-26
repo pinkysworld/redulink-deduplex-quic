@@ -1,4 +1,4 @@
-# ReduLink / Deduplex-QUIC Protocol Appendix
+# ReduLink Protocol Appendix
 
 This appendix summarizes ReduLink as an implementable representation layer for
 cooperative encrypted endpoints. It is intentionally narrower than a complete
@@ -31,7 +31,7 @@ be mixed into normative text.
 - **Reconstructed bytes**: application payload bytes delivered after successful
   validation and dictionary lookup.
 
-## A.2 Deduplex-QUIC Integration Profile
+## A.2 Candidate Deduplex-QUIC Integration Profile
 
 ReduLink can be carried either as an application mapping inside QUIC STREAM data
 or as negotiated QUIC extension frames. The paper's Deduplex-QUIC profile is the
@@ -50,6 +50,7 @@ redulink_parameters {
   max_dictionary_chunks
   max_reference_expansion
   max_pending_reconstructed_bytes
+  max_ref_wait
   max_miss_rate
   dictionary_scope = connection | origin
   speculative_references = true | false
@@ -162,6 +163,7 @@ stable -> evicted_or_expired
 7. Disable references or reset the epoch when hit rate is too low, MISS rate is
    too high, dictionary state is ambiguous, or security policy requires it.
 8. On `REDULINK_MISS`, retransmit the affected byte range as `REDULINK_FULL`.
+   This is semantic repair, not proof that QUIC packet retransmission failed.
 
 ## A.5 Receiver State Machine
 
@@ -184,8 +186,13 @@ Additional receiver rules:
 - Conflicting bytes for an already delivered stream offset are a protocol error.
 - A REF whose `original_length` does not match the stored chunk length is a
   validation failure.
-- A REF for a gap may be buffered only within `max_pending_reconstructed_bytes`;
-  otherwise it is rejected or repaired with MISS.
+- If a REF cannot be resolved but its dependency may still be in flight, the
+  receiver MUST NOT deliver bytes. It may buffer the pending REF up to
+  `max_pending_reconstructed_bytes` and `max_ref_wait`, while charging
+  reconstructed flow-control credit. On timer expiry, eviction, generation
+  mismatch, or budget exhaustion, it emits `REDULINK_MISS`. Immediate MISS is
+  allowed for authenticated references that cannot become valid in the current
+  epoch.
 - If a `REDULINK_FULL` that would populate a dictionary is lost, later REF
   frames depending on that chunk MUST NOT deliver bytes speculatively. The
   receiver either buffers within `max_pending_reconstructed_bytes` until repair
@@ -247,8 +254,11 @@ must fail closed:
 2. The receiver emits `REDULINK_MISS` with epoch, stream offset, and chunk id.
 3. If MISS is lost, the receiver may retransmit MISS while the stream offset is
    blocked, subject to rate limits.
-4. The sender retransmits the affected range as semantic repair using
-   `REDULINK_FULL`; this is distinct from QUIC packet retransmission.
+4. QUIC loss recovery may retransmit lost ReduLink frame bytes. That handles
+   packet loss only. Once a REF has arrived and failed dictionary resolution,
+   resending the REF does not repair the semantic miss; the sender sends a new
+   `REDULINK_FULL` repair for the same stream id, stream offset, original
+   length, and chunk id.
 5. A duplicate MISS is idempotent. A duplicate repair FULL is accepted only when
    it reconstructs the same bytes at the same offset.
 6. Repeated MISS events reduce or disable reference generation.

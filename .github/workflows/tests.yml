@@ -20,7 +20,15 @@ jobs:
         run: python -m unittest discover -s tests
       - name: Benchmark smoke test
         run: bash benchmarks/run_synthetic_suite.sh --smoke
+      - name: Target-class generated artifact check
+        run: |
+          bash benchmarks/run_target_class_suite.sh
+          python benchmarks/check_generated_artifacts.py
       - name: Plot selected-result CSV
         run: python scripts/plot_results.py results/paper_real_artifact_cdc_selected.csv --output-dir /tmp/redulink-figures
+      - name: Generate paper evidence summary
+        run: |
+          python scripts/summarize_benchmark_evidence.py
+          python scripts/plot_warm_update_summary.py
       - name: Socket prototype demo
         run: python prototypes/redulink_socket_prototype.py demo

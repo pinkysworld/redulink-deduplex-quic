@@ -1,82 +1,84 @@
-# v0.8 Evidence Tables
+# v0.9 Evidence Tables
 
-These tables are generated from repository CSV outputs and are intended for the
-manuscript or supplement. They separate evidence levels, avoid claiming a real
-rsync implementation, and report local cost columns beside byte-savings results.
+These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.
 
 ## Evidence Levels
 
 | Level | What it supports | Current repository artifact |
 |---|---|---|
-| Analytic model | Explains when effective reconstructed throughput can exceed physical wire throughput. | Bandwidth model and conservative frame overheads. |
-| Simulator | Validates FULL/REF reconstruction, negative controls, miss fallback, and byte accounting. | `src/redulink_proto_v0_5.py` plus `tests/`. |
-| Controlled synthetic | Exercises repeat-heavy logs, update-like insertions, and mixed redundant/random data. | `results/synthetic_suite.csv`. |
-| Frozen public fixture | Checks pinned public version pairs with URLs, SHA256s, byte sizes, and license notes. | `benchmarks/public_artifacts_manifest.csv` and `results/public_artifact_suite.csv`. |
-| Prototype | Demonstrates endpoint cooperation and byte-exact reconstruction over localhost TCP. | `prototypes/redulink_socket_prototype.py`. |
+| Representation model | FULL/REF byte reconstruction, accounting, miss failure. | `src/redulink_model.py`, `tests/`. |
+| Controlled target fixtures | Target-class behavior under deterministic generated warm/update pairs. | `benchmarks/generate_target_corpora.py`, `results/target_class_suite.csv`. |
+| Frozen public fixture | Reviewer-runnable pinned public text/version pairs. | `benchmarks/public_artifacts_manifest.csv`, `results/public_artifact_suite.csv`. |
+| Prototype | Endpoint cooperation over localhost TCP. | `prototypes/redulink_socket_prototype.py`. |
+| Pending transport validation | Real QUIC loss, flow control, congestion fairness, migration, 0-RTT. | Not implemented. |
 
-## Synthetic Baseline Excerpt
+## Target-Class Evidence Matrix
 
-Source: `results/synthetic_suite.csv`. Cost columns are local wall-clock
-measurements from the runner that generated the CSV and are not
-machine-independent constants.
+Source: `results/target_class_suite.csv` and `results/target_class_warm_update_summary.csv`. These are controlled generated fixtures, not production traces.
 
-| Workload | Method | Chunker | Input bytes | Wire bytes | Savings | Multiplier | CPU ms | MiB/s |
-|---|---|---|---:|---:|---:|---:|---:|---:|
-| logs | fixed-block-reuse | fixed | 2,578,182 | 35,466 | 0.986 | 72.694 | 11.113 | 221.249 |
-| logs | ReduLink | fixed | 2,578,182 | 40,518 | 0.984 | 63.631 | 7.666 | 320.725 |
-| logs | zstd-then-ReduLink | cdc | 66,540 | 11,182 | 0.832 | 5.951 | 50.472 | 1.257 |
-| updates | fixed-block-reuse | fixed | 2,575,182 | 40,682 | 0.984 | 63.300 | 19.990 | 122.858 |
-| updates | ReduLink | fixed | 2,575,182 | 1,314,222 | 0.490 | 1.959 | 10.007 | 245.412 |
-| mixed | fixed-block-reuse | fixed | 3,187,727 | 645,011 | 0.798 | 4.942 | 208.353 | 14.591 |
-| mixed | ReduLink | fixed | 3,187,727 | 651,863 | 0.796 | 4.890 | 8.735 | 348.038 |
-| mixed | ReduLink | cdc | 3,187,727 | 667,559 | 0.791 | 4.775 | 1,899.219 | 1.601 |
+| Target | Input bytes | Warm bytes | Changed bytes | Best compression | Fixed-block | ReduLink fixed | ReduLink CDC | Interpretation |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| software update | 515,534 | 478,034 | 292,158 | zstd-3 11.958x | 1.000x | 0.997x | 0.999x | ReduLink loses; single-object compression dominates this generated update shape. |
+| container layer | 624,778 | 493,423 | 600,951 | zstd-3 4.087x | 1.799x | 1.010x | 0.999x | Weak reference identity; fixed-block baseline helps more than ReduLink. |
+| git-packlike | 1,038,009 | 973,109 | 660,483 | zstd-3 18.080x | 1.269x | 1.082x | 1.193x | Modest warm-dictionary gain, especially with CDC. |
+| VM backup | 3,686,400 | 3,686,400 | 49,623 | zstd-3 9.949x | 21.560x | 20.701x | 2.771x | Strong for aligned/page-like state; fixed-block and ReduLink fixed both benefit. |
+| structured logs | 4,980,940 | 4,075,370 | 906,941 | gzip-6 12.397x | 1.070x | 1.067x | 0.999x | Compression dominates; reference substitution is weak after overhead. |
+| random negative | 2,097,152 | 2,097,152 | 2,088,982 | zstd-3 1.000x | 1.000x | 0.997x | 0.998x | Correct no-gain random control. |
+| compressed related | 382,339 | 382,242 | 29,416 | zstd-3 2.192x | 12.417x | 12.117x | 9.623x | Diagnostic positive: related compressed streams retain reusable byte regions. |
+| compressed negative | 786,678 | 786,678 | 783,669 | zstd-3 1.000x | 1.000x | 0.997x | 0.998x | Correct no-gain compressed negative control. |
 
-Interpretation: the fixed-block reuse approximation is deliberately strong for
-update-like byte streams and should be treated as a serious delta-transfer
-comparator, not as the real rsync protocol. ReduLink's narrower claim is
-authenticated endpoint-controlled references under transport dictionary state,
-not dominance over compression or delta transfer on every workload.
+Interpretation: ReduLink helps only when byte-identical chunks survive across warm dictionary state and chosen chunk boundaries. The target-class suite deliberately includes weak and negative cases, because related data does not automatically imply referenceable chunk identity.
 
-## Frozen Public-Corpora Fixture
+## Public-Corpus Coverage and Limits
 
-Source: `results/public_artifact_suite.csv` and
-`benchmarks/public_artifacts_manifest.csv`.
+| Corpus family | Current fixture | Scale | Positive cases | Negative/weak cases | Production trace? | Limitation |
+|---|---|---:|---|---|---|---|
+| Text version pairs | Yes | 23 KB-829 KB | nginx, redis | cpython, linux-parameters, RFC pair | No | Small, text-only, smoke-level public fixture. |
+| OCI/container layers | No | - | - | - | No | Needed for claimed container workloads. |
+| Git packs | No | - | - | - | No | Needed for repository synchronization claims. |
+| Package repository metadata | No | - | - | - | No | Needed for software-update claims. |
+| VM/backup snapshots | No | - | - | - | No | Needed beyond generated sparse-block fixture. |
+| Structured log archives | No | - | - | - | No | Needed beyond generated log fixture. |
 
-| Artifact | Public source | Mode | Method | Multiplier | Savings | CPU ms | MiB/s |
-|---|---|---|---|---:|---:|---:|---:|
-| cpython-http-server | CPython v3.11.0 -> v3.12.0 `Lib/http/server.py` | changed version pair | fixed-block-reuse | 1.201 | 0.168 | 14.565 | 3.177 |
-| cpython-http-server | CPython v3.11.0 -> v3.12.0 `Lib/http/server.py` | changed version pair | ReduLink CDC | 0.998 | 0.000 | 48.086 | 0.962 |
-| cpython-pathlib | CPython v3.11.0 -> v3.12.0 `Lib/pathlib.py` | changed version pair | ReduLink CDC | 0.997 | 0.000 | 52.447 | 0.930 |
-| linux-kernel-parameters | Linux v6.8 -> v6.9 kernel parameters documentation | changed version pair | ReduLink CDC | 0.998 | 0.000 | 258.930 | 1.004 |
-| nginx-changes | nginx release-1.25.0 -> release-1.25.1 `changes.xml` | changed version pair | fixed-block-reuse | 72.956 | 0.986 | 3.295 | 239.894 |
-| nginx-changes | nginx release-1.25.0 -> release-1.25.1 `changes.xml` | changed version pair | ReduLink CDC | 53.126 | 0.981 | 621.301 | 1.272 |
-| redis-readme | Redis 7.2 -> 7.4 `README.md` | changed version pair | ReduLink CDC | 1.565 | 0.361 | 18.408 | 1.235 |
-| ietf-quic-rfc | RFC 9000 -> RFC 9001 related QUIC texts | related public texts | ReduLink CDC | 0.998 | 0.000 | 244.857 | 0.491 |
+## Frozen Public-Corpora Fixture Excerpt
 
-Interpretation: the public fixture is still small and should not be framed as
-production trace validation. Its value is that all rows are pinned, checksummed,
-and reviewer-runnable. It now includes a real positive changed-version case
-(`nginx-changes`), a modest case (`redis-readme`), and several negative or weak
-changed-version cases where chunk identity is low. The Linux kernel parameters
-and RFC rows show why the mechanism must be workload-gated: related text does
-not automatically imply repeated chunk identity after the chosen chunking and
-framing overheads.
+Source: `results/public_artifact_suite.csv` and `benchmarks/public_artifacts_manifest.csv`.
 
-## Selected Earlier Artifact Results
+| Artifact | Method | Input bytes | Warm bytes | Changed bytes | Wire bytes | Multiplier | Wall ms | MiB/s local |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| nginx-changes | fixed-block-reuse:fixed | 828,922 | 827,855 | 797,468 | 11,362 | 72.956x | 1.730 | 456.982 |
+| nginx-changes | redulink:cdc | 828,922 | 827,855 | 797,468 | 15,603 | 53.126x | 319.241 | 2.476 |
+| redis-readme | redulink:cdc | 23,845 | 22,607 | 22,354 | 15,236 | 1.565x | 7.901 | 2.878 |
+| cpython-http-server | redulink:cdc | 48,516 | 47,735 | 40,101 | 48,612 | 0.998x | 17.897 | 2.585 |
+| linux-kernel-parameters | redulink:cdc | 272,692 | 269,275 | 259,568 | 273,364 | 0.998x | 98.707 | 2.635 |
+| ietf-quic-rfc | redulink:cdc | 126,175 | 403,442 | 393,620 | 126,487 | 0.998x | 113.117 | 1.064 |
 
-Source: `results/paper_real_artifact_cdc_selected.csv`. These rows are retained
-as earlier controlled artifact measurements, not as production trace validation.
+Interpretation: the public fixture is intentionally small but pinned and checksum-verifiable. It contains one strong public changed-version case, one modest positive case, and several weak cases.
 
-| Artifact | Mode | Input bytes | Wire-model bytes | Savings | Multiplier | Full | Ref |
-|---|---|---:|---:|---:|---:|---:|---:|
-| python-stdlib-py | cold-intra-artifact | 2,088,013 | 2,056,749 | 0.015 | 1.015 | 280 | 6 |
-| python-stdlib-py | warm-update-like | 1,803,998 | 667,016 | 0.630 | 2.705 | 73 | 172 |
-| dpkg-metadata | cold-intra-artifact | 2,084,976 | 2,092,132 | 0.000 | 0.997 | 298 | 0 |
-| dpkg-metadata | warm-update-like | 2,002,495 | 805,404 | 0.598 | 2.486 | 86 | 201 |
-| etc-config-text | warm-update-like | 1,315,817 | 597,539 | 0.546 | 2.202 | 102 | 132 |
-| random-negative-control | cold-intra-artifact | 8,388,608 | 8,413,120 | 0.000 | 0.997 | 1024 | 0 |
+## Synthetic Excerpt
 
-Interpretation: warm dictionary state can produce effective multipliers on
-repeated text-like artifacts while the random negative control remains below 1x
-after frame overhead. These rows should be secondary to the frozen public
-fixture and larger future corpora.
+Synthetic rows are retained as mechanism checks and should not be read as production trace validation.
+
+| Workload | Method | Input bytes | Wire bytes | Multiplier | Wall ms | MiB/s local |
+|---|---|---:|---:|---:|---:|---:|
+| logs | redulink:fixed | 2,578,182 | 40,518 | 63.631x | 4.034 | 609.569 |
+| logs | redulink:cdc | 2,578,182 | 57,558 | 44.793x | 944.324 | 2.604 |
+| updates | redulink:fixed | 2,575,182 | 1,314,222 | 1.959x | 4.725 | 519.769 |
+| mixed | redulink:fixed | 3,187,727 | 651,863 | 4.890x | 4.406 | 689.980 |
+| mixed | redulink:cdc | 3,187,727 | 667,559 | 4.775x | 1017.794 | 2.987 |
+
+## Fixed-Block Baseline Definition
+
+| Parameter | Value |
+|---|---|
+| Default block size | 8192 bytes unless `--chunk-size` overrides it. |
+| Match rule | Byte-scan exact block match using a prefix lookup followed by full-block equality. |
+| Token overhead | 16 bytes per matched block reference. |
+| Literal overhead | 20 bytes per literal run plus literal bytes. |
+| Checksum exchange | Not modeled. |
+| rsync compatibility | No; this is an rsync-family fixed-block reuse approximation, not the rsync protocol. |
+| Compression order | None for fixed-block rows. |
+
+## Timing Scope
+
+`wall_ms`, `throughput_mib_s_local`, and `runner_peak_kib` are local runner measurements. They are not line-rate performance claims. `cost_scope` distinguishes compression-only rows, fixed-block scans, ReduLink encode/decode rows, and composition diagnostics.

@@ -1,34 +1,34 @@
-family,artifact,mode,chunker,method,input_bytes,wire_bytes,saving_rate,effective_multiplier,chunks,full_frames,ref_frames,reconstruction_ok,comparable,cpu_ms,throughput_mib_s,peak_kib,notes
-synthetic,logs,single-object,none,raw,2578182,2578182,0.000000,1.000000,0,0,0,True,True,,,,
-synthetic,logs,single-object,none,gzip-6,2578182,145905,0.943408,17.670279,0,0,0,True,True,14.718,167.057,39616.0,
-synthetic,logs,single-object,none,zstd-3,2578182,66540,0.974191,38.746348,0,0,0,True,True,71.823,34.233,39616.0,
-synthetic,logs,warm-update-like,fixed,fixed-block-reuse,2578182,35466,0.986244,72.694468,312,1,311,True,True,11.113,221.249,40752.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
-synthetic,logs,cold-intra-artifact,fixed,redulink,2578182,2585742,0.000000,0.997076,315,315,0,True,True,5.659,434.475,43392.0,
-synthetic,logs,warm-update-like,fixed,redulink,2578182,40518,0.984284,63.630535,315,4,311,True,True,7.666,320.725,46752.0,
-synthetic,logs,cold-intra-artifact,cdc,redulink,2578182,2580078,0.000000,0.999265,79,79,0,True,True,596.147,4.124,50128.0,
-synthetic,logs,warm-update-like,cdc,redulink,2578182,57558,0.977675,44.792766,79,2,77,True,True,2324.080,1.058,54192.0,
-synthetic,logs,warm-update-like,cdc,gzip-then-redulink,145905,57265,0.607519,2.547891,7,2,5,True,True,126.749,1.098,54304.0,ReduLink applied after gzip compression
-synthetic,logs,warm-update-like,cdc,redulink-then-gzip,2578182,3979,0.998457,647.947223,79,2,77,True,False,1975.684,1.245,55536.0,gzip applied to modeled ReduLink frame stream
-synthetic,logs,warm-update-like,cdc,zstd-then-redulink,66540,11182,0.831951,5.950635,5,1,4,True,True,50.472,1.257,55600.0,ReduLink applied after zstd compression
-synthetic,updates,single-object,none,raw,2575182,2575182,0.000000,1.000000,0,0,0,True,True,,,,
-synthetic,updates,single-object,none,gzip-6,2575182,146143,0.943249,17.620974,0,0,0,True,True,19.139,128.320,58224.0,
-synthetic,updates,single-object,none,zstd-3,2575182,66633,0.974125,38.647247,0,0,0,True,True,53.763,45.680,58224.0,
-synthetic,updates,warm-update-like,fixed,fixed-block-reuse,2575182,40682,0.984202,63.300280,313,3,310,True,True,19.990,122.858,58224.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
-synthetic,updates,cold-intra-artifact,fixed,redulink,2575182,2582742,0.000000,0.997073,315,315,0,True,True,6.529,376.143,58224.0,
-synthetic,updates,warm-update-like,fixed,redulink,2575182,1314222,0.489659,1.959473,315,160,155,True,True,10.007,245.412,58224.0,
-synthetic,updates,cold-intra-artifact,cdc,redulink,2575182,2577078,0.000000,0.999264,79,79,0,True,True,704.547,3.486,58224.0,
-synthetic,updates,warm-update-like,cdc,redulink,2575182,1332198,0.482678,1.933032,79,41,38,True,True,1902.230,1.291,58224.0,
-synthetic,updates,warm-update-like,cdc,gzip-then-redulink,146143,90335,0.381873,1.617789,10,6,4,True,True,93.904,1.484,58224.0,ReduLink applied after gzip compression
-synthetic,updates,warm-update-like,cdc,redulink-then-gzip,2575182,79042,0.969306,32.579920,79,41,38,True,False,1736.258,1.414,58224.0,gzip applied to modeled ReduLink frame stream
-synthetic,updates,warm-update-like,cdc,zstd-then-redulink,66633,38964,0.415245,1.710117,7,4,3,True,True,48.705,1.305,58224.0,ReduLink applied after zstd compression
-synthetic,mixed,single-object,none,raw,3187727,3187727,0.000000,1.000000,0,0,0,True,True,,,,
-synthetic,mixed,single-object,none,gzip-6,3187727,148543,0.953402,21.459961,0,0,0,True,True,18.301,166.116,63776.0,
-synthetic,mixed,single-object,none,zstd-3,3187727,66840,0.979032,47.691906,0,0,0,True,True,66.052,46.025,63776.0,
-synthetic,mixed,warm-update-like,fixed,fixed-block-reuse,3187727,645011,0.797658,4.942128,312,1,311,True,True,208.353,14.591,63776.0,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
-synthetic,mixed,cold-intra-artifact,fixed,redulink,3187727,3197087,0.000000,0.997072,390,390,0,True,True,5.943,511.553,64320.0,
-synthetic,mixed,warm-update-like,fixed,redulink,3187727,651863,0.795509,4.890179,390,79,311,True,True,8.735,348.038,65232.0,
-synthetic,mixed,cold-intra-artifact,cdc,redulink,3187727,3190079,0.000000,0.999263,98,98,0,True,True,740.191,4.107,65232.0,
-synthetic,mixed,warm-update-like,cdc,redulink,3187727,667559,0.790585,4.775199,98,21,77,True,True,1899.219,1.601,65232.0,
-synthetic,mixed,warm-update-like,cdc,gzip-then-redulink,148543,59927,0.596568,2.478732,8,3,5,True,True,96.516,1.468,65232.0,ReduLink applied after gzip compression
-synthetic,mixed,warm-update-like,cdc,redulink-then-gzip,3187727,7872,0.997531,404.944995,98,21,77,True,False,2187.690,1.390,65232.0,gzip applied to modeled ReduLink frame stream
-synthetic,mixed,warm-update-like,cdc,zstd-then-redulink,66840,11482,0.828217,5.821285,5,1,4,True,True,65.867,0.968,65232.0,ReduLink applied after zstd compression
+family,artifact,mode,chunker,method,warm_bytes,aligned_changed_bytes,input_bytes,wire_bytes,saving_rate,effective_multiplier,chunks,full_frames,ref_frames,reconstruction_ok,comparable,wall_ms,throughput_mib_s_local,runner_peak_kib,cost_scope,dictionary_entries,method_parameters,notes
+synthetic,logs,single-object,none,raw,,,2578182,2578182,0.000000,1.000000,0,0,0,True,True,,,,,,,
+synthetic,logs,single-object,none,gzip-6,,,2578182,145905,0.943408,17.670279,0,0,0,True,True,7.808,314.903,39872.0,compress_only,,,
+synthetic,logs,single-object,none,zstd-3,,,2578182,66540,0.974191,38.746348,0,0,0,True,True,86.146,28.542,39872.0,compress_only,,,
+synthetic,logs,warm-update-like,fixed,fixed-block-reuse,2550182,28000,2578182,35466,0.986244,72.694468,312,1,311,True,True,6.177,398.035,40608.0,fixed_block_scan,311,block_size=8192; token_overhead=16; literal_run_overhead=20; hash=prefix+exact-block; rolling_alignment=byte-scan; compression=none,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+synthetic,logs,cold-intra-artifact,fixed,redulink,,,2578182,2585742,0.000000,0.997076,315,315,0,True,True,3.137,783.914,43296.0,redulink_encode_decode,0,chunker=fixed; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,logs,warm-update-like,fixed,redulink,2550182,28000,2578182,40518,0.984284,63.630535,315,4,311,True,True,4.034,609.569,46656.0,redulink_encode_decode,312,chunker=fixed; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,logs,cold-intra-artifact,cdc,redulink,,,2578182,2580078,0.000000,0.999265,79,79,0,True,True,380.101,6.469,50080.0,redulink_encode_decode,0,chunker=cdc; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,logs,warm-update-like,cdc,redulink,2550182,28000,2578182,57558,0.977675,44.792766,79,2,77,True,True,944.324,2.604,53840.0,redulink_encode_decode,78,chunker=cdc; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,logs,warm-update-like,cdc,gzip-then-redulink,145670,36054,145905,57265,0.607519,2.547891,7,2,5,True,True,53.105,2.620,53952.0,redulink_only_after_precompression,9,chunker=cdc; target_chunk_size=8192; compression=gzip-before-redulink,ReduLink applied after gzip compression
+synthetic,logs,warm-update-like,cdc,redulink-then-gzip,2550182,28000,2578182,3979,0.998457,647.947223,79,2,77,True,False,943.472,2.606,57840.0,redulink_encode_decode_plus_gzip_frame_stream,78,chunker=cdc; target_chunk_size=8192; compression=redulink-frame-stream-then-gzip,gzip applied to modeled ReduLink frame stream
+synthetic,logs,warm-update-like,cdc,zstd-then-redulink,66498,1624,66540,11182,0.831951,5.950635,5,1,4,True,True,25.061,2.532,57904.0,redulink_only_after_precompression,5,chunker=cdc; target_chunk_size=8192; compression=zstd-before-redulink,ReduLink applied after zstd compression
+synthetic,updates,single-object,none,raw,,,2575182,2575182,0.000000,1.000000,0,0,0,True,True,,,,,,,
+synthetic,updates,single-object,none,gzip-6,,,2575182,146143,0.943249,17.620974,0,0,0,True,True,8.256,297.452,60544.0,compress_only,,,
+synthetic,updates,single-object,none,zstd-3,,,2575182,66633,0.974125,38.647247,0,0,0,True,True,28.298,86.787,60544.0,compress_only,,,
+synthetic,updates,warm-update-like,fixed,fixed-block-reuse,2550182,1235231,2575182,40682,0.984202,63.300280,313,3,310,True,True,10.142,242.140,60544.0,fixed_block_scan,311,block_size=8192; token_overhead=16; literal_run_overhead=20; hash=prefix+exact-block; rolling_alignment=byte-scan; compression=none,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+synthetic,updates,cold-intra-artifact,fixed,redulink,,,2575182,2582742,0.000000,0.997073,315,315,0,True,True,2.604,942.939,60544.0,redulink_encode_decode,0,chunker=fixed; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,updates,warm-update-like,fixed,redulink,2550182,1235231,2575182,1314222,0.489659,1.959473,315,160,155,True,True,4.725,519.769,60544.0,redulink_encode_decode,312,chunker=fixed; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,updates,cold-intra-artifact,cdc,redulink,,,2575182,2577078,0.000000,0.999264,79,79,0,True,True,316.677,7.755,60544.0,redulink_encode_decode,0,chunker=cdc; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,updates,warm-update-like,cdc,redulink,2550182,1235231,2575182,1332198,0.482678,1.933032,79,41,38,True,True,945.203,2.598,60544.0,redulink_encode_decode,78,chunker=cdc; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,updates,warm-update-like,cdc,gzip-then-redulink,145670,72492,146143,90335,0.381873,1.617789,10,6,4,True,True,53.366,2.612,60544.0,redulink_only_after_precompression,9,chunker=cdc; target_chunk_size=8192; compression=gzip-before-redulink,ReduLink applied after gzip compression
+synthetic,updates,warm-update-like,cdc,redulink-then-gzip,2550182,1235231,2575182,79042,0.969306,32.579920,79,41,38,True,False,951.457,2.581,60544.0,redulink_encode_decode_plus_gzip_frame_stream,78,chunker=cdc; target_chunk_size=8192; compression=redulink-frame-stream-then-gzip,gzip applied to modeled ReduLink frame stream
+synthetic,updates,warm-update-like,cdc,zstd-then-redulink,66498,35485,66633,38964,0.415245,1.710117,7,4,3,True,True,24.458,2.598,60544.0,redulink_only_after_precompression,5,chunker=cdc; target_chunk_size=8192; compression=zstd-before-redulink,ReduLink applied after zstd compression
+synthetic,mixed,single-object,none,raw,,,3187727,3187727,0.000000,1.000000,0,0,0,True,True,,,,,,,
+synthetic,mixed,single-object,none,gzip-6,,,3187727,148543,0.953402,21.459961,0,0,0,True,True,9.582,317.282,60592.0,compress_only,,,
+synthetic,mixed,single-object,none,zstd-3,,,3187727,66840,0.979032,47.691906,0,0,0,True,True,30.948,98.231,60592.0,compress_only,,,
+synthetic,mixed,warm-update-like,fixed,fixed-block-reuse,2550182,637545,3187727,645011,0.797658,4.942128,312,1,311,True,True,103.139,29.475,60592.0,fixed_block_scan,311,block_size=8192; token_overhead=16; literal_run_overhead=20; hash=prefix+exact-block; rolling_alignment=byte-scan; compression=none,fixed-block reuse approximation against warm artifact; not wire-compatible rsync
+synthetic,mixed,cold-intra-artifact,fixed,redulink,,,3187727,3197087,0.000000,0.997072,390,390,0,True,True,3.537,859.470,61088.0,redulink_encode_decode,0,chunker=fixed; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,mixed,warm-update-like,fixed,redulink,2550182,637545,3187727,651863,0.795509,4.890179,390,79,311,True,True,4.406,689.980,61856.0,redulink_encode_decode,312,chunker=fixed; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,mixed,cold-intra-artifact,cdc,redulink,,,3187727,3190079,0.000000,0.999263,98,98,0,True,True,392.236,7.751,61856.0,redulink_encode_decode,0,chunker=cdc; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,mixed,warm-update-like,cdc,redulink,2550182,637545,3187727,667559,0.790585,4.775199,98,21,77,True,True,1017.794,2.987,61856.0,redulink_encode_decode,78,chunker=cdc; target_chunk_size=8192; ref_overhead=32; full_overhead=24; compression=none,
+synthetic,mixed,warm-update-like,cdc,gzip-then-redulink,145670,38626,148543,59927,0.596568,2.478732,8,3,5,True,True,53.557,2.645,61856.0,redulink_only_after_precompression,9,chunker=cdc; target_chunk_size=8192; compression=gzip-before-redulink,ReduLink applied after gzip compression
+synthetic,mixed,warm-update-like,cdc,redulink-then-gzip,2550182,637545,3187727,7872,0.997531,404.944995,98,21,77,True,False,1023.110,2.971,61872.0,redulink_encode_decode_plus_gzip_frame_stream,78,chunker=cdc; target_chunk_size=8192; compression=redulink-frame-stream-then-gzip,gzip applied to modeled ReduLink frame stream
+synthetic,mixed,warm-update-like,cdc,zstd-then-redulink,66498,1921,66840,11482,0.828217,5.821285,5,1,4,True,True,24.410,2.611,61872.0,redulink_only_after_precompression,5,chunker=cdc; target_chunk_size=8192; compression=zstd-before-redulink,ReduLink applied after zstd compression

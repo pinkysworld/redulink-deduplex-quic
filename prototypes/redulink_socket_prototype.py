@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-import redulink_proto_v0_5 as redulink
+import redulink_model as redulink
 
 
 def read_exact(sock: socket.socket, size: int) -> bytes:
@@ -94,7 +94,11 @@ def run_server(host: str, port: int, warm_path: Path, output_path: Path,
                 chunk_size=chunk_size,
             )
             output_path.write_bytes(reconstructed)
-            conn.sendall(json.dumps({"frames": len(frames), "wire_model_bytes": wire}).encode("utf-8"))
+            conn.sendall(json.dumps({
+                "frames": len(frames),
+                "reconstructed_bytes": len(reconstructed),
+                "wire_model_bytes": wire,
+            }).encode("utf-8"))
             return len(reconstructed), wire
 
 
@@ -116,7 +120,7 @@ def run_client(host: str, port: int, input_path: Path, warm_path: Path,
         "socket_bytes": socket_wire,
         "frames": stats.chunks,
         "ref_frames": stats.ref_frames,
-        "server_reconstructed_bytes": int(server_stats.get("frames", 0)),
+        "server_reconstructed_bytes": int(server_stats.get("reconstructed_bytes", 0)),
     }
 
 

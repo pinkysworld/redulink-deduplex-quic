@@ -4,3 +4,5 @@ __pycache__/
 results/real_artifact_results.csv
 results/loss_sweep_results.csv
 data/public_corpora/
+data/target_corpora/
+render_*/

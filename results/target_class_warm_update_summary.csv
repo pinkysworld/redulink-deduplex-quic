@@ -1,0 +1,9 @@
+artifact,target,input_bytes,warm_bytes,aligned_changed_bytes,best_compression_method,best_compression_multiplier,fixed_block_multiplier,redulink_fixed_multiplier,redulink_cdc_multiplier,best_redulink_method,best_redulink_multiplier,best_redulink_ref_frames,best_redulink_wall_ms,best_redulink_mibps,interpretation
+software-update-generated,software update,515534,478034,292158,zstd-3,11.958294,0.999961,0.997076,0.999256,cdc,0.999256,0,180.995,2.716,ReduLink loses; single-object compression dominates this generated update shape.
+container-layer-generated,container layer,624778,493423,600951,zstd-3,4.086534,1.799092,1.010245,0.998964,fixed,1.010245,1,1.117,533.444,Weak reference identity; fixed-block baseline helps more than ReduLink.
+git-packlike-generated,git-packlike,1038009,973109,660483,zstd-3,18.080316,1.269461,1.082142,1.193240,cdc,1.193240,56,344.611,2.873,"Modest warm-dictionary gain, especially with CDC."
+vm-backup-generated,VM backup,3686400,3686400,49623,zstd-3,9.948938,21.560416,20.700809,2.770902,fixed,20.700809,430,5.864,599.557,Strong for aligned/page-like state; fixed-block and ReduLink fixed both benefit.
+structured-logs-generated,structured logs,4980940,4075370,906941,gzip-6,12.396720,1.070088,1.066995,0.999263,fixed,1.066995,40,9.157,518.729,Compression dominates; reference substitution is weak after overhead.
+random-negative-generated,random negative,2097152,2097152,2088982,zstd-3,0.999972,0.999990,0.997079,0.997751,cdc,0.997751,0,752.309,2.658,Correct no-gain random control.
+compressed-related-warm-generated,compressed related,382339,382242,29416,zstd-3,2.192173,12.417232,12.116590,9.623433,fixed,12.116590,43,0.627,581.812,Diagnostic positive: related compressed streams retain reusable byte regions.
+independent-compressed-negative-generated,compressed negative,786678,786678,783669,zstd-3,0.999961,0.999975,0.997049,0.997565,cdc,0.997565,0,281.324,2.667,Correct no-gain compressed negative control.

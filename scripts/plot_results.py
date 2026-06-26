@@ -71,6 +71,21 @@ def grouped_best(rows: list[dict[str, str]], metric: str) -> tuple[list[str], li
     return sorted(set(workloads)), sorted(set(methods)), values
 
 
+def workload_label(workload: str) -> str:
+    artifact, _, mode = workload.partition(":")
+    artifact = artifact.replace("-generated", "")
+    artifact = artifact.replace("-artifact", "")
+    artifact = artifact.replace("-", " ")
+    mode = {
+        "warm-update-like": "warm/update",
+        "cold-intra-artifact": "cold intra",
+        "single-object": "single object",
+    }.get(mode, mode.replace("-", " "))
+    if mode == "warm/update":
+        return artifact
+    return f"{artifact}\n{mode}"
+
+
 def plot_grouped(rows: list[dict[str, str]], metric: str, title: str, ylabel: str, output: Path) -> None:
     plt = require_matplotlib()
     workloads, methods, values = grouped_best(rows, metric)
@@ -97,17 +112,18 @@ def plot_grouped(rows: list[dict[str, str]], metric: str, title: str, ylabel: st
     width = max(0.08, min(0.8 / len(methods), 0.18))
     x_positions = list(range(len(workloads)))
 
-    fig_width = max(10, len(workloads) * 1.25)
-    fig, ax = plt.subplots(figsize=(fig_width, 6))
+    fig_width = max(11, len(workloads) * 1.55)
+    fig, ax = plt.subplots(figsize=(fig_width, 6.8))
     for idx, method in enumerate(methods):
         offset = (idx - (len(methods) - 1) / 2) * width
         ys = [values.get((workload, method), 0.0) for workload in workloads]
         ax.bar([x + offset for x in x_positions], ys, width=width, label=method)
 
-    ax.set_title(title)
-    ax.set_ylabel(ylabel)
+    ax.set_title(title, fontsize=12)
+    ax.set_ylabel(ylabel, fontsize=10)
     ax.set_xticks(x_positions)
-    ax.set_xticklabels(workloads, rotation=35, ha="right")
+    ax.set_xticklabels([workload_label(workload) for workload in workloads],
+                       rotation=30, ha="right", fontsize=9)
     ax.grid(axis="y", alpha=0.25)
     ax.legend(fontsize=8, ncols=2)
     fig.tight_layout()
@@ -203,6 +219,10 @@ def write_summary(rows: list[dict[str, str]], output: Path) -> None:
     output.write_text("\n".join(lines) + "\n")
 
 
+def rows_for_mode(rows: list[dict[str, str]], mode: str) -> list[dict[str, str]]:
+    return [row for row in rows if row.get("mode") == mode]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("csv_path")
@@ -227,6 +247,22 @@ def main() -> None:
         "Saving rate",
         out / "savings_by_workload.png",
     )
+    warm_rows = rows_for_mode(rows, "warm-update-like")
+    if warm_rows:
+        plot_grouped(
+            warm_rows,
+            "effective_multiplier",
+            "Effective reconstructed throughput multiplier for warm/update pairs",
+            "Multiplier over transmitted wire bytes",
+            out / "effective_multiplier_warm_update.png",
+        )
+        plot_grouped(
+            warm_rows,
+            "saving_rate",
+            "Modeled wire-byte savings for warm/update pairs",
+            "Saving rate",
+            out / "savings_warm_update.png",
+        )
     write_summary(rows, out / "benchmark_summary.md")
 
 

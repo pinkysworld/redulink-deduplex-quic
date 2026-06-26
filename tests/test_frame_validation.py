@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-import redulink_proto_v0_5 as redulink
+import redulink_model as redulink
 
 
 class FrameValidationTests(unittest.TestCase):

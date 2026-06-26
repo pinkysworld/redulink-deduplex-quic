@@ -14,6 +14,7 @@ class SocketPrototypeTests(unittest.TestCase):
         output = subprocess.check_output([sys.executable, str(PROTO), "demo"], text=True)
         stats = json.loads(output)
         self.assertTrue(stats["reconstruction_ok"])
+        self.assertEqual(stats["server_reconstructed_bytes"], stats["input_bytes"])
         self.assertGreater(stats["ref_frames"], 0)
         self.assertLess(stats["wire_model_bytes"], stats["input_bytes"])
 

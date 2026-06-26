@@ -3,6 +3,8 @@
 The benchmark suite is designed to make the paper tables reproducible from
 plain CSV outputs. It separates small synthetic runs from larger public-artifact
 runs so CI can stay fast while reviewers can rerun the stronger evidence path.
+It also includes deterministic target-class fixtures for controlled positive,
+weak, and negative cases.
 
 ## Synthetic suite
 
@@ -71,12 +73,46 @@ manifest columns. Fill in exact source URLs, SHA256 hashes, byte sizes,
 content-relation labels, license notes, and retrieval timestamps before using a
 public-artifact table in a paper.
 
+## Target-class generated suite
+
+The target-class suite creates deterministic generated warm/update pairs for
+software-update, container-layer, git-like, VM/backup, structured-log, random
+negative-control, related-compressed, and independent-compressed negative-control
+cases:
+
+```bash
+bash benchmarks/run_target_class_suite.sh
+python3 benchmarks/check_generated_artifacts.py
+```
+
+Output:
+
+```text
+benchmarks/target_class_manifest.csv
+results/target_class_suite.csv
+results/target_class_suite.csv.metadata.json
+```
+
+These are controlled fixtures, not production traces. They are useful because
+they show where ReduLink helps and where it does not. The related-compressed row
+is a diagnostic positive case; the independent-compressed row is the true
+compressed negative control.
+
+Optional block-size sensitivity:
+
+```bash
+bash benchmarks/run_block_size_sensitivity.sh
+```
+
 ## Cost columns
 
-The baseline runner records `cpu_ms`, `throughput_mib_s`, and `peak_kib`.
-These are local runner measurements, not machine-independent constants.
-`peak_kib` is a coarse process maximum RSS from `getrusage`; use it to expose
-resource scale, not to compare implementations across machines.
+The baseline runner records `wall_ms`, `throughput_mib_s_local`,
+`runner_peak_kib`, and `cost_scope`. These are local elapsed wall-clock
+measurements, not machine-independent constants. `runner_peak_kib` is a coarse
+process maximum RSS from `getrusage`; use it to expose resource scale, not to
+compare implementations across machines. `cost_scope` distinguishes
+compression-only rows, fixed-block scans, ReduLink encode/decode rows, and
+composition diagnostics.
 
 ## Plot generation
 
@@ -91,6 +127,24 @@ The plotting script generates:
 ```text
 figures/effective_multiplier_by_workload.png
 figures/savings_by_workload.png
+figures/effective_multiplier_warm_update.png
+figures/savings_warm_update.png
+figures/benchmark_summary.md
+```
+
+For the paper-facing warm/update summary:
+
+```bash
+python3 scripts/summarize_benchmark_evidence.py
+python3 scripts/plot_warm_update_summary.py
+```
+
+Output:
+
+```text
+results/target_class_warm_update_summary.csv
+figures/target_class/redulink_vs_baseline_warm_update.png
+paper/evidence_tables.md
 ```
 
 The plotting script supports both the baseline-suite schema and the selected

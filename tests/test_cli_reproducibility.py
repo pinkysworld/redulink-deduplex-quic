@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "src" / "redulink_proto_v0_5.py"
+SCRIPT = ROOT / "src" / "redulink_model.py"
 
 
 class CliReproducibilityTests(unittest.TestCase):

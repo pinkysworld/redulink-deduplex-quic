@@ -4,5 +4,6 @@
   "gzip_module": "python-stdlib",
   "zstd_path": "/usr/local/bin/zstd",
   "zstd_version": "*** Zstandard CLI (64-bit) v1.5.7, by Yann Collet ***",
-  "cost_columns": "cpu_ms and throughput_mib_s are local wall-clock measurements; peak_kib is process maximum resident set size from getrusage and is coarse/cumulative."
+  "cost_columns": "wall_ms and throughput_mib_s_local are local elapsed wall-clock measurements; runner_peak_kib is process maximum resident set size from getrusage and is coarse/cumulative. cost_scope describes which work the measurement includes.",
+  "context_columns": "warm_bytes is receiver-side dictionary input size. aligned_changed_bytes is a simple aligned byte-difference estimate, not a semantic diff. dictionary_entries counts warm dictionary blocks/chunks where applicable."
 }

@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-import redulink_proto_v0_5 as redulink
+import redulink_model as redulink
 
 
 HEADER = [
@@ -29,6 +29,8 @@ HEADER = [
     "mode",
     "chunker",
     "method",
+    "warm_bytes",
+    "aligned_changed_bytes",
     "input_bytes",
     "wire_bytes",
     "saving_rate",
@@ -38,9 +40,12 @@ HEADER = [
     "ref_frames",
     "reconstruction_ok",
     "comparable",
-    "cpu_ms",
-    "throughput_mib_s",
-    "peak_kib",
+    "wall_ms",
+    "throughput_mib_s_local",
+    "runner_peak_kib",
+    "cost_scope",
+    "dictionary_entries",
+    "method_parameters",
     "notes",
 ]
 
@@ -122,7 +127,8 @@ def write_metadata(output: Path) -> None:
         "gzip_module": "python-stdlib",
         "zstd_path": zstd or "",
         "zstd_version": "",
-        "cost_columns": "cpu_ms and throughput_mib_s are local wall-clock measurements; peak_kib is process maximum resident set size from getrusage and is coarse/cumulative.",
+        "cost_columns": "wall_ms and throughput_mib_s_local are local elapsed wall-clock measurements; runner_peak_kib is process maximum resident set size from getrusage and is coarse/cumulative. cost_scope describes which work the measurement includes.",
+        "context_columns": "warm_bytes is receiver-side dictionary input size. aligned_changed_bytes is a simple aligned byte-difference estimate, not a semantic diff. dictionary_entries counts warm dictionary blocks/chunks where applicable.",
     }
     if zstd:
         proc = subprocess.run([zstd, "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -178,15 +184,34 @@ def measure(func):
     return result, elapsed_ms, float(maxrss)
 
 
-def cost_fields(input_len: int, cpu_ms: float | None, peak_kib: float | None) -> dict[str, str]:
-    if cpu_ms is None or peak_kib is None:
-        return {"cpu_ms": "", "throughput_mib_s": "", "peak_kib": ""}
-    seconds = max(cpu_ms / 1000, 1e-9)
+def cost_fields(input_len: int, wall_ms: float | None, peak_kib: float | None,
+                cost_scope: str = "") -> dict[str, str]:
+    if wall_ms is None or peak_kib is None:
+        return {"wall_ms": "", "throughput_mib_s_local": "", "runner_peak_kib": "", "cost_scope": cost_scope}
+    seconds = max(wall_ms / 1000, 1e-9)
     throughput = (input_len / (1024 * 1024)) / seconds if input_len else 0.0
     return {
-        "cpu_ms": f"{cpu_ms:.3f}",
-        "throughput_mib_s": f"{throughput:.3f}",
-        "peak_kib": f"{peak_kib:.1f}",
+        "wall_ms": f"{wall_ms:.3f}",
+        "throughput_mib_s_local": f"{throughput:.3f}",
+        "runner_peak_kib": f"{peak_kib:.1f}",
+        "cost_scope": cost_scope,
+    }
+
+
+def aligned_changed_bytes(warm: bytes, update: bytes) -> int:
+    overlap = min(len(warm), len(update))
+    changed = sum(1 for idx in range(overlap) if warm[idx] != update[idx])
+    return changed + abs(len(warm) - len(update))
+
+
+def context_fields(warm_len: int | None = None, changed_bytes: int | None = None,
+                   dictionary_entries: int | None = None,
+                   method_parameters: str = "") -> dict[str, str]:
+    return {
+        "warm_bytes": "" if warm_len is None else str(warm_len),
+        "aligned_changed_bytes": "" if changed_bytes is None else str(changed_bytes),
+        "dictionary_entries": "" if dictionary_entries is None else str(dictionary_entries),
+        "method_parameters": method_parameters,
     }
 
 
@@ -194,7 +219,11 @@ def metric_row(family: str, artifact: str, mode: str, chunker: str, method: str,
                input_len: int, wire_len: int, notes: str = "",
                chunks: int = 0, full: int = 0, ref: int = 0,
                ok: bool = True, comparable: bool = True,
-               cpu_ms: float | None = None, peak_kib: float | None = None) -> dict[str, str]:
+               cpu_ms: float | None = None, peak_kib: float | None = None,
+               cost_scope: str = "",
+               warm_len: int | None = None, changed_bytes: int | None = None,
+               dictionary_entries: int | None = None,
+               method_parameters: str = "") -> dict[str, str]:
     saving = max(0.0, 1.0 - (wire_len / input_len)) if input_len else 0.0
     multiplier = (input_len / wire_len) if wire_len else 1.0
     row = {
@@ -214,13 +243,18 @@ def metric_row(family: str, artifact: str, mode: str, chunker: str, method: str,
         "comparable": str(comparable),
         "notes": notes,
     }
-    row.update(cost_fields(input_len, cpu_ms, peak_kib))
+    row.update(cost_fields(input_len, cpu_ms, peak_kib, cost_scope))
+    row.update(context_fields(warm_len, changed_bytes, dictionary_entries, method_parameters))
     return row
 
 
 def stats_row(family: str, artifact: str, mode: str, chunker: str, method: str,
               stats: redulink.Stats, notes: str = "", comparable: bool = True,
-              cpu_ms: float | None = None, peak_kib: float | None = None) -> dict[str, str]:
+              cpu_ms: float | None = None, peak_kib: float | None = None,
+              cost_scope: str = "",
+              warm_len: int | None = None, changed_bytes: int | None = None,
+              dictionary_entries: int | None = None,
+              method_parameters: str = "") -> dict[str, str]:
     row = {
         "family": family,
         "artifact": artifact,
@@ -238,7 +272,8 @@ def stats_row(family: str, artifact: str, mode: str, chunker: str, method: str,
         "comparable": str(comparable),
         "notes": notes,
     }
-    row.update(cost_fields(stats.input_bytes, cpu_ms, peak_kib))
+    row.update(cost_fields(stats.input_bytes, cpu_ms, peak_kib, cost_scope))
+    row.update(context_fields(warm_len, changed_bytes, dictionary_entries, method_parameters))
     return row
 
 
@@ -268,12 +303,14 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
 
     gz, gz_ms, gz_peak = measure(lambda: gzip_bytes(data))
     rows.append(metric_row(family, artifact, "single-object", "none", "gzip-6", len(data), len(gz),
-                           cpu_ms=gz_ms, peak_kib=gz_peak))
+                           cpu_ms=gz_ms, peak_kib=gz_peak,
+                           cost_scope="compress_only"))
 
     zstd, zstd_ms, zstd_peak = measure(lambda: zstd_bytes(data))
     if zstd is not None:
         rows.append(metric_row(family, artifact, "single-object", "none", "zstd-3", len(data), len(zstd),
-                               cpu_ms=zstd_ms, peak_kib=zstd_peak))
+                               cpu_ms=zstd_ms, peak_kib=zstd_peak,
+                               cost_scope="compress_only"))
     else:
         rows.append(metric_row(family, artifact, "single-object", "none", "zstd-3", len(data), len(data),
                                ok=False, notes="zstd command unavailable; row records raw byte count placeholder"))
@@ -282,10 +319,12 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
         warm, update = split_warm(data, warm_fraction)
     else:
         warm, update = warm_update
+    changed = aligned_changed_bytes(warm, update)
 
     (rsync_wire, rsync_full, rsync_ref), rsync_ms, rsync_peak = measure(
         lambda: rsync_block_reuse(update, warm, chunk_size)
     )
+    fixed_dict_entries = len(warm) // chunk_size
     rows.append(metric_row(
         family,
         artifact,
@@ -299,21 +338,36 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
         ref=rsync_ref,
         cpu_ms=rsync_ms,
         peak_kib=rsync_peak,
+        cost_scope="fixed_block_scan",
+        warm_len=len(warm),
+        changed_bytes=changed,
+        dictionary_entries=fixed_dict_entries,
+        method_parameters=f"block_size={chunk_size}; token_overhead=16; literal_run_overhead=20; hash=prefix+exact-block; rolling_alignment=byte-scan; compression=none",
         notes="fixed-block reuse approximation against warm artifact; not wire-compatible rsync",
     ))
 
     for chunker in ("fixed", "cdc"):
+        cold_entries = 0
         cold, cold_ms, cold_peak = measure(
             lambda: redulink.run_bytes(data, chunker=chunker, chunk_size=chunk_size)
         )
         rows.append(stats_row(family, artifact, "cold-intra-artifact", chunker, "redulink", cold,
-                              cpu_ms=cold_ms, peak_kib=cold_peak))
+                              cpu_ms=cold_ms, peak_kib=cold_peak,
+                              cost_scope="redulink_encode_decode",
+                              dictionary_entries=cold_entries,
+                              method_parameters=f"chunker={chunker}; target_chunk_size={chunk_size}; ref_overhead={redulink.REF_OVERHEAD}; full_overhead={redulink.FULL_OVERHEAD}; compression=none"))
 
+        warm_entries = len(redulink.make_chunks(warm, chunker, chunk_size))
         warm_stats, warm_ms, warm_peak = measure(
             lambda: redulink.run_bytes(update, chunker=chunker, chunk_size=chunk_size, warm=warm)
         )
         rows.append(stats_row(family, artifact, "warm-update-like", chunker, "redulink", warm_stats,
-                              cpu_ms=warm_ms, peak_kib=warm_peak))
+                              cpu_ms=warm_ms, peak_kib=warm_peak,
+                              cost_scope="redulink_encode_decode",
+                              warm_len=len(warm),
+                              changed_bytes=changed,
+                              dictionary_entries=warm_entries,
+                              method_parameters=f"chunker={chunker}; target_chunk_size={chunk_size}; ref_overhead={redulink.REF_OVERHEAD}; full_overhead={redulink.FULL_OVERHEAD}; compression=none"))
 
     gz_warm = gzip_bytes(warm)
     gz_update = gzip_bytes(update)
@@ -322,7 +376,12 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
     )
     rows.append(stats_row(family, artifact, "warm-update-like", "cdc", "gzip-then-redulink", gz_then_rl,
                           notes="ReduLink applied after gzip compression",
-                          cpu_ms=gzrl_ms, peak_kib=gzrl_peak))
+                          cpu_ms=gzrl_ms, peak_kib=gzrl_peak,
+                          cost_scope="redulink_only_after_precompression",
+                          warm_len=len(gz_warm),
+                          changed_bytes=aligned_changed_bytes(gz_warm, gz_update),
+                          dictionary_entries=len(redulink.make_chunks(gz_warm, "cdc", chunk_size)),
+                          method_parameters=f"chunker=cdc; target_chunk_size={chunk_size}; compression=gzip-before-redulink"))
 
     def encode_decode_compress():
         frames, rl_stats = redulink.encode(update, chunker="cdc", chunk_size=chunk_size, warm_dictionary=warm)
@@ -346,6 +405,11 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
         comparable=False,
         cpu_ms=rlgz_ms,
         peak_kib=rlgz_peak,
+        cost_scope="redulink_encode_decode_plus_gzip_frame_stream",
+        warm_len=len(warm),
+        changed_bytes=changed,
+        dictionary_entries=len(redulink.make_chunks(warm, "cdc", chunk_size)),
+        method_parameters=f"chunker=cdc; target_chunk_size={chunk_size}; compression=redulink-frame-stream-then-gzip",
         notes="gzip applied to modeled ReduLink frame stream",
     ))
 
@@ -358,7 +422,12 @@ def evaluate_artifact(family: str, artifact: str, data: bytes, *,
             )
             rows.append(stats_row(family, artifact, "warm-update-like", "cdc", "zstd-then-redulink", zr,
                                   notes="ReduLink applied after zstd compression",
-                                  cpu_ms=zr_ms, peak_kib=zr_peak))
+                                  cpu_ms=zr_ms, peak_kib=zr_peak,
+                                  cost_scope="redulink_only_after_precompression",
+                                  warm_len=len(zwarm),
+                                  changed_bytes=aligned_changed_bytes(zwarm, zupdate),
+                                  dictionary_entries=len(redulink.make_chunks(zwarm, "cdc", chunk_size)),
+                                  method_parameters=f"chunker=cdc; target_chunk_size={chunk_size}; compression=zstd-before-redulink"))
 
     return rows
 
@@ -403,6 +472,8 @@ def main() -> None:
     parser.add_argument("--synthetic", action="append", choices=["logs", "updates", "mixed"], default=[],
                         help="Synthetic workload to include. May be repeated.")
     parser.add_argument("--output", default="results/baseline_comparison.csv")
+    parser.add_argument("--family", default="public-artifact",
+                        help="Family label for --artifact/--manifest rows.")
     parser.add_argument("--chunk-size", type=int, default=8192)
     parser.add_argument("--warm-fraction", type=float, default=0.45)
     args = parser.parse_args()
@@ -423,7 +494,7 @@ def main() -> None:
         warm_update = None
         if warm_path is not None:
             warm_update = (redulink.read_artifact(warm_path), data)
-        rows.extend(evaluate_artifact("public-artifact", label, data,
+        rows.extend(evaluate_artifact(args.family, label, data,
                                       chunk_size=args.chunk_size, warm_fraction=args.warm_fraction,
                                       warm_update=warm_update))
 
