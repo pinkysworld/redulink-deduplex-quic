@@ -32,6 +32,7 @@ benchmarks/run_external_object_workload_suite.py
 benchmarks/run_journal_block_size_sensitivity.py
 benchmarks/run_journal_workload_suite.sh
 benchmarks/run_public_artifacts.sh
+benchmarks/run_pypi_object_trace.py
 benchmarks/run_quic_bottleneck_emulation.py
 benchmarks/run_quic_competing_flows.py
 benchmarks/run_quic_flow_comparison.py
@@ -66,6 +67,7 @@ docs/internal_peer_review_v2_8.md
 docs/internal_peer_review_v2_9.md
 docs/internal_peer_review_v3_0.md
 docs/internal_peer_review_v3_1.md
+docs/new_evidence_v3_2.md
 docs/peer_review_v2_8.md
 docs/peer_review_v2_8_round2.md
 docs/peer_review_v2_9_round3.md
@@ -102,8 +104,8 @@ figures/target_class/savings_warm_update.png
 paper/README.md
 paper/evidence_tables.md
 paper/submission/README.md
-paper/submission/ReduLink_journal_ready_v3_1.docx
-paper/submission/ReduLink_journal_ready_v3_1.pdf
+paper/submission/ReduLink_journal_ready_v3_2.docx
+paper/submission/ReduLink_journal_ready_v3_2.pdf
 prototypes/README.md
 prototypes/redulink_aioquic_experiment.py
 prototypes/redulink_authenticated_udp_experiment.py
@@ -133,6 +135,8 @@ results/journal_workload_suite.csv.metadata.json
 results/paper_real_artifact_cdc_selected.csv
 results/public_artifact_suite.csv
 results/public_artifact_suite.csv.metadata.json
+results/pypi_object_trace.csv
+results/pypi_object_trace.json
 results/quic_bottleneck_emulation.csv
 results/quic_bottleneck_emulation.json
 results/quic_competing_flows.csv
@@ -159,6 +163,7 @@ scripts/build_manuscript_v2_8.py
 scripts/build_manuscript_v2_9.py
 scripts/build_manuscript_v3_0.py
 scripts/build_manuscript_v3_1.py
+scripts/build_manuscript_v3_2.py
 scripts/check_manuscript_citations.py
 scripts/make_journal_figures_v2_8.py
 scripts/plot_quic_flow_comparison.py
@@ -183,6 +188,7 @@ tests/test_key_schedule.py
 tests/test_miss_rate_and_accounting.py
 tests/test_plot_results.py
 tests/test_public_manifest_validation.py
+tests/test_pypi_object_trace.py
 tests/test_quic_competing_flows.py
 tests/test_random_negative_control.py
 tests/test_real_workload_manifest.py

@@ -1,6 +1,6 @@
 # Reference audit
 
-The manuscript contains 22 numbered references and every numbered reference is
+The manuscript contains 25 numbered references and every numbered reference is
 cited before the reference list. The automated checker is:
 
 ```bash
@@ -20,6 +20,8 @@ Reference roles:
 - [19]-[22] establish the HTTP delta / shared-dictionary lineage (RFC 3229 delta
   encoding, VCDIFF/RFC 3284, SDCH, and RFC 9842 Compression Dictionary Transport)
   against which ReduLink is differentiated.
+- [23]-[24] (HMAC RFC 2104, HKDF RFC 5869) ground the formal security analysis
+  in Section 4.5; [25] (Jain fairness index) supports the competing-flow metric.
 
 [11] is cited as W. Xia et al. (FastCDC, IEEE TPDS 2020); [19]-[22] are the
 nearest receiver-side-reuse prior work and are contrasted in Section 3.3.
