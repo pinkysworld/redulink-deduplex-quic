@@ -2,11 +2,11 @@
 
 The reviewer-facing manuscript files are:
 
-- `paper/submission/ReduLink_journal_ready_v3_0.docx`
-- `paper/submission/ReduLink_journal_ready_v3_0.pdf`
+- `paper/submission/ReduLink_journal_ready_v3_1.docx`
+- `paper/submission/ReduLink_journal_ready_v3_1.pdf`
 
 The manuscript is generated from package evidence by:
 
 ```bash
-python3 scripts/build_manuscript_v3_0.py
+python3 scripts/build_manuscript_v3_1.py
 ```

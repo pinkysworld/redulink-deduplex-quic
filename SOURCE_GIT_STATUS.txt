@@ -1,1 +1,1 @@
-ReduLink journal-ready v3.0 (round-3 peer-review-adapted); manuscript and evidence regenerated from committed result files.
+ReduLink journal-ready v3.1 (round-4 strict-review-adapted); manuscript and evidence regenerated from committed result files.
