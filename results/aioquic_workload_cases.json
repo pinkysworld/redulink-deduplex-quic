@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "approx_ipv4_udp_bytes_seen_total": 38238,
+      "approx_ipv4_udp_multiplier_seen": 2.570846,
+      "input_bytes": 98304,
+      "label": "demo-positive",
+      "notes": "constructed byte-stable warm update",
+      "reconstruction_ok": true,
+      "repair_full_frames": 13,
+      "semantic_misses": 13,
+      "sha256": "a5912ca4ceff291d846032d645fea1b634646bb67bd0414ca27d2e71f8408044",
+      "stream_payload_bytes": 30817,
+      "stream_payload_multiplier": 3.189928,
+      "udp_payload_bytes_seen_total": 36810
+    },
+    {
+      "approx_ipv4_udp_bytes_seen_total": 312661,
+      "approx_ipv4_udp_multiplier_seen": 0.838742,
+      "input_bytes": 262242,
+      "label": "independent-compressed-negative",
+      "notes": "independent compressed negative control",
+      "reconstruction_ok": true,
+      "repair_full_frames": 0,
+      "semantic_misses": 0,
+      "sha256": "b3c7aa366694a35c9e4d7af6c1873f64a30ab1d9915f0bd871171d943173325c",
+      "stream_payload_bytes": 287351,
+      "stream_payload_multiplier": 0.912619,
+      "udp_payload_bytes_seen_total": 303253
+    },
+    {
+      "approx_ipv4_udp_bytes_seen_total": 151617,
+      "approx_ipv4_udp_multiplier_seen": 3.457976,
+      "input_bytes": 524288,
+      "label": "external-positive-redis-layered",
+      "notes": "layer-like positive corpus derived from public Redis bytes",
+      "reconstruction_ok": true,
+      "repair_full_frames": 72,
+      "semantic_misses": 72,
+      "sha256": "21247f4b721a01ed9cdfce500a0bb8f1b196d16b53ac42d01c70d7ed55c7a3ca",
+      "stream_payload_bytes": 136755,
+      "stream_payload_multiplier": 3.833776,
+      "udp_payload_bytes_seen_total": 146857
+    }
+  ]
+}

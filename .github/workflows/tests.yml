@@ -64,3 +64,6 @@ jobs:
         run: python benchmarks/run_aioquic_scaling_experiment.py --blocks 96
       - name: Portable QUIC bottleneck emulation
         run: python benchmarks/run_quic_bottleneck_emulation.py
+
+      - name: External object-sequence public workload suite
+        run: python benchmarks/run_external_object_workload_suite.py

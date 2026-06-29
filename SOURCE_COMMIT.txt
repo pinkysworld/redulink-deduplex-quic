@@ -1,4 +1,1 @@
-derived-from: ReduLink_systems_ready_v2_2_2026-06-26.zip and ReduLink_journal_ready_v2_3_2026-06-26
-package: ReduLink_journal_ready_v2_4_2026-06-26
-git-commit: see the Git commit containing this v2.4 package metadata
-source-repository: https://github.com/pinkysworld/redulink-deduplex-quic
+artifact-export-v2.8-2026-06-29

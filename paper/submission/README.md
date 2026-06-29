@@ -1,8 +1,11 @@
-# Manuscript files
+# Manuscript submission files
 
-This folder contains the v2.4 journal-ready manuscript files for the ReduLink submission package.
+Primary manuscript files:
 
-- `ReduLink_journal_ready_v2_4.docx`
-- `ReduLink_journal_ready_v2_4.pdf`
+- `ReduLink_journal_ready_v2_8.docx`
+- `ReduLink_journal_ready_v2_8.pdf`
 
-The v2.4 manuscript lengthens the paper, adds independently curated public source-release results, real rsync baselines, local UDP datagram-byte accounting, expanded related work, methodology, security/privacy, implementation rationale, fairness limits, and limitations, and removes version-specific claim language from the abstract and conclusion.
+The DOCX is regenerated from the committed result files by
+`scripts/build_manuscript_v2_8.py` (figures by `scripts/make_journal_figures_v2_8.py`),
+so every table and figure can be reproduced from the artifact. The DOCX metadata
+identifies Michél Nguyen and University of the People.

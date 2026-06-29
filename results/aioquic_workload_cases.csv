@@ -1,0 +1,4 @@
+label,notes,input_bytes,stream_payload_bytes,stream_payload_multiplier,udp_payload_bytes_seen_total,approx_ipv4_udp_bytes_seen_total,approx_ipv4_udp_multiplier_seen,semantic_misses,repair_full_frames,reconstruction_ok,sha256
+demo-positive,constructed byte-stable warm update,98304,30817,3.189928,36810,38238,2.570846,13,13,True,a5912ca4ceff291d846032d645fea1b634646bb67bd0414ca27d2e71f8408044
+independent-compressed-negative,independent compressed negative control,262242,287351,0.912619,303253,312661,0.838742,0,0,True,b3c7aa366694a35c9e4d7af6c1873f64a30ab1d9915f0bd871171d943173325c
+external-positive-redis-layered,layer-like positive corpus derived from public Redis bytes,524288,136755,3.833776,146857,151617,3.457976,72,72,True,21247f4b721a01ed9cdfce500a0bb8f1b196d16b53ac42d01c70d7ed55c7a3ca

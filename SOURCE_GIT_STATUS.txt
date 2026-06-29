@@ -1,2 +1,1 @@
-v2.4 journal package generated from the v2.3 working package after addressing the hard peer-review findings.
-The package folder is a standalone submission artifact; the synchronized Git repository is https://github.com/pinkysworld/redulink-deduplex-quic.
+ReduLink journal-ready v2.8 (peer-review-adapted); manuscript and evidence regenerated from committed result files.

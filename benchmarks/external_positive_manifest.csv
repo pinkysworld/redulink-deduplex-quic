@@ -1,0 +1,2 @@
+label,workload,old_path,new_path,chunker,chunk_size,notes,old_sha256,new_sha256,old_bytes,new_bytes
+redis-layered-public-positive,external-public-layered-positive,data/external_positive_corpora/redis-layered-public-positive/warm.bin,data/external_positive_corpora/redis-layered-public-positive/update.bin,fixed,4096,Layer-like positive corpus derived from included public Redis release bytes; not a production trace.,77ed05d0aada3ff2a001206b62ff0d133f40e41487402650380975c0949dab66,21247f4b721a01ed9cdfce500a0bb8f1b196d16b53ac42d01c70d7ed55c7a3ca,524288,524288

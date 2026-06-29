@@ -1,0 +1,42 @@
+{
+  "raw_client_ms": {
+    "max": 245.474,
+    "mean": 227.04366666666667,
+    "median": 229.714,
+    "min": 205.943,
+    "n": 3,
+    "stdev": 19.9003266388603
+  },
+  "raw_stream_multiplier": {
+    "max": 1.0,
+    "mean": 1.0,
+    "median": 1.0,
+    "min": 1.0,
+    "n": 3,
+    "stdev": 0.0
+  },
+  "redulink_client_ms": {
+    "max": 140.401,
+    "mean": 137.07600000000002,
+    "median": 138.836,
+    "min": 131.991,
+    "n": 3,
+    "stdev": 4.4727200896099
+  },
+  "redulink_stream_multiplier": {
+    "max": 3.189928,
+    "mean": 3.189928,
+    "median": 3.189928,
+    "min": 3.189928,
+    "n": 3,
+    "stdev": 0.0
+  },
+  "redulink_udp_est_multiplier": {
+    "max": 2.582666,
+    "mean": 2.578853,
+    "median": 2.578939,
+    "min": 2.574954,
+    "n": 3,
+    "stdev": 0.0038567192016013604
+  }
+}

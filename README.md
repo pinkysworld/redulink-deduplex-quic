@@ -1,53 +1,45 @@
-# ReduLink journal-ready artifact package
+# ReduLink journal-ready package v2.8
 
-This package accompanies the manuscript **ReduLink: Authenticated Reference Substitution for Redundancy-Suppressed Transfers over Encrypted QUIC Streams** by Michél Nguyen, University of the People, ORCID 0000-0001-6834-4422.
+This package contains the ReduLink manuscript and reproducibility artifact for an applied networking/systems journal submission.
 
-The artifact implements a scoped, endpoint-controlled ReduLink representation layer and evaluates it through offline reconstruction, authenticated frame validation, native aioquic QUIC stream mapping, deterministic loss, scaling, component-cost measurements, external public source-release snapshots, and portable bottleneck-emulation analysis. The implementation is intentionally scoped as a **native QUIC stream mapping**, not as custom QUIC extension-frame parsing.
+## Main manuscript
 
-## Key files
+- DOCX: `paper/submission/ReduLink_journal_ready_v2_8.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v2_8.pdf`
+- Build source: `scripts/build_manuscript_v2_8.py` (figures: `scripts/make_journal_figures_v2_8.py`)
 
-- Manuscript DOCX: `paper/submission/ReduLink_journal_ready_v2_4.docx`
-- Manuscript PDF: `paper/submission/ReduLink_journal_ready_v2_4.pdf`
-- Core model: `src/redulink_model.py`
-- Authenticated model: `src/redulink_secure.py`
-- Binary stream format: `src/redulink_wire.py`
-- Exporter-style artifact key schedule: `src/redulink_key_schedule.py`
-- Native aioquic prototype: `prototypes/redulink_aioquic_experiment.py`
-- Real-workload manifest runner: `benchmarks/run_real_workload_manifest.py`
-- External public corpus fetcher: `benchmarks/fetch_external_public_corpora.py`
-- Real rsync baseline runner: `benchmarks/run_rsync_baseline_manifest.py`
-- Scaling experiment: `benchmarks/run_aioquic_scaling_experiment.py`
-- Bottleneck emulation: `benchmarks/run_quic_bottleneck_emulation.py`
-- Internal peer review notes: `docs/internal_peer_review_v2_2.md`
-- Evidence hierarchy: `docs/evidence_hierarchy_v2_4.md`
+## Claim boundary
 
-## Quick validation
+ReduLink is authenticated, scoped, QUIC-compatible reference substitution for selected warm-state transfers. It is not a new matching algorithm, not a universal accelerator, not a replacement for compression or rsync, and not a custom QUIC extension-frame implementation. The native QUIC artifact maps compact binary ReduLink records into encrypted aioquic streams.
 
-Install dependencies first:
+## What is implemented
 
-```bash
-python3 -m pip install -r requirements-dev.txt
-```
+- Authenticated FULL/REF/MISS-style reference substitution model.
+- Compact binary ReduLink stream messages over native aioquic QUIC streams.
+- Exporter-style HKDF key schedule model for context separation.
+- Tamper, replay, wrong-scope, wrong-epoch, wrong-stream, wrong-offset, and wrong-length tests.
+- Deterministic journal fixtures, public source-release negative pairs, object-aligned public release workloads, and one Redis-derived layer-like public positive workload.
+- Real rsync baselines, compression baselines, block-size sensitivity, repeated QUIC trials, component-cost measurements, and conservative accounting-layer separation.
 
-Then run:
+## Validation commands
+
+Fast reviewer smoke validation:
 
 ```bash
-python3 -m unittest discover -s tests
-python3 scripts/check_manuscript_citations.py
-python3 benchmarks/generate_target_corpora.py
-python3 benchmarks/check_generated_artifacts.py
-python3 benchmarks/run_component_performance.py
-python3 benchmarks/fetch_external_public_corpora.py
-python3 benchmarks/run_real_workload_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/external_public_suite.csv
-python3 benchmarks/run_rsync_baseline_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/rsync_baseline_external_public.csv
-python3 benchmarks/run_aioquic_scaling_experiment.py
-python3 benchmarks/run_quic_bottleneck_emulation.py
+python3 scripts/run_smoke_validation.py
 ```
 
-Most tests that require aioquic skip when aioquic is unavailable, so non-QUIC artifact checks remain reviewable in minimal environments.
+Full validation:
 
-## Scope
+```bash
+python3 scripts/run_full_validation.py
+```
 
-Implemented: byte-exact FULL/REF reconstruction, authenticated frame validation, replay/tamper rejection, semantic MISS/FULL repair, compact binary stream encoding, native aioquic stream mapping, deterministic loss proxy, local UDP datagram-byte accounting, component-cost reporting, deterministic workload fixtures, pinned public text fixtures, hash-pinned external public source-release snapshots, real rsync baseline runs, reviewer-supplied workload manifest runner, scaling measurements, and bottleneck-emulation analysis over measured QUIC stream payload bytes.
+The full suite includes integration and aioquic-dependent tests. If aioquic is unavailable, those tests skip gracefully. Install `requirements-dev.txt` for complete QUIC stream validation.
 
-Not implemented: custom QUIC extension frames, QUIC transport-parameter negotiation, direct TLS exporter extraction from aioquic internals, 0-RTT dictionary enforcement inside the transport, migration-policy enforcement, production-scale OCI/VM/Git-pack corpora, and kernel netem/tc multi-flow congestion experiments.
+## Important limitations
+
+- The artifact uses native QUIC stream mapping, not custom QUIC extension frames or transport parameters.
+- The key schedule is exporter-style and context separated, but does not use live private QUIC TLS exporter bytes.
+- Public object-aligned workloads are derived from real public release bytes, but are transfer-model evidence, not captured production registry traces.
+- Fairness evidence is conservative: stream payload accounting, local UDP/IPv4 estimates, and emulation rather than a full `tc/netem` or Mininet congestion-control study.

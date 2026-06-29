@@ -1,0 +1,4 @@
+trial,raw_stream_multiplier,raw_client_ms,redulink_stream_multiplier,redulink_udp_est_multiplier,redulink_client_ms,redulink_reconstruction_ok
+1,1.0,245.474,3.189928,2.578939,138.836,True
+2,1.0,229.714,3.189928,2.582666,131.991,True
+3,1.0,205.943,3.189928,2.574954,140.401,True

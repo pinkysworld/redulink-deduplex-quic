@@ -1,29 +1,20 @@
-# Reference and Citation Audit, Version 2.4
+# Reference audit
 
-Scope: `paper/submission/ReduLink_journal_ready_v2_4.docx`, reference list, and visible in-text numeric citations.
-
-Automated check:
+The manuscript contains 18 numbered references and every numbered reference is cited before the reference list. The automated checker is:
 
 ```bash
 python3 scripts/check_manuscript_citations.py
 ```
 
-Expected result:
+Reference roles:
 
-```text
-citation check OK: 18 references, 18 cited in manuscript body
-```
+- [1]-[4] establish redundancy elimination, enterprise redundancy, SmartRE, and EndRE.
+- [5] establishes the low-bandwidth file-system / file-delta context.
+- [6]-[10] establish QUIC transport, QUIC TLS, loss recovery, applicability, and manageability.
+- [11]-[13] establish content-defined chunking and chunking-attack context.
+- [14] provides Ethernet line-rate context.
+- [15] cites the ReduLink artifact.
+- [16]-[17] establish deduplication privacy and server-aided deduplication context.
+- [18] cites the aioquic implementation used for the native QUIC stream-mapping artifact.
 
-Manual audit notes:
-
-- References [1]-[5] cover classical redundancy elimination, SmartRE, enterprise redundancy findings, EndRE, and LBFS.
-- References [6]-[10] cover QUIC transport, TLS for QUIC, loss/congestion recovery, applicability, and manageability.
-- References [11]-[13] cover content-defined chunking performance, CDC behavior, and chunking attacks.
-- Reference [14] supports Ethernet/physical line-rate context.
-- Reference [15] is the artifact/repository reference.
-- References [16]-[17] cover deduplication side channels and server-aided encryption for deduplicated storage.
-- Reference [18] documents aioquic as a Python QUIC/HTTP/3 implementation and supports the native aioquic stream-mapping experiment.
-
-No uncited references or dangling citation numbers were found by the checker.
-
-Open bibliography strengthening item: add full metadata for modern rsync/zsync/xdelta-style delta-transfer comparators and QUIC measurement papers if this is submitted to a high-selectivity systems journal.
+The manuscript deliberately avoids using the artifact citation [15] as a substitute for prior research citations.
