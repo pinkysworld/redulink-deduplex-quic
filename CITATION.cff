@@ -8,7 +8,7 @@ authors:
     orcid: "https://orcid.org/0000-0001-6834-4422"
     affiliation: "University of the People"
 year: 2026
-version: "2.9"
+version: "3.0"
 repository-code: "https://github.com/pinkysworld/redulink-deduplex-quic"
 abstract: "ReduLink studies authenticated, scoped reference substitution for redundancy-suppressed transfers over encrypted QUIC streams. It provides a representation-layer model, secure frame binding tests, native aioquic compact-binary stream mapping, deterministic loss testing, raw QUIC comparison, local UDP datagram-byte accounting, scripted journal workload fixtures, hash-pinned public source-release snapshots, object-aligned public release workloads, real rsync baseline runs, component-cost measurements, repeated QUIC trials, block-size sensitivity, and conservative fairness accounting."
 keywords:
