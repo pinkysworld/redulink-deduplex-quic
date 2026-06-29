@@ -60,9 +60,12 @@ data/journal_corpora/scripted-structured-logs/update.bin
 data/journal_corpora/scripted-structured-logs/warm.bin
 docs/evidence_hierarchy_v2_7.md
 docs/evidence_hierarchy_v2_8.md
+docs/evidence_hierarchy_v2_9.md
 docs/internal_peer_review_v2_7.md
 docs/internal_peer_review_v2_8.md
+docs/internal_peer_review_v2_9.md
 docs/peer_review_v2_8.md
+docs/peer_review_v2_8_round2.md
 docs/protocol_summary.md
 docs/reference_audit.md
 docs/threat_model.md
@@ -95,8 +98,8 @@ figures/target_class/savings_warm_update.png
 paper/README.md
 paper/evidence_tables.md
 paper/submission/README.md
-paper/submission/ReduLink_journal_ready_v2_8.docx
-paper/submission/ReduLink_journal_ready_v2_8.pdf
+paper/submission/ReduLink_journal_ready_v2_9.docx
+paper/submission/ReduLink_journal_ready_v2_9.pdf
 prototypes/README.md
 prototypes/redulink_aioquic_experiment.py
 prototypes/redulink_authenticated_udp_experiment.py
@@ -149,6 +152,7 @@ results/wire_fairness_accounting.csv
 results/wire_fairness_accounting.json
 scripts/build_manuscript_v2_7.py
 scripts/build_manuscript_v2_8.py
+scripts/build_manuscript_v2_9.py
 scripts/check_manuscript_citations.py
 scripts/make_journal_figures_v2_8.py
 scripts/plot_quic_flow_comparison.py

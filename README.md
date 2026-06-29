@@ -1,12 +1,12 @@
-# ReduLink journal-ready package v2.8
+# ReduLink journal-ready package v2.9
 
 This package contains the ReduLink manuscript and reproducibility artifact for an applied networking/systems journal submission.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v2_8.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v2_8.pdf`
-- Build source: `scripts/build_manuscript_v2_8.py` (figures: `scripts/make_journal_figures_v2_8.py`)
+- DOCX: `paper/submission/ReduLink_journal_ready_v2_9.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v2_9.pdf`
+- Build source: `scripts/build_manuscript_v2_9.py` (figures: `scripts/make_journal_figures_v2_8.py`)
 
 ## Claim boundary
 

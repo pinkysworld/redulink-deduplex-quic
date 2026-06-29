@@ -1,6 +1,7 @@
 # Reference audit
 
-The manuscript contains 18 numbered references and every numbered reference is cited before the reference list. The automated checker is:
+The manuscript contains 22 numbered references and every numbered reference is
+cited before the reference list. The automated checker is:
 
 ```bash
 python3 scripts/check_manuscript_citations.py
@@ -16,5 +17,9 @@ Reference roles:
 - [15] cites the ReduLink artifact.
 - [16]-[17] establish deduplication privacy and server-aided deduplication context.
 - [18] cites the aioquic implementation used for the native QUIC stream-mapping artifact.
+- [19]-[22] establish the HTTP delta / shared-dictionary lineage (RFC 3229 delta
+  encoding, VCDIFF/RFC 3284, SDCH, and RFC 9842 Compression Dictionary Transport)
+  against which ReduLink is differentiated.
 
-The manuscript deliberately avoids using the artifact citation [15] as a substitute for prior research citations.
+[11] is cited as W. Xia et al. (FastCDC, IEEE TPDS 2020); [19]-[22] are the
+nearest receiver-side-reuse prior work and are contrasted in Section 3.3.
