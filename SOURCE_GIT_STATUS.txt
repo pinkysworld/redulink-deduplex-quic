@@ -1,1 +1,1 @@
-ReduLink journal-ready v3.2 (new evidence: independent PyPI trace, 12-round measured fairness, formal security analysis).
+ReduLink journal-ready v3.3 (round-5 + external review adapted); manuscript and evidence regenerated from committed result files.
