@@ -1,4 +1,7 @@
-payload_blocks,input_bytes,stream_payload_bytes,stream_payload_multiplier,semantic_misses,repair_full_frames,client_elapsed_ms,reconstruction_ok,loss_every
-96,98304,30816,3.190031,13,13,123.954,True,0
-512,524288,138922,3.773974,73,73,192.879,True,0
-1024,1048576,271006,3.869198,146,146,260.416,True,0
+payload_blocks,dictionary_budget_chunks,input_bytes,stream_payload_bytes,stream_payload_multiplier,semantic_misses,repair_full_frames,client_elapsed_ms,reconstruction_ok,loss_every
+96,8192,98304,30816,3.190031,13,13,98.397,True,0
+512,8192,524288,138922,3.773974,73,73,123.71,True,0
+1024,8192,1048576,271006,3.869198,146,146,145.767,True,0
+4096,8192,4194304,1064628,3.93969,585,585,229.08,True,0
+16384,8192,16777216,18334399,0.915068,0,0,1305.313,True,0
+16384,24576,16777216,4237960,3.958795,2340,2340,592.041,True,0

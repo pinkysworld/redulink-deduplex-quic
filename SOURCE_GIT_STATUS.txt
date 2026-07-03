@@ -1,1 +1,1 @@
-ReduLink journal-ready v3.4 (round-6 internal + second external review adapted; adds measured userspace path-emulation evidence).
+ReduLink journal-ready v3.5 (final external review adapted; adds 16 MiB scaling with dictionary-budget overflow/recovery finding).

@@ -1,14 +1,14 @@
-# ReduLink journal-ready package v3.4
+# ReduLink journal-ready package v3.5
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.4-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.5-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_4.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_4.pdf`
-- Build source: `scripts/build_manuscript_v3_4.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_5.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_5.pdf`
+- Build source: `scripts/build_manuscript_v3_5.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed

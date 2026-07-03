@@ -27,17 +27,25 @@ except SystemExit as exc:  # pragma: no cover
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--blocks", type=int, nargs="+", default=[96, 512, 1024])
+    p.add_argument("--budgets", type=int, nargs="+", default=None,
+                   help="dictionary budget (max chunks) per blocks entry; single value broadcasts")
     p.add_argument("--loss-every", type=int, default=0)
     p.add_argument("--output-csv", type=Path, default=ROOT / "results" / "aioquic_scaling_experiment.csv")
     p.add_argument("--output-json", type=Path, default=ROOT / "results" / "aioquic_scaling_experiment.json")
     args = p.parse_args()
     rows = []
     results = []
-    for blocks in args.blocks:
-        stats = run_experiment(payload_blocks=blocks, wire_format="binary", loss_every=args.loss_every)
+    budgets = args.budgets or [None] * len(args.blocks)
+    if len(budgets) == 1:
+        budgets = budgets * len(args.blocks)
+    if len(budgets) != len(args.blocks):
+        raise SystemExit("--budgets must match --blocks length (or be a single value)")
+    for blocks, budget in zip(args.blocks, budgets):
+        stats = run_experiment(payload_blocks=blocks, wire_format="binary", loss_every=args.loss_every, max_dict_chunks=budget)
         results.append(stats)
         rows.append({
             "payload_blocks": blocks,
+            "dictionary_budget_chunks": budget if budget else 8192,
             "input_bytes": stats["input_bytes"],
             "stream_payload_bytes": stats["quic_stream_payload_total_bytes"],
             "stream_payload_multiplier": stats["quic_stream_payload_multiplier_after_repair"],

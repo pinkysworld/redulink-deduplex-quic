@@ -112,14 +112,15 @@ def msg_to_frame(msg: dict[str, Any]) -> secure.SecureFrame:
 
 
 def build_secure_dictionary(data: bytes, *, secret: bytes, epoch: int, scope: str,
-                            chunker: str, chunk_size: int) -> OrderedDict[str, bytes]:
+                            chunker: str, chunk_size: int,
+                            max_dict_chunks: int | None = None) -> OrderedDict[str, bytes]:
     d: OrderedDict[str, bytes] = OrderedDict()
     for chunk in redulink.make_chunks(data, chunker, chunk_size):
         redulink.touch_lru(
             d,
             secure.secure_cid(chunk, secret=secret, epoch=epoch, scope=scope),
             chunk,
-            redulink.MAX_DICT_CHUNKS,
+            max_dict_chunks or redulink.MAX_DICT_CHUNKS,
         )
     return d
 
@@ -214,8 +215,10 @@ def write_self_signed_cert(directory: Path) -> tuple[Path, Path]:
 
 class QuicReduLinkServer:
     def __init__(self, *, warm: bytes, expected_sha256: str, secret: bytes, epoch: int, scope: str,
-                 stream_id: int, chunker: str, chunk_size: int, missing_every: int):
-        full = build_secure_dictionary(warm, secret=secret, epoch=epoch, scope=scope, chunker=chunker, chunk_size=chunk_size)
+                 stream_id: int, chunker: str, chunk_size: int, missing_every: int,
+                 max_dict_chunks: int | None = None):
+        self.max_dict_chunks = max_dict_chunks or redulink.MAX_DICT_CHUNKS
+        full = build_secure_dictionary(warm, secret=secret, epoch=epoch, scope=scope, chunker=chunker, chunk_size=chunk_size, max_dict_chunks=self.max_dict_chunks)
         self.dictionary = thin_dictionary(full, missing_every=missing_every)
         self.initial_dictionary_entries = len(self.dictionary)
         self.expected_sha256 = expected_sha256
@@ -311,7 +314,7 @@ class QuicReduLinkServer:
                             auth_failures += 1
                             missing.append({"seq": seq, "error": "FULL cid mismatch"})
                             continue
-                        redulink.touch_lru(self.dictionary, frame.cid, frame.payload, redulink.MAX_DICT_CHUNKS)
+                        redulink.touch_lru(self.dictionary, frame.cid, frame.payload, self.max_dict_chunks)
                         self.delivered[seq] = frame.payload
                         full_frames += 1
                         if bool(msg.get("repair", False)):
@@ -402,7 +405,8 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
 
 async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every: int,
                     wire_format: str = "binary", loss_every: int = 0,
-                    account_datagrams: bool = False, shaper: Any = None) -> dict[str, Any]:
+                    account_datagrams: bool = False, shaper: Any = None,
+                    max_dict_chunks: int | None = None) -> dict[str, Any]:
     global WIRE_FORMAT
     WIRE_FORMAT = wire_format
     master_secret = b"redulink-aioquic-artifact-master-secret"
@@ -428,8 +432,9 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         stream_id=stream_id,
         chunker="fixed",
         chunk_size=chunk_size,
+        max_dict_chunks=max_dict_chunks or redulink.MAX_DICT_CHUNKS,
     )
-    sender_dict = build_secure_dictionary(warm, secret=secret, epoch=epoch, scope=scope, chunker="fixed", chunk_size=chunk_size)
+    sender_dict = build_secure_dictionary(warm, secret=secret, epoch=epoch, scope=scope, chunker="fixed", chunk_size=chunk_size, max_dict_chunks=max_dict_chunks)
 
     with tempfile.TemporaryDirectory(prefix="redulink-aioquic-") as tmp:
         cert_path, key_path = write_self_signed_cert(Path(tmp))
@@ -448,6 +453,7 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
             chunker="fixed",
             chunk_size=chunk_size,
             missing_every=missing_every,
+            max_dict_chunks=max_dict_chunks,
         )
 
         def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -554,7 +560,7 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
 
 def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_format: str = "binary",
                    loss_every: int = 0, payload_blocks: int = 96,
-                   account_datagrams: bool = False) -> dict[str, Any]:
+                   account_datagrams: bool = False, max_dict_chunks: int | None = None) -> dict[str, Any]:
     warm, data = demo_payload(payload_blocks)
     return asyncio.run(run_async(
         warm=warm,
@@ -564,6 +570,7 @@ def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_forma
         wire_format=wire_format,
         loss_every=loss_every,
         account_datagrams=account_datagrams,
+        max_dict_chunks=max_dict_chunks,
     ))
 
 
