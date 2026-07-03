@@ -1,1 +1,1 @@
-ReduLink journal-ready v3.3 (round-5 + external review adapted); manuscript and evidence regenerated from committed result files.
+ReduLink journal-ready v3.4 (round-6 internal + second external review adapted; adds measured userspace path-emulation evidence).

@@ -35,6 +35,7 @@ benchmarks/run_public_artifacts.sh
 benchmarks/run_pypi_object_trace.py
 benchmarks/run_quic_bottleneck_emulation.py
 benchmarks/run_quic_competing_flows.py
+benchmarks/run_quic_emulated_path.py
 benchmarks/run_quic_flow_comparison.py
 benchmarks/run_real_workload_manifest.py
 benchmarks/run_repeated_quic_trials.py
@@ -63,18 +64,21 @@ docs/evidence_hierarchy_v2_7.md
 docs/evidence_hierarchy_v2_8.md
 docs/evidence_hierarchy_v2_9.md
 docs/evidence_hierarchy_v3_3.md
+docs/evidence_hierarchy_v3_4.md
 docs/internal_peer_review_v2_7.md
 docs/internal_peer_review_v2_8.md
 docs/internal_peer_review_v2_9.md
 docs/internal_peer_review_v3_0.md
 docs/internal_peer_review_v3_1.md
 docs/internal_peer_review_v3_3.md
+docs/internal_peer_review_v3_4.md
 docs/new_evidence_v3_2.md
 docs/peer_review_v2_8.md
 docs/peer_review_v2_8_round2.md
 docs/peer_review_v2_9_round3.md
 docs/peer_review_v3_0_round4_strict.md
 docs/peer_review_v3_2_round5.md
+docs/peer_review_v3_3_round6.md
 docs/protocol_summary.md
 docs/reference_audit.md
 docs/threat_model.md
@@ -107,8 +111,8 @@ figures/target_class/savings_warm_update.png
 paper/README.md
 paper/evidence_tables.md
 paper/submission/README.md
-paper/submission/ReduLink_journal_ready_v3_3.docx
-paper/submission/ReduLink_journal_ready_v3_3.pdf
+paper/submission/ReduLink_journal_ready_v3_4.docx
+paper/submission/ReduLink_journal_ready_v3_4.pdf
 prototypes/README.md
 prototypes/redulink_aioquic_experiment.py
 prototypes/redulink_authenticated_udp_experiment.py
@@ -144,6 +148,8 @@ results/quic_bottleneck_emulation.csv
 results/quic_bottleneck_emulation.json
 results/quic_competing_flows.csv
 results/quic_competing_flows.json
+results/quic_emulated_path.csv
+results/quic_emulated_path.json
 results/quic_flow_comparison.csv
 results/quic_flow_comparison.json
 results/real_workload_suite.csv
@@ -168,6 +174,7 @@ scripts/build_manuscript_v3_0.py
 scripts/build_manuscript_v3_1.py
 scripts/build_manuscript_v3_2.py
 scripts/build_manuscript_v3_3.py
+scripts/build_manuscript_v3_4.py
 scripts/check_manuscript_citations.py
 scripts/make_journal_figures_v2_8.py
 scripts/plot_quic_flow_comparison.py
@@ -194,6 +201,7 @@ tests/test_plot_results.py
 tests/test_public_manifest_validation.py
 tests/test_pypi_object_trace.py
 tests/test_quic_competing_flows.py
+tests/test_quic_emulated_path.py
 tests/test_random_negative_control.py
 tests/test_real_workload_manifest.py
 tests/test_reconstruction.py

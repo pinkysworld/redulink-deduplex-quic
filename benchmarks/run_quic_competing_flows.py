@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Live QUIC competing-flow smoke experiment.
 
-Two independent aioquic connections run concurrently through two localhost UDP
-proxy ports that share one token-bucket-like shaped link. One flow sends the
+Two independent aioquic connections run concurrently over a shared localhost
+schedule (no rate shaping in this experiment; see run_quic_emulated_path.py for
+the measured shaped-path experiment). One flow sends the
 update as a raw QUIC stream. The other sends the same update through ReduLink's
 binary QUIC stream mapping. The experiment is intentionally small and
 reproducible; it is not an Internet fairness study. It checks that ReduLink's

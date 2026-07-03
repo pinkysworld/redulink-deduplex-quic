@@ -40,7 +40,7 @@ def _pack_stats(stats: dict) -> bytes:
 
 
 async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 4096,
-                        account_datagrams: bool = False) -> dict:
+                        account_datagrams: bool = False, shaper=None) -> dict:
     expected = hashlib.sha256(data).hexdigest()
     with tempfile.TemporaryDirectory(prefix="redulink-raw-quic-") as tmp:
         cert, key = write_self_signed_cert(Path(tmp))
@@ -76,9 +76,9 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
         proxy_transport = None
         proxy_protocol = None
         port = server_port
-        if loss_every > 0 or account_datagrams:
+        if loss_every > 0 or account_datagrams or shaper is not None:
             loop = asyncio.get_running_loop()
-            proxy_protocol = LossyUdpProxy(("127.0.0.1", server_port), loss_every=loss_every)
+            proxy_protocol = LossyUdpProxy(("127.0.0.1", server_port), loss_every=loss_every, shaper=shaper)
             proxy_transport, _ = await loop.create_datagram_endpoint(lambda: proxy_protocol, local_addr=("127.0.0.1", 0))
             port = int(proxy_transport.get_extra_info("sockname")[1])
         start = time.perf_counter()

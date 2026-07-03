@@ -1,45 +1,76 @@
-# ReduLink journal-ready package v3.3
+# ReduLink journal-ready package v3.4
 
-This package contains the ReduLink manuscript and reproducibility artifact for an applied networking/systems journal submission.
+This package contains the ReduLink manuscript and reproducibility artifact for an
+applied networking/systems journal submission. The submission snapshot is tagged
+`v3.4-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_3.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_3.pdf`
-- Build source: `scripts/build_manuscript_v3_3.py` (figures: `scripts/make_journal_figures_v2_8.py`)
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_4.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_4.pdf`
+- Build source: `scripts/build_manuscript_v3_4.py`
+  (figures: `scripts/make_journal_figures_v2_8.py`)
+
+Every table and figure in the manuscript is regenerated from the committed
+result files, so the reported numbers can be reproduced from this artifact.
 
 ## Claim boundary
 
-ReduLink is authenticated, scoped, QUIC-compatible reference substitution for selected warm-state transfers. It is not a new matching algorithm, not a universal accelerator, not a replacement for compression or rsync, and not a custom QUIC extension-frame implementation. The native QUIC artifact maps compact binary ReduLink records into encrypted aioquic streams.
-
-## What is implemented
-
-- Authenticated FULL/REF/MISS-style reference substitution model.
-- Compact binary ReduLink stream messages over native aioquic QUIC streams.
-- Exporter-style HKDF key schedule model for context separation.
-- Tamper, replay, wrong-scope, wrong-epoch, wrong-stream, wrong-offset, and wrong-length tests.
-- Deterministic journal fixtures, public source-release negative pairs, object-aligned public release workloads, and one Redis-derived layer-like public positive workload.
-- Real rsync baselines, compression baselines, block-size sensitivity, repeated QUIC trials, component-cost measurements, and conservative accounting-layer separation.
+ReduLink is authenticated, scoped, QUIC-compatible reference substitution for
+selected warm-state transfers. It is not a new matching algorithm, not a
+universal accelerator, not a replacement for compression or rsync, and not a
+custom QUIC extension-frame implementation. The native QUIC artifact maps
+compact binary ReduLink records into encrypted aioquic streams. Measured
+path-emulation results show that byte savings do not automatically shorten
+completion time for small repair-bearing transfers on constrained shared paths;
+the measured benefit there is byte-cost reduction at equal congestion fairness.
 
 ## Validation commands
 
-Fast reviewer smoke validation:
+Fast reviewer smoke validation (citation check, artifact consistency, selected
+unit tests; prints a success summary):
 
 ```bash
 python3 scripts/run_smoke_validation.py
 ```
 
-Full validation:
+Full validation (entire unit suite plus benchmark regeneration):
 
 ```bash
 python3 scripts/run_full_validation.py
 ```
 
-The full suite includes integration and aioquic-dependent tests. If aioquic is unavailable, those tests skip gracefully. Install `requirements-dev.txt` for complete QUIC stream validation.
+The full suite includes aioquic-dependent integration tests. If aioquic is
+unavailable, those tests skip gracefully; install `requirements-dev.txt` for
+complete QUIC stream validation.
+
+## What is implemented
+
+- Authenticated FULL/REF/MISS reference substitution model with fail-closed
+  validation and semantic repair.
+- Compact binary ReduLink stream messages over native aioquic QUIC streams.
+- Exporter-style HKDF key schedule model for context separation, with a formal
+  adversary model and reduction-style analysis in the manuscript (Section 4.5).
+- Tamper, replay, wrong-scope, wrong-epoch, wrong-stream, wrong-offset, and
+  wrong-length rejection tests.
+- Deterministic journal fixtures (with disclosed unchanged fractions), public
+  source-release negative pairs, object-aligned public release workloads, a
+  Redis-derived layer-like positive case, and an independent hash-pinned PyPI
+  package-upgrade trace (`benchmarks/run_pypi_object_trace.py`).
+- Real rsync and compression baselines, block-size sensitivity, repeated QUIC
+  trials, scaling, component costs, and conservative accounting-layer separation.
+- Measured competing-flow fairness and a measured userspace path emulation
+  (token-bucket rate + delay shared by both flows;
+  `benchmarks/run_quic_emulated_path.py`).
 
 ## Important limitations
 
-- The artifact uses native QUIC stream mapping, not custom QUIC extension frames or transport parameters.
-- The key schedule is exporter-style and context separated, but does not use live private QUIC TLS exporter bytes.
-- Public object-aligned workloads are derived from real public release bytes, but are transfer-model evidence, not captured production registry traces.
-- Fairness evidence is conservative: stream payload accounting, local UDP/IPv4 estimates, and emulation rather than a full `tc/netem` or Mininet congestion-control study.
+- Native QUIC stream mapping, not custom QUIC extension frames or transport
+  parameters.
+- The key schedule is exporter-style and context separated, but does not use
+  live private QUIC TLS exporter bytes.
+- Public object-aligned and package-upgrade workloads are derived from real
+  public bytes but are transfer-model evidence, not captured production traces.
+- Path emulation is userspace (asyncio token bucket + delay), not kernel
+  `tc/netem` or Mininet; a privileged-host congestion-control study remains
+  future work.

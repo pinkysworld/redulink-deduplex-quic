@@ -1,0 +1,25 @@
+rate_mbps,rtt_ms,loss_every,round,method,input_bytes,encoded_stream_payload_bytes,reconstructed_bytes,completion_ms_measured,encoded_rate_mbps_measured,reconstructed_rate_mbps_measured,reconstruction_ok,semantic_misses,repair_full_frames,emulation,mean_queue_delay_ms,max_queue_delay_ms
+5.0,20.0,0,1,raw-quic-stream,98304,98304,98304,752.123,1.045616,1.045616,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,23.749,72.211
+5.0,20.0,0,1,redulink-binary-quic-stream,98304,30818,98304,1296.297,0.190191,0.606676,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,23.749,72.211
+5.0,20.0,0,2,raw-quic-stream,98304,98304,98304,732.281,1.073948,1.073948,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,23.506,71.245
+5.0,20.0,0,2,redulink-binary-quic-stream,98304,30818,98304,1275.572,0.193281,0.616533,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,23.506,71.245
+5.0,20.0,0,3,raw-quic-stream,98304,98304,98304,709.645,1.108205,1.108205,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,23.613,71.601
+5.0,20.0,0,3,redulink-binary-quic-stream,98304,30818,98304,1252.617,0.196823,0.627831,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,23.613,71.601
+5.0,80.0,0,1,raw-quic-stream,98304,98304,98304,972.076,0.809023,0.809023,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,10.685,45.153
+5.0,80.0,0,1,redulink-binary-quic-stream,98304,30816,98304,1406.984,0.175217,0.558949,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,10.685,45.153
+5.0,80.0,0,2,raw-quic-stream,98304,98304,98304,964.859,0.815075,0.815075,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,9.776,42.694
+5.0,80.0,0,2,redulink-binary-quic-stream,98304,30816,98304,1299.092,0.189769,0.605371,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,9.776,42.694
+5.0,80.0,0,3,raw-quic-stream,98304,98304,98304,996.615,0.789103,0.789103,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,10.519,48.743
+5.0,80.0,0,3,redulink-binary-quic-stream,98304,30818,98304,1366.792,0.180382,0.575385,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,10.519,48.743
+20.0,20.0,0,1,raw-quic-stream,98304,98304,98304,313.725,2.506756,2.506756,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,1.125,4.584
+20.0,20.0,0,1,redulink-binary-quic-stream,98304,30817,98304,339.602,0.725956,2.315746,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,1.125,4.584
+20.0,20.0,0,2,raw-quic-stream,98304,98304,98304,318.818,2.466711,2.466711,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,1.638,6.273
+20.0,20.0,0,2,redulink-binary-quic-stream,98304,30817,98304,359.48,0.685813,2.187693,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,1.638,6.273
+20.0,20.0,0,3,raw-quic-stream,98304,98304,98304,322.846,2.435935,2.435935,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,1.412,5.663
+20.0,20.0,0,3,redulink-binary-quic-stream,98304,30817,98304,351.03,0.702322,2.240356,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,1.412,5.663
+20.0,80.0,0,1,raw-quic-stream,98304,98304,98304,814.514,0.965523,0.965523,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,0.516,4.006
+20.0,80.0,0,1,redulink-binary-quic-stream,98304,30818,98304,826.387,0.29834,0.951651,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,0.516,4.006
+20.0,80.0,0,2,raw-quic-stream,98304,98304,98304,789.055,0.996676,0.996676,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,0.475,4.648
+20.0,80.0,0,2,redulink-binary-quic-stream,98304,30818,98304,815.931,0.302163,0.963846,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,0.475,4.648
+20.0,80.0,0,3,raw-quic-stream,98304,98304,98304,779.386,1.00904,1.00904,True,0,0,userspace token-bucket + one-way delay shared by both flows; not kernel netem,0.482,3.628
+20.0,80.0,0,3,redulink-binary-quic-stream,98304,30818,98304,809.0,0.304752,0.972104,True,13,13,userspace token-bucket + one-way delay shared by both flows; not kernel netem,0.482,3.628

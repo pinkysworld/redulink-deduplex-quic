@@ -336,9 +336,10 @@ class QuicReduLinkServer:
 
 class LossyUdpProxy(asyncio.DatagramProtocol):
     """Local UDP proxy that drops deterministic datagrams between QUIC endpoints."""
-    def __init__(self, server_addr: tuple[str, int], *, loss_every: int = 0):
+    def __init__(self, server_addr: tuple[str, int], *, loss_every: int = 0, shaper: Any = None):
         self.server_addr = server_addr
         self.loss_every = loss_every
+        self.shaper = shaper  # optional userspace delay + token-bucket rate shaper
         self.transport: Any = None
         self.client_addr: tuple[str, int] | None = None
         self.c2s_seen = 0
@@ -362,7 +363,7 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
                 return
             if self.client_addr is not None:
                 self.s2c_payload_bytes_forwarded += len(data)
-                self.transport.sendto(data, self.client_addr)
+                self._forward(data, self.client_addr)
         else:
             self.client_addr = addr
             self.c2s_seen += 1
@@ -371,7 +372,20 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
                 self.c2s_dropped += 1
                 return
             self.c2s_payload_bytes_forwarded += len(data)
-            self.transport.sendto(data, self.server_addr)
+            self._forward(data, self.server_addr)
+
+    def _forward(self, data: bytes, dest: tuple[str, int]) -> None:
+        if self.shaper is None:
+            self.transport.sendto(data, dest)
+            return
+        deliver_at = self.shaper.schedule(len(data))
+        transport = self.transport
+
+        def _send() -> None:
+            if transport is not None and not transport.is_closing():
+                transport.sendto(data, dest)
+
+        asyncio.get_event_loop().call_at(deliver_at, _send)
 
     def stats(self) -> dict[str, int]:
         return {
@@ -388,7 +402,7 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
 
 async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every: int,
                     wire_format: str = "binary", loss_every: int = 0,
-                    account_datagrams: bool = False) -> dict[str, Any]:
+                    account_datagrams: bool = False, shaper: Any = None) -> dict[str, Any]:
     global WIRE_FORMAT
     WIRE_FORMAT = wire_format
     master_secret = b"redulink-aioquic-artifact-master-secret"
@@ -444,9 +458,9 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         server_port = int(server._transport.get_extra_info("sockname")[1])
         proxy_transport = None
         proxy_protocol = None
-        if loss_every > 0 or account_datagrams:
+        if loss_every > 0 or account_datagrams or shaper is not None:
             loop = asyncio.get_running_loop()
-            proxy_protocol = LossyUdpProxy(("127.0.0.1", server_port), loss_every=loss_every)
+            proxy_protocol = LossyUdpProxy(("127.0.0.1", server_port), loss_every=loss_every, shaper=shaper)
             proxy_transport, _ = await loop.create_datagram_endpoint(lambda: proxy_protocol, local_addr=("127.0.0.1", 0))
             port = int(proxy_transport.get_extra_info("sockname")[1])
         else:
