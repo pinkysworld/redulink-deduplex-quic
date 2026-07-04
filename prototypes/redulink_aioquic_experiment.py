@@ -366,7 +366,7 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
                 return
             if self.client_addr is not None:
                 self.s2c_payload_bytes_forwarded += len(data)
-                self._forward(data, self.client_addr)
+                self._forward(data, self.client_addr, direction="s2c")
         else:
             self.client_addr = addr
             self.c2s_seen += 1
@@ -375,13 +375,13 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
                 self.c2s_dropped += 1
                 return
             self.c2s_payload_bytes_forwarded += len(data)
-            self._forward(data, self.server_addr)
+            self._forward(data, self.server_addr, direction="c2s")
 
-    def _forward(self, data: bytes, dest: tuple[str, int]) -> None:
+    def _forward(self, data: bytes, dest: tuple[str, int], *, direction: str = "c2s") -> None:
         if self.shaper is None:
             self.transport.sendto(data, dest)
             return
-        deliver_at = self.shaper.schedule(len(data))
+        deliver_at = self.shaper.schedule(len(data), direction=direction)
         transport = self.transport
 
         def _send() -> None:

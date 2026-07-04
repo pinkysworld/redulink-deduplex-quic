@@ -1,9 +1,9 @@
-# ReduLink v3.6 submission package
+# ReduLink v3.7 submission package
 
 Primary manuscript files:
 
-- `paper/submission/ReduLink_journal_ready_v3_6.pdf`
-- `paper/submission/ReduLink_journal_ready_v3_6.docx`
+- `paper/submission/ReduLink_journal_ready_v3_7.pdf`
+- `paper/submission/ReduLink_journal_ready_v3_7.docx`
 
 Quick validation:
 

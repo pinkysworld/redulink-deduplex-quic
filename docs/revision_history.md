@@ -1,5 +1,13 @@
 # Revision history (factual changelog)
 
+- v3.7: path emulator corrected to a full-duplex per-direction token bucket
+  (fixes a half-duplex artifact that had wrongly shown ReduLink ~74% slower);
+  on byte-stable content ReduLink now completes in 0.65x of raw on a constrained
+  link, while a real Redis-layered payload (72 misses) can run 1.11-1.27x slower
+  where repair round trips dominate. Table 20 adds dispersion (s.d.) and both
+  payloads. Emulation is explicitly emulation-model-dependent pending a kernel
+  emulator.
+
 - v3.6: authentication-first verification with a bounded replay window; UDP
   prototype binds expected offsets to sequence numbers and returns uniform
   on-wire validation errors; CI fetches corpora before unit tests and the
