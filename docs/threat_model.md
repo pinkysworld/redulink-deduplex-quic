@@ -38,6 +38,7 @@ verifies byte-exact reconstruction and selected fail-closed conditions, but the 
 | Attack | Oracle or failure mode | Preconditions | Required mitigation | Residual risk |
 |---|---|---|---|---|
 | Dictionary poisoning | Useful chunks are evicted by attacker-chosen FULL frames. | Attacker can send traffic into a shared dictionary. | Per-tenant quotas, admission refusal, LRU budget, epoch reset, anti-eviction policy for shared dictionaries. | Mostly denial of service; bounded by memory and quota policy. |
+| Chosen-eviction probing | Attacker-driven FULL admissions cascade-evict victim warm entries; subsequent REF/MISS behavior leaks content existence. | Shared dictionary and observable transfer size/timing. | Per-connection default scope, per-tenant quotas, eviction isolation, rate limits. | Shared-dictionary modes retain residual leakage; see Sec. 4.4. |
 | Chosen-chunk probing | REF success/MISS/timing reveals whether receiver has content. | Sender can choose references and observe fallback behavior. | Per-connection default, no speculative cross-user references, public-artifact-only shared dictionaries, rate limits, constant-error policy where needed. | Per-origin dictionaries may still leak public-artifact popularity. |
 | Cross-user leakage | Shared dictionary exposes private-user content existence. | Dictionary is shared across users or tenants. | Exclude global/private cross-user dictionaries; require explicit trust domain or tenant policy. | Misconfiguration risk remains. |
 | Replayed REF | Stale reference reconstructs bytes in the wrong epoch or offset. | Old REF is replayed or accepted after epoch change. | Epoch binding, nonce/replay window, stream offset binding in REF authentication, epoch reset on key/context changes. | Needs production implementation beyond the simulator. |
@@ -70,6 +71,21 @@ Mitigations are policy-specific: default per-connection dictionaries, short
 epochs, no 0-RTT references by default, public-only manifests for public
 artifact mode, per-tenant quotas, and constant-error or padding policies where a
 deployment accepts the overhead.
+
+## Verification order and replay window (v3.6)
+
+`verify_frame` is authentication-first: the MAC over the frame's own fields is
+checked before any context field, and failures return one generic error, so an
+attacker without the key cannot use error classes as a parsing/validation
+oracle. Context mismatches are distinguishable only for authentically-tagged
+frames. Replay state is a bounded, reorder-tolerant `NonceWindow` (default
+4,096 entries): repeated nonces and nonces at or below the sliding floor are
+rejected, bounding receiver memory for long-lived sessions. Cross-session
+freshness comes from per-connection derived keys (implemented in the aioquic
+path; the standalone model and UDP prototype default to a fixed test secret).
+The authenticated-UDP server binds the expected reconstructed offset to the
+sequence number and returns a uniform on-wire error for all validation
+failures.
 
 ## Current Test Coverage
 

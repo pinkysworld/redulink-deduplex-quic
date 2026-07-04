@@ -1,7 +1,7 @@
 {
   "aioquic_version": "1.3.0",
   "auth_failures": 0,
-  "client_elapsed_ms": 130.479,
+  "client_elapsed_ms": 98.763,
   "client_full_frames_initial": 6,
   "client_ref_frames_initial": 90,
   "client_repair_full_frames_sent": 13,
@@ -10,7 +10,7 @@
   "custom_extension_frames": false,
   "datagram_loss_every": 0,
   "datagram_loss_proxy_enabled": false,
-  "elapsed_ms": 7.475,
+  "elapsed_ms": 3.467,
   "experiment": "aioquic_native_stream_mapping",
   "full_frames_accepted": 19,
   "initial_redulink_model_multiplier": 8.533333,

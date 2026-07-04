@@ -147,8 +147,58 @@ def encode(data: bytes, *, warm_dictionary: bytes = b"", secret: bytes = DEFAULT
     return frames, stats
 
 
+class NonceWindow:
+    """Bounded, reorder-tolerant replay state (drop-in for a plain set).
+
+    Keeps at most ``size`` recent nonces. A nonce is treated as replayed if it
+    was already seen or if it falls below the sliding window floor, so memory
+    is bounded for long-lived receivers while moderate datagram reordering
+    inside the window remains accepted. Implements ``__contains__`` and
+    ``add`` so existing callers that used a set keep working unchanged.
+    """
+
+    def __init__(self, size: int = 4096) -> None:
+        self.size = int(size)
+        self.highest = 0
+        self._seen: set[int] = set()
+
+    def __contains__(self, nonce: int) -> bool:
+        if self.highest and nonce <= self.highest - self.size:
+            return True  # below window floor: treat as replayed (fail closed)
+        return nonce in self._seen
+
+    def add(self, nonce: int) -> None:
+        self._seen.add(nonce)
+        if nonce > self.highest:
+            self.highest = nonce
+            floor = self.highest - self.size
+            if floor > 0 and len(self._seen) > self.size:
+                self._seen = {n for n in self._seen if n > floor}
+
+    def __len__(self) -> int:
+        return len(self._seen)
+
+
 def verify_frame(frame: SecureFrame, *, secret: bytes, expected_epoch: int, expected_scope: str,
-                 expected_stream_id: int, expected_offset: int, seen_nonces: set[int]) -> None:
+                 expected_stream_id: int, expected_offset: int, seen_nonces) -> None:
+    """Validate a frame: authentication first, then context, then replay.
+
+    The MAC is checked before any context field so that an attacker without
+    the key observes a single generic failure ("frame authentication failed")
+    regardless of which field was tampered with; context mismatches are only
+    distinguishable for authentically-tagged frames (i.e. cross-context replay
+    of legitimate traffic). ``seen_nonces`` may be a plain set or a
+    :class:`NonceWindow`.
+    """
+    if len(frame.tag) != TAG_BYTES * 2 or len(frame.cid) != CID_HEX_CHARS:
+        raise ValueError("frame authentication failed")
+    expected_tag = frame_tag(
+        secret=secret, kind=frame.kind, epoch=frame.epoch, scope=frame.scope,
+        stream_id=frame.stream_id, offset=frame.offset, cid=frame.cid,
+        length=frame.length, nonce=frame.nonce, payload=frame.payload,
+    )
+    if not hmac.compare_digest(frame.tag, expected_tag):
+        raise ValueError("frame authentication failed")
     if frame.epoch != expected_epoch:
         raise ValueError("epoch mismatch")
     if frame.scope != expected_scope:
@@ -159,13 +209,6 @@ def verify_frame(frame: SecureFrame, *, secret: bytes, expected_epoch: int, expe
         raise ValueError("stream offset mismatch")
     if frame.nonce in seen_nonces:
         raise ValueError("replayed nonce")
-    expected_tag = frame_tag(
-        secret=secret, kind=frame.kind, epoch=frame.epoch, scope=frame.scope,
-        stream_id=frame.stream_id, offset=frame.offset, cid=frame.cid,
-        length=frame.length, nonce=frame.nonce, payload=frame.payload,
-    )
-    if not hmac.compare_digest(frame.tag, expected_tag):
-        raise ValueError("frame authentication failed")
 
 
 def decode(frames: Iterable[SecureFrame], *, warm_dictionary: bytes = b"",

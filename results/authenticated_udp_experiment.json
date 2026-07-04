@@ -1,10 +1,10 @@
 {
   "auth_failures": 1,
   "chunk_size": 1024,
-  "client_payload_bytes_received": 2700,
+  "client_payload_bytes_received": 2691,
   "client_payload_bytes_sent": 38605,
   "client_repair_full_frames": 12,
-  "elapsed_ms": 26.784,
+  "elapsed_ms": 6.48,
   "experiment": "authenticated_udp_repair",
   "initial_model_wire_bytes": 6656,
   "initial_secure_effective_multiplier": 9.846154,
@@ -19,7 +19,7 @@
   "server_initial_dictionary_entries": 51,
   "server_received_payload_bytes": 38605,
   "server_reconstructed_bytes": 65536,
-  "server_sent_payload_bytes": 2325,
+  "server_sent_payload_bytes": 2318,
   "socket_payload_multiplier": 1.697604,
   "tamper_probe_rejections": 1
 }

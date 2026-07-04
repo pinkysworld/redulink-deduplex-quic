@@ -1,14 +1,14 @@
-# ReduLink journal-ready package v3.5
+# ReduLink journal-ready package v3.6
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.5-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.6-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_5.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_5.pdf`
-- Build source: `scripts/build_manuscript_v3_5.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_6.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_6.pdf`
+- Build source: `scripts/build_manuscript_v3_6.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed
@@ -28,7 +28,9 @@ the measured benefit there is byte-cost reduction at equal congestion fairness.
 ## Validation commands
 
 Fast reviewer smoke validation (citation check, artifact consistency, selected
-unit tests; prints a success summary):
+unit tests; prints a success summary). It works on a clean clone: steps that
+need the hash-pinned external corpora are skipped until you run
+`python3 benchmarks/fetch_external_public_corpora.py` once:
 
 ```bash
 python3 scripts/run_smoke_validation.py
@@ -62,6 +64,9 @@ complete QUIC stream validation.
 - Measured competing-flow fairness and a measured userspace path emulation
   (token-bucket rate + delay shared by both flows;
   `benchmarks/run_quic_emulated_path.py`).
+- Framing repricing at the measured 108-byte binary wire cost and a zstd
+  `--patch-from` dictionary-delta baseline
+  (`benchmarks/run_framing_dictionary_baseline.py`).
 
 ## Important limitations
 

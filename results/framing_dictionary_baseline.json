@@ -1,0 +1,153 @@
+{
+  "experiment": "framing_repricing_and_zstd_patch_baseline",
+  "measured_frame_overhead_bytes": {
+    "full": 108,
+    "ref": 108
+  },
+  "model_overhead_bytes": {
+    "full": 24,
+    "ref": 32
+  },
+  "rows": [
+    {
+      "label": "object-click-8.1.7-to-8.1.8",
+      "input_bytes": "947826",
+      "full_frames": "156",
+      "ref_frames": "176",
+      "model_multiplier": "1.941157",
+      "repriced_multiplier": "1.8413",
+      "oh_full_bytes": "108",
+      "oh_ref_bytes": "108",
+      "zstd_patch_bytes": "14603",
+      "zstd_patch_multiplier": "65.251866",
+      "gzip_multiplier": "2.855025",
+      "reconstruction_ok": "True"
+    },
+    {
+      "label": "object-redis-7.2.4-to-7.2.5",
+      "input_bytes": "15467095",
+      "full_frames": "366",
+      "ref_frames": "4360",
+      "model_multiplier": "9.699896",
+      "repriced_multiplier": "7.904817",
+      "oh_full_bytes": "108",
+      "oh_ref_bytes": "108",
+      "zstd_patch_bytes": "8700",
+      "zstd_patch_multiplier": "1785.42954",
+      "gzip_multiplier": "4.609644",
+      "reconstruction_ok": "True"
+    },
+    {
+      "label": "object-nginx-1.25.3-to-1.25.4",
+      "input_bytes": "7357392",
+      "full_frames": "409",
+      "ref_frames": "1684",
+      "model_multiplier": "4.384873",
+      "repriced_multiplier": "3.998055",
+      "oh_full_bytes": "108",
+      "oh_ref_bytes": "108",
+      "zstd_patch_bytes": "7752",
+      "zstd_patch_multiplier": "951.715299",
+      "gzip_multiplier": "6.086902",
+      "reconstruction_ok": "True"
+    },
+    {
+      "label": "redis-layered-public-positive",
+      "input_bytes": "524288",
+      "full_frames": "5",
+      "ref_frames": "123",
+      "model_multiplier": "21.368112",
+      "repriced_multiplier": "15.283582",
+      "oh_full_bytes": "108",
+      "oh_ref_bytes": "108",
+      "zstd_patch_bytes": "316",
+      "zstd_patch_multiplier": "1659.139241",
+      "gzip_multiplier": "4.238931",
+      "reconstruction_ok": "True"
+    },
+    {
+      "label": "pypi-rich-13.7.0-to-13.7.1",
+      "input_bytes": 947654,
+      "full_frames": 18,
+      "ref_frames": 259,
+      "model_multiplier": 12.413434,
+      "repriced_multiplier": 9.715841,
+      "oh_full_bytes": 108,
+      "oh_ref_bytes": 108,
+      "zstd_patch_bytes": 1575,
+      "zstd_patch_multiplier": 603.146667,
+      "gzip_multiplier": 4.427399,
+      "reconstruction_ok": true
+    },
+    {
+      "label": "pypi-jinja2-3.1.3-to-3.1.4",
+      "input_bytes": 491214,
+      "full_frames": 120,
+      "ref_frames": 17,
+      "model_multiplier": 1.096068,
+      "repriced_multiplier": 1.068944,
+      "oh_full_bytes": 108,
+      "oh_ref_bytes": 108,
+      "zstd_patch_bytes": 3146,
+      "zstd_patch_multiplier": 156.44342,
+      "gzip_multiplier": 4.032635,
+      "reconstruction_ok": true
+    },
+    {
+      "label": "pypi-click-8.1.6-to-8.1.7",
+      "input_bytes": 353767,
+      "full_frames": 10,
+      "ref_frames": 85,
+      "model_multiplier": 11.170061,
+      "repriced_multiplier": 9.077699,
+      "oh_full_bytes": 108,
+      "oh_ref_bytes": 108,
+      "zstd_patch_bytes": 554,
+      "zstd_patch_multiplier": 639.799639,
+      "gzip_multiplier": 3.981052,
+      "reconstruction_ok": true
+    },
+    {
+      "label": "pypi-werkzeug-3.0.1-to-3.0.2",
+      "input_bytes": 762091,
+      "full_frames": 68,
+      "ref_frames": 155,
+      "model_multiplier": 3.057721,
+      "repriced_multiplier": 2.857195,
+      "oh_full_bytes": 108,
+      "oh_ref_bytes": 108,
+      "zstd_patch_bytes": 1976,
+      "zstd_patch_multiplier": 387.087551,
+      "gzip_multiplier": 3.967122,
+      "reconstruction_ok": true
+    },
+    {
+      "label": "pypi-urllib3-2.1.0-to-2.2.0",
+      "input_bytes": 391321,
+      "full_frames": 60,
+      "ref_frames": 57,
+      "model_multiplier": 1.873748,
+      "repriced_multiplier": 1.793274,
+      "oh_full_bytes": 108,
+      "oh_ref_bytes": 108,
+      "zstd_patch_bytes": 13321,
+      "zstd_patch_multiplier": 29.488101,
+      "gzip_multiplier": 3.813144,
+      "reconstruction_ok": true
+    },
+    {
+      "label": "pypi-packaging-23.2-to-24.0",
+      "input_bytes": 174172,
+      "full_frames": 32,
+      "ref_frames": 22,
+      "model_multiplier": 1.537549,
+      "repriced_multiplier": 1.480563,
+      "oh_full_bytes": 108,
+      "oh_ref_bytes": 108,
+      "zstd_patch_bytes": 2121,
+      "zstd_patch_multiplier": 82.466761,
+      "gzip_multiplier": 3.787942,
+      "reconstruction_ok": true
+    }
+  ]
+}

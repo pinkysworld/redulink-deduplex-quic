@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Evaluate ReduLink on object-sequence transfers derived from public release pairs.
 
-The source-release tarballs are real public artifacts included in
-``data/external_public_corpora``. A raw tarball or whole-directory byte stream can
+The source-release tarballs are real public artifacts fetched into
+``data/external_public_corpora`` by ``benchmarks/fetch_external_public_corpora.py``
+(they are hash-pinned but gitignored, so run the fetcher once before this suite). A raw tarball or whole-directory byte stream can
 shift substantially between releases, which favors file-tree delta tools such as
 rsync and often defeats fixed chunk reuse. This runner evaluates a different and
 common deployment abstraction: a registry/CDN/object-transfer channel where files
@@ -212,8 +213,8 @@ def run_pair(label: str, old_tar: Path, new_tar: Path) -> dict[str, str]:
         return {
             "label": label,
             "workload_class": "external_public_object_sequence",
-            "old_tar": str(old_tar),
-            "new_tar": str(new_tar),
+            "old_tar": str(old_tar.relative_to(ROOT)),
+            "new_tar": str(new_tar.relative_to(ROOT)),
             "old_tar_sha256": sha256_file(old_tar),
             "new_tar_sha256": sha256_file(new_tar),
             "old_file_count": str(len(old_files)),
@@ -240,14 +241,25 @@ def run_pair(label: str, old_tar: Path, new_tar: Path) -> dict[str, str]:
 
 
 def main() -> None:
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--output", type=Path, default=ROOT / "results" / "external_object_workload_suite.csv")
+    args = ap.parse_args()
     base = ROOT / "data" / "external_public_corpora"
     pairs = [
         ("click-object-sequence-8.1.7-to-8.1.8", base/"click-8.1.7-to-8.1.8"/"old"/"source.tar.gz", base/"click-8.1.7-to-8.1.8"/"new"/"source.tar.gz"),
         ("redis-object-sequence-7.2.4-to-7.2.5", base/"redis-7.2.4-to-7.2.5"/"old"/"source.tar.gz", base/"redis-7.2.4-to-7.2.5"/"new"/"source.tar.gz"),
         ("nginx-object-sequence-1.25.3-to-1.25.4", base/"nginx-1.25.3-to-1.25.4"/"old"/"source.tar.gz", base/"nginx-1.25.3-to-1.25.4"/"new"/"source.tar.gz"),
     ]
+    missing = [str(t) for _, o, n in pairs for t in (o, n) if not t.exists()]
+    if missing:
+        raise SystemExit(
+            "external public corpora not present; run "
+            "`python3 benchmarks/fetch_external_public_corpora.py` first. Missing: "
+            + ", ".join(missing[:2]) + ("..." if len(missing) > 2 else "")
+        )
     rows = [run_pair(*p) for p in pairs]
-    out = ROOT / "results" / "external_object_workload_suite.csv"
+    out = args.output
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n")

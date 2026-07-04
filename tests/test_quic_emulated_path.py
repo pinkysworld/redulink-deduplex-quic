@@ -12,7 +12,8 @@ JSON = ROOT / "results" / "quic_emulated_path.json"
 class TestQuicEmulatedPath(unittest.TestCase):
     def test_committed_results_are_wellformed(self):
         self.assertTrue(CSV.exists() and JSON.exists())
-        rows = list(csv.DictReader(CSV.open()))
+        with CSV.open(newline="") as fh:
+            rows = list(csv.DictReader(fh))
         self.assertGreaterEqual(len(rows), 8)  # >= 4 scenarios x 2 methods
         for r in rows:
             self.assertEqual(r["reconstruction_ok"], "True")
@@ -27,7 +28,8 @@ class TestQuicEmulatedPath(unittest.TestCase):
             self.assertGreater(s["redulink_app_rate_mbps_mean"], 0.0)
 
     def test_redulink_encodes_fewer_bytes_than_raw(self):
-        rows = list(csv.DictReader(CSV.open()))
+        with CSV.open(newline="") as fh:
+            rows = list(csv.DictReader(fh))
         raw = [int(r["encoded_stream_payload_bytes"]) for r in rows if r["method"] == "raw-quic-stream"]
         rl = [int(r["encoded_stream_payload_bytes"]) for r in rows if r["method"] != "raw-quic-stream"]
         self.assertLess(max(rl), min(raw))

@@ -135,7 +135,7 @@ class AuthUdpServer(threading.Thread):
 
     def run(self) -> None:
         delivered: dict[int, bytes] = {}
-        seen_nonces: set[int] = set()
+        seen_nonces = secure.NonceWindow()
         received = sent = auth_failures = replay_rejections = semantic_misses = repair_full = 0
         start = time.perf_counter()
         self.ready.set()
@@ -168,6 +168,11 @@ class AuthUdpServer(threading.Thread):
                     continue
                 frame = msg_to_frame(msg)
                 seq = int(msg["seq"])
+                # Bind the expected reconstructed offset to the sequence number
+                # (fixed chunker), instead of trusting the frame's own offset
+                # field; probe frames (seq < 0) never deliver bytes, so their
+                # offset is checked only through the MAC.
+                expected_offset = seq * self.chunk_size if seq >= 0 else frame.offset
                 try:
                     secure.verify_frame(
                         frame,
@@ -175,7 +180,7 @@ class AuthUdpServer(threading.Thread):
                         expected_epoch=self.epoch,
                         expected_scope=self.scope,
                         expected_stream_id=self.stream_id,
-                        expected_offset=frame.offset,
+                        expected_offset=expected_offset,
                         seen_nonces=seen_nonces,
                     )
                 except ValueError as exc:
@@ -183,7 +188,9 @@ class AuthUdpServer(threading.Thread):
                         replay_rejections += 1
                     else:
                         auth_failures += 1
-                    sent += _send(self.sock, {"t": "ERROR", "seq": seq, "error": str(exc)}, addr)
+                    # Uniform on-wire error: do not export a validation-failure
+                    # oracle distinguishing which check failed.
+                    sent += _send(self.sock, {"t": "ERROR", "seq": seq, "error": "validation failed"}, addr)
                     continue
                 seen_nonces.add(frame.nonce)
                 if seq < 0:

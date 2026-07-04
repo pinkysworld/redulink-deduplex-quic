@@ -1,0 +1,23 @@
+# Revision history (factual changelog)
+
+- v3.6: authentication-first verification with a bounded replay window; UDP
+  prototype binds expected offsets to sequence numbers and returns uniform
+  on-wire validation errors; CI fetches corpora before unit tests and the
+  corpora-dependent test/smoke steps skip cleanly when data is absent;
+  framing repricing (measured 108 B/frame) and a zstd --patch-from
+  dictionary-delta baseline added (Sec. 7.6, Table 12); offline-vs-QUIC gap
+  reconciled (Sec. 8.1); keying per artifact path stated precisely; stale
+  result generations regenerated consistently; committed evidence uses
+  repo-relative paths; historical build scripts and review notes pruned.
+- v3.5: 16 MiB scaling with dictionary-budget overflow (0.92x fail-safe) and
+  recovery (3.96x at 24,576 chunks); release-pinned artifact citation.
+- v3.4: measured userspace path emulation (byte savings do not imply
+  completion-time savings for small repair-bearing transfers); byline cleanup.
+- v3.3: fixture unchanged-fractions disclosed; analytic bottleneck model
+  labeled as computed; security evidence scoped; identifier sizing guidance.
+- v3.2: PyPI version-pair study; 12-round measured competing flows; formal
+  security model and reduction sketch (Sec. 4.5).
+- v3.0-v3.1: positioning table; measured-vs-model labeling; strict-review
+  disclosures.
+- v2.7-v2.9: journal-ready consolidation; HTTP delta / shared-dictionary
+  related work; figures, captions, and cross-references.

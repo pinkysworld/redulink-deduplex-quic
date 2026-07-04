@@ -1,1 +1,4 @@
-artifact-export-v3.5-2026-07-03
+package: ReduLink journal-ready v3.6
+parent-commit: 0c4095e65fee92ca82c8d9ea1d166ffa7ed462b4
+tag: v3.6-journal-submission
+repository: https://github.com/pinkysworld/redulink-deduplex-quic

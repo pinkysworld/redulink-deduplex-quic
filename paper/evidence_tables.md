@@ -1,4 +1,4 @@
-# Version 3.3 Evidence Tables
+# Version 3.6 Evidence Tables
 
 These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.
 
@@ -75,11 +75,11 @@ Source: `results/aioquic_native_experiment.json`. This experiment uses a real ai
 | Metric | Value |
 |---|---:|
 | Input bytes | 98,304 |
-| Initial FULL / REF frames | 5 / 91 |
+| Initial FULL / REF frames | 6 / 90 |
 | Semantic misses | 13 |
 | Repair FULL frames | 13 |
-| QUIC stream payload bytes after repair | 29,792 |
-| Effective stream-payload multiplier after repair | 3.300x |
+| QUIC stream payload bytes after repair | 30,816 |
+| Effective stream-payload multiplier after repair | 3.190x |
 | Reconstruction | byte-exact |
 | aioquic version | 1.3.0 |
 

@@ -227,7 +227,7 @@ class QuicReduLinkServer:
         self.scope = scope
         self.stream_id = stream_id
         self.delivered: dict[int, bytes] = {}
-        self.seen_nonces: set[int] = set()
+        self.seen_nonces = secure.NonceWindow()
         self.stats: dict[str, Any] = {}
 
     async def handle_stream(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
