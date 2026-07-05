@@ -97,7 +97,7 @@ def main() -> None:
     result = run_experiment()
     out_json.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     with out_csv.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(result.keys()))
+        writer = csv.DictWriter(fh, fieldnames=list(result.keys()), lineterminator="\n")
         writer.writeheader()
         writer.writerow(result)
     print(json.dumps(result, indent=2, sort_keys=True))

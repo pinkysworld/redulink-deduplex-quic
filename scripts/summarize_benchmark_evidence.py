@@ -124,7 +124,7 @@ def make_target_summary(target_rows: list[dict[str, str]]) -> list[dict[str, str
 def write_summary_csv(summary_rows: list[dict[str, str]]) -> None:
     SUMMARY_CSV.parent.mkdir(parents=True, exist_ok=True)
     with SUMMARY_CSV.open("w", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(summary_rows[0]))
+        writer = csv.DictWriter(fh, fieldnames=list(summary_rows[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(summary_rows)
 
@@ -278,7 +278,7 @@ def main() -> None:
     write_summary_csv(summary_rows)
 
     lines = [
-        "# Version 3.10 Evidence Tables",
+        "# Version 3.11 Evidence Tables",
         "",
         "These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.",
         "",

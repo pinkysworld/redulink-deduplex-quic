@@ -1,6 +1,6 @@
 [project]
 name = "redulink-artifact"
-version = "3.10"
+version = "3.11"
 description = "Reproducibility artifact for authenticated reference substitution over encrypted QUIC streams."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,6 +15,6 @@ dependencies = [
 ]
 
 [tool.redulink]
-artifact_tag = "v3.10-journal-submission"
+artifact_tag = "v3.11-journal-submission"
 smoke_validation = "python3 scripts/run_smoke_validation.py"
 full_validation = "python3 scripts/run_full_validation.py"

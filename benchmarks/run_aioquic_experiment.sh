@@ -32,7 +32,7 @@ for label, name in [
         'reconstruction_ok': d['reconstruction_ok'],
     })
 with (root / 'results' / 'aioquic_experiment_summary.csv').open('w', newline='') as fh:
-    w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+    w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator='\n')
     w.writeheader()
     w.writerows(rows)
 PY

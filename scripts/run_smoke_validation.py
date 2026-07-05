@@ -25,6 +25,7 @@ def run_unittest_file(name: str) -> None:
     run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", name])
 
 if __name__ == "__main__":
+    run([sys.executable, "scripts/check_text_line_endings.py"])
     run([sys.executable, "scripts/check_manuscript_citations.py"])
     run([sys.executable, "benchmarks/check_generated_artifacts.py"])
     corpora = ROOT / "data" / "external_public_corpora"
@@ -42,4 +43,4 @@ if __name__ == "__main__":
         "test_secure_verify_hardening.py",
     ]:
         run_unittest_file(test_file)
-    print("smoke validation OK: citations, generated artifacts, and core security/model tests passed")
+    print("smoke validation OK: line endings, citations, generated artifacts, and core security/model tests passed")

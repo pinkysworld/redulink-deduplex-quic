@@ -1,15 +1,19 @@
-# ReduLink v3.10 submission package
+# ReduLink v3.11 submission package
 
 Primary manuscript files:
 
-- `paper/submission/ReduLink_journal_ready_v3_10.pdf`
-- `paper/submission/ReduLink_journal_ready_v3_10.docx`
+- `paper/submission/ReduLink_journal_ready_v3_11.pdf`
+- `paper/submission/ReduLink_journal_ready_v3_11.docx`
 
 Quick validation:
 
 ```bash
 python3 scripts/run_smoke_validation.py
 ```
+
+This includes the raw-public text line-ending check
+(`python3 scripts/check_text_line_endings.py`) so reviewer-facing Markdown and
+CSV files stay LF-only in GitHub Raw views.
 
 For complete native QUIC validation, create a Python 3.10+ environment and run:
 
@@ -23,8 +27,8 @@ For exact dependency reproduction, use `requirements-lock.txt` instead of
 `requirements-dev.txt`, or build and run the pinned container:
 
 ```bash
-docker build -t redulink-artifact:v3.10 .
-docker run --rm redulink-artifact:v3.10
+docker build -t redulink-artifact:v3.11 .
+docker run --rm redulink-artifact:v3.11
 ```
 
 Full validation:
@@ -33,7 +37,7 @@ Full validation:
 python3 scripts/run_full_validation.py
 ```
 
-Aioquic-dependent tests skip gracefully when aioquic is absent. The v3.10
+Aioquic-dependent tests skip gracefully when aioquic is absent. The v3.11
 revision refreshes the repeated local QUIC evidence at 20 rounds per reported
 grid point and includes both macOS pf/dnctl and Linux `tc/netem` kernel-path
 harnesses. The kernel harnesses are reviewer-runnable infrastructure; no live

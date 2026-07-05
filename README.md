@@ -1,13 +1,13 @@
-# ReduLink journal-ready package v3.10
+# ReduLink journal-ready package v3.11
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.10-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.11-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Reviewer start here
 
 1. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
-2. Read `paper/submission/ReduLink_journal_ready_v3_10.pdf` or `.docx`.
+2. Read `paper/submission/ReduLink_journal_ready_v3_11.pdf` or `.docx`.
 3. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
 4. Use `python3 scripts/run_full_validation.py` only after installing
    `requirements-dev.txt`; aioquic-dependent transport tests skip when aioquic
@@ -15,13 +15,13 @@ applied networking/systems journal submission. The submission snapshot is tagged
    directly or build the included `Dockerfile`.
 
 The canonical public artifact is the GitHub release/tag
-`v3.10-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
+`v3.11-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_10.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_10.pdf`
-- Build source: `scripts/build_manuscript_v3_10.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_11.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_11.pdf`
+- Build source: `scripts/build_manuscript_v3_11.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed
@@ -41,8 +41,9 @@ the measured benefit there is byte-cost reduction at equal congestion fairness.
 ## Validation commands
 
 Fast reviewer smoke validation (citation check, artifact consistency, selected
-unit tests; prints a success summary). It works on a clean clone: steps that
-need the hash-pinned external corpora are skipped until you run
+unit tests, and LF-only raw-file formatting; prints a success summary). It works
+on a clean clone: steps that need the hash-pinned external corpora are skipped
+until you run
 `python3 benchmarks/fetch_external_public_corpora.py` once:
 
 ```bash
@@ -53,6 +54,12 @@ Full validation (entire unit suite plus benchmark regeneration):
 
 ```bash
 python3 scripts/run_full_validation.py
+```
+
+The line-ending guard can also be run directly with:
+
+```bash
+python3 scripts/check_text_line_endings.py
 ```
 
 The full suite includes aioquic-dependent integration tests. If aioquic is
@@ -79,8 +86,8 @@ python -m pip install -r requirements-lock.txt
 The same pinned environment can be exercised through Docker:
 
 ```bash
-docker build -t redulink-artifact:v3.10 .
-docker run --rm redulink-artifact:v3.10
+docker build -t redulink-artifact:v3.11 .
+docker run --rm redulink-artifact:v3.11
 ```
 
 The smoke command is intended to finish quickly on a clean clone because it

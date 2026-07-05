@@ -119,7 +119,7 @@ def main() -> None:
     if not rows:
         print("no rows produced", file=sys.stderr); sys.exit(1)
     with out_csv.open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n"); w.writeheader(); w.writerows(rows)
     out_json.write_text(json.dumps({"experiment": "pypi_version_pair_object_study", "pairs": rows}, indent=2))
     print(out_csv)
 

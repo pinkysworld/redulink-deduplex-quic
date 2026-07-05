@@ -101,8 +101,8 @@ figures/target_class/savings_warm_update.png
 paper/README.md
 paper/evidence_tables.md
 paper/submission/README.md
-paper/submission/ReduLink_journal_ready_v3_10.docx
-paper/submission/ReduLink_journal_ready_v3_10.pdf
+paper/submission/ReduLink_journal_ready_v3_11.docx
+paper/submission/ReduLink_journal_ready_v3_11.pdf
 prototypes/README.md
 prototypes/redulink_aioquic_experiment.py
 prototypes/redulink_authenticated_udp_experiment.py
@@ -167,7 +167,8 @@ results/target_class_warm_update_summary.csv
 results/udp_repair_experiment.json
 results/wire_fairness_accounting.csv
 results/wire_fairness_accounting.json
-scripts/build_manuscript_v3_10.py
+scripts/build_manuscript_v3_11.py
+scripts/check_text_line_endings.py
 scripts/check_manuscript_citations.py
 scripts/make_journal_figures_v2_8.py
 scripts/plot_quic_flow_comparison.py

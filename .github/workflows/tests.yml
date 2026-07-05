@@ -14,6 +14,8 @@ jobs:
           python-version: "3.11"
       - name: Install dev dependencies
         run: python -m pip install -r requirements-dev.txt
+      - name: Text line-ending check
+        run: python scripts/check_text_line_endings.py
       - name: Fetch public corpus fixture
         run: python benchmarks/fetch_public_corpora.py
       - name: Fetch external public corpora (needed by unit tests)
@@ -68,3 +70,6 @@ jobs:
 
       - name: External object-sequence public workload suite
         run: python benchmarks/run_external_object_workload_suite.py
+
+      - name: Text line-ending check after regenerated artifacts
+        run: python scripts/check_text_line_endings.py

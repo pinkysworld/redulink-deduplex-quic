@@ -203,7 +203,7 @@ def main() -> None:
             existing = [r for r in csv.DictReader(fh) if not r["label"].startswith("pypi-")]
         rows = existing + rows
     with args.output.open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n"); w.writeheader(); w.writerows(rows)
     args.output.with_suffix(".json").write_text(json.dumps(
         {"experiment": "framing_repricing_and_zstd_patch_baseline",
          "measured_frame_overhead_bytes": {"full": oh_full, "ref": oh_ref},

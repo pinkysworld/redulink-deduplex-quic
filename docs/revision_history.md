@@ -1,5 +1,11 @@
 # Revision history (factual changelog)
 
+- v3.11: public-GitHub hygiene cleanup after a reviewer found raw-view
+  formatting problems: reviewer-facing Markdown/CSV/JSON/script metadata is
+  normalized to LF line endings, CSV writers now force LF output, smoke/full
+  validation and CI include a tracked text line-ending guard, and the package is
+  republished as the latest GitHub release without changing the v3.10 tag.
+
 - v3.10: consistency-focused cleanup before submission: stale abstract and
   Section 8.2/Table 15 wording are aligned with the n=20 QUIC evidence; package
   metadata is promoted in `pyproject.toml`; the PyPI evidence is named as a

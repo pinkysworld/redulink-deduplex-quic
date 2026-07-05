@@ -20,6 +20,7 @@ def run(cmd: list[str]) -> None:
     subprocess.run(cmd, cwd=ROOT, env=env, check=True)
 
 if __name__ == "__main__":
+    run([sys.executable, "scripts/check_text_line_endings.py"])
     run([sys.executable, "scripts/check_manuscript_citations.py"])
     run([sys.executable, "benchmarks/check_generated_artifacts.py"])
     run([sys.executable, "scripts/run_tests_isolated.py"])
