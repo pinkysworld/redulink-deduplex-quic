@@ -5,6 +5,7 @@ Dockerfile
 INVENTORY.txt
 LICENSE
 MANUSCRIPT_SHA256.txt
+PUBLIC_REVIEWER_CHECKLIST.md
 README.md
 SOURCE_COMMIT.txt
 SOURCE_GIT_STATUS.txt
@@ -101,8 +102,8 @@ figures/target_class/savings_warm_update.png
 paper/README.md
 paper/evidence_tables.md
 paper/submission/README.md
-paper/submission/ReduLink_journal_ready_v3_11.docx
-paper/submission/ReduLink_journal_ready_v3_11.pdf
+paper/submission/ReduLink_journal_ready_v3_12.docx
+paper/submission/ReduLink_journal_ready_v3_12.pdf
 prototypes/README.md
 prototypes/redulink_aioquic_experiment.py
 prototypes/redulink_authenticated_udp_experiment.py
@@ -167,7 +168,7 @@ results/target_class_warm_update_summary.csv
 results/udp_repair_experiment.json
 results/wire_fairness_accounting.csv
 results/wire_fairness_accounting.json
-scripts/build_manuscript_v3_11.py
+scripts/build_manuscript_v3_12.py
 scripts/check_text_line_endings.py
 scripts/check_manuscript_citations.py
 scripts/make_journal_figures_v2_8.py
@@ -178,6 +179,7 @@ scripts/run_full_validation.py
 scripts/run_smoke_validation.py
 scripts/run_tests_isolated.py
 scripts/summarize_benchmark_evidence.py
+scripts/verify_public_release.py
 src/redulink_key_schedule.py
 src/redulink_model.py
 src/redulink_proto_v0_5.py

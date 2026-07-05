@@ -1,5 +1,11 @@
 # Revision history (factual changelog)
 
+- v3.12: final reviewer-facing public-state cleanup and top-venue framing pass:
+  adds `PUBLIC_REVIEWER_CHECKLIST.md` and an unauthenticated public-release
+  verifier for raw/API/fresh-clone checks; sharpens the dictionary-delta/CDT
+  boundary; and restates that kernel/WAN transport evidence is future work, not
+  claimed evidence.
+
 - v3.11: public-GitHub hygiene cleanup after a reviewer found raw-view
   formatting problems: reviewer-facing Markdown/CSV/JSON/script metadata is
   normalized to LF line endings, CSV writers now force LF output, smoke/full

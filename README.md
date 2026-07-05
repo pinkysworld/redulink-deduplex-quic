@@ -1,27 +1,29 @@
-# ReduLink journal-ready package v3.11
+# ReduLink journal-ready package v3.12
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.11-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.12-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Reviewer start here
 
-1. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
-2. Read `paper/submission/ReduLink_journal_ready_v3_11.pdf` or `.docx`.
-3. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
-4. Use `python3 scripts/run_full_validation.py` only after installing
+1. Use `PUBLIC_REVIEWER_CHECKLIST.md` if a GitHub HTML page or raw CDN view
+   appears stale.
+2. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
+3. Read `paper/submission/ReduLink_journal_ready_v3_12.pdf` or `.docx`.
+4. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
+5. Use `python3 scripts/run_full_validation.py` only after installing
    `requirements-dev.txt`; aioquic-dependent transport tests skip when aioquic
    is absent. For pinned dependency reproduction, use `requirements-lock.txt`
    directly or build the included `Dockerfile`.
 
 The canonical public artifact is the GitHub release/tag
-`v3.11-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
+`v3.12-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_11.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_11.pdf`
-- Build source: `scripts/build_manuscript_v3_11.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_12.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_12.pdf`
+- Build source: `scripts/build_manuscript_v3_12.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed
@@ -62,6 +64,13 @@ The line-ending guard can also be run directly with:
 python3 scripts/check_text_line_endings.py
 ```
 
+The public GitHub state can be checked without login through the GitHub API,
+raw tag URLs, raw branch URLs, and the latest-release endpoint:
+
+```bash
+python3 scripts/verify_public_release.py --version 3.12
+```
+
 The full suite includes aioquic-dependent integration tests. If aioquic is
 unavailable, those tests skip gracefully; install `requirements-dev.txt` for
 complete QUIC stream validation or `requirements-lock.txt` for the exact
@@ -86,8 +95,8 @@ python -m pip install -r requirements-lock.txt
 The same pinned environment can be exercised through Docker:
 
 ```bash
-docker build -t redulink-artifact:v3.11 .
-docker run --rm redulink-artifact:v3.11
+docker build -t redulink-artifact:v3.12 .
+docker run --rm redulink-artifact:v3.12
 ```
 
 The smoke command is intended to finish quickly on a clean clone because it
@@ -136,3 +145,8 @@ time depends on host speed and whether aioquic and external corpora are present.
   (asyncio token bucket + delay). Kernel-path harnesses are included, but the
   package does not claim a completed `tc/netem`, dummynet, Mininet, or WAN
   congestion-control study.
+- When the receiver can retain the exact prior byte stream and codec-level
+  trust is acceptable, dictionary delta (`zstd --patch-from`, the CDT-style
+  baseline) is the stronger byte-saving choice. ReduLink is for authenticated,
+  object-granular, fail-closed reference substitution over encrypted endpoint
+  streams, not byte-optimal codec delta.

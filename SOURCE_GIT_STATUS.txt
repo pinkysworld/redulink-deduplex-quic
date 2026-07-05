@@ -1,1 +1,1 @@
-Exported from main as v3.11 journal-ready working package; verify with: git status --porcelain (empty) after commit. Manuscript hashes: MANUSCRIPT_SHA256.txt
+Exported from main as v3.12 journal-ready working package; verify with: git status --porcelain (empty) after commit. Manuscript hashes: MANUSCRIPT_SHA256.txt
