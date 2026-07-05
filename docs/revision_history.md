@@ -1,5 +1,13 @@
 # Revision history (factual changelog)
 
+- v3.10: consistency-focused cleanup before submission: stale abstract and
+  Section 8.2/Table 15 wording are aligned with the n=20 QUIC evidence; package
+  metadata is promoted in `pyproject.toml`; the PyPI evidence is named as a
+  version-pair object study rather than a trace; a lockfile and Dockerfile give
+  an exact dependency path; Section 10 adds an explicit "what this does not
+  prove" scope note; and the security table separates specified, implemented,
+  tested, and future-work items.
+
 - v3.9: package metadata, manuscript filenames, citation metadata, and build
   script names are promoted consistently from v3.8 to v3.9; repeated local QUIC
   evidence is refreshed at 20 rounds for the path-emulation grid, concurrent

@@ -278,7 +278,7 @@ def main() -> None:
     write_summary_csv(summary_rows)
 
     lines = [
-        "# Version 3.9 Evidence Tables",
+        "# Version 3.10 Evidence Tables",
         "",
         "These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.",
         "",

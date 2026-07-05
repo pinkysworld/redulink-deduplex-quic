@@ -1,4 +1,4 @@
-# Evidence hierarchy (v3.9)
+# Evidence hierarchy (v3.10)
 
 | Evidence level | What it supports | What it does not prove |
 |---|---|---|

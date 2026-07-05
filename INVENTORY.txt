@@ -1,6 +1,7 @@
 .github/workflows/tests.yml
 .gitignore
 CITATION.cff
+Dockerfile
 INVENTORY.txt
 LICENSE
 MANUSCRIPT_SHA256.txt
@@ -35,7 +36,7 @@ benchmarks/run_journal_workload_suite.sh
 benchmarks/run_linux_netem_quic_path.py
 benchmarks/run_macos_dummynet_quic_path.py
 benchmarks/run_public_artifacts.sh
-benchmarks/run_pypi_object_trace.py
+benchmarks/run_pypi_version_pair_object_study.py
 benchmarks/run_quic_bottleneck_emulation.py
 benchmarks/run_quic_competing_flows.py
 benchmarks/run_quic_emulated_path.py
@@ -100,8 +101,8 @@ figures/target_class/savings_warm_update.png
 paper/README.md
 paper/evidence_tables.md
 paper/submission/README.md
-paper/submission/ReduLink_journal_ready_v3_9.docx
-paper/submission/ReduLink_journal_ready_v3_9.pdf
+paper/submission/ReduLink_journal_ready_v3_10.docx
+paper/submission/ReduLink_journal_ready_v3_10.pdf
 prototypes/README.md
 prototypes/redulink_aioquic_experiment.py
 prototypes/redulink_authenticated_udp_experiment.py
@@ -110,6 +111,7 @@ prototypes/redulink_socket_prototype.py
 prototypes/redulink_udp_repair_experiment.py
 pyproject.toml
 requirements-dev.txt
+requirements-lock.txt
 results/aioquic_binary_experiment.json
 results/aioquic_binary_lossy_experiment.json
 results/aioquic_experiment_summary.csv
@@ -134,8 +136,8 @@ results/journal_workload_suite.csv.metadata.json
 results/paper_real_artifact_cdc_selected.csv
 results/public_artifact_suite.csv
 results/public_artifact_suite.csv.metadata.json
-results/pypi_object_trace.csv
-results/pypi_object_trace.json
+results/pypi_version_pair_object_study.csv
+results/pypi_version_pair_object_study.json
 results/quic_bottleneck_emulation.csv
 results/quic_bottleneck_emulation.json
 results/quic_competing_flows.csv
@@ -165,7 +167,7 @@ results/target_class_warm_update_summary.csv
 results/udp_repair_experiment.json
 results/wire_fairness_accounting.csv
 results/wire_fairness_accounting.json
-scripts/build_manuscript_v3_9.py
+scripts/build_manuscript_v3_10.py
 scripts/check_manuscript_citations.py
 scripts/make_journal_figures_v2_8.py
 scripts/plot_quic_flow_comparison.py
@@ -193,7 +195,7 @@ tests/test_miss_rate_and_accounting.py
 tests/test_macos_dummynet_quic_path.py
 tests/test_plot_results.py
 tests/test_public_manifest_validation.py
-tests/test_pypi_object_trace.py
+tests/test_pypi_version_pair_object_study.py
 tests/test_quic_competing_flows.py
 tests/test_quic_emulated_path.py
 tests/test_quic_miss_rate_sensitivity.py

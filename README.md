@@ -1,26 +1,27 @@
-# ReduLink journal-ready package v3.9
+# ReduLink journal-ready package v3.10
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.9-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.10-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Reviewer start here
 
 1. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
-2. Read `paper/submission/ReduLink_journal_ready_v3_9.pdf` or `.docx`.
+2. Read `paper/submission/ReduLink_journal_ready_v3_10.pdf` or `.docx`.
 3. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
 4. Use `python3 scripts/run_full_validation.py` only after installing
    `requirements-dev.txt`; aioquic-dependent transport tests skip when aioquic
-   is absent.
+   is absent. For pinned dependency reproduction, use `requirements-lock.txt`
+   directly or build the included `Dockerfile`.
 
 The canonical public artifact is the GitHub release/tag
-`v3.9-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
+`v3.10-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_9.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_9.pdf`
-- Build source: `scripts/build_manuscript_v3_9.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_10.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_10.pdf`
+- Build source: `scripts/build_manuscript_v3_10.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed
@@ -56,7 +57,8 @@ python3 scripts/run_full_validation.py
 
 The full suite includes aioquic-dependent integration tests. If aioquic is
 unavailable, those tests skip gracefully; install `requirements-dev.txt` for
-complete QUIC stream validation.
+complete QUIC stream validation or `requirements-lock.txt` for the exact
+dependency set used by this submission package.
 
 ## Environment
 
@@ -66,6 +68,19 @@ The artifact targets Python 3.10 or newer. A clean reviewer environment is:
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements-dev.txt
+```
+
+For exact dependency reproduction, use the committed lockfile instead:
+
+```bash
+python -m pip install -r requirements-lock.txt
+```
+
+The same pinned environment can be exercised through Docker:
+
+```bash
+docker build -t redulink-artifact:v3.10 .
+docker run --rm redulink-artifact:v3.10
 ```
 
 The smoke command is intended to finish quickly on a clean clone because it
@@ -85,7 +100,7 @@ time depends on host speed and whether aioquic and external corpora are present.
 - Deterministic journal fixtures (with disclosed unchanged fractions), public
   source-release negative pairs, object-aligned public release workloads, a
   Redis-derived layer-like positive case, and an independent hash-pinned PyPI
-  package version-pair study (`benchmarks/run_pypi_object_trace.py`).
+  package version-pair study (`benchmarks/run_pypi_version_pair_object_study.py`).
 - Real rsync and compression baselines, block-size sensitivity, repeated QUIC
   trials, scaling, component costs, and conservative accounting-layer separation.
 - Measured competing-flow fairness and a measured full-duplex userspace path

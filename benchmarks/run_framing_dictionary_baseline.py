@@ -20,7 +20,8 @@ Two review-driven additions in one runner:
 Object streams are serialized exactly as in the object suite's gzip baseline
 (length-prefixed relative name + length-prefixed content), so all byte counts
 are comparable. PyPI wheels are re-downloaded hash-verified against the
-committed trace (``results/pypi_object_trace.csv``).
+committed version-pair object-study file
+(``results/pypi_version_pair_object_study.csv``).
 
 Output: results/framing_dictionary_baseline.csv (and .json).
 """
@@ -144,7 +145,7 @@ def layer_row(oh_full: int, oh_ref: int) -> dict:
 
 def pypi_rows(oh_full: int, oh_ref: int) -> list[dict]:
     committed = {r["package"]: r for r in csv.DictReader(
-        (ROOT / "results" / "pypi_object_trace.csv").open())}
+        (ROOT / "results" / "pypi_version_pair_object_study.csv").open())}
     rows = []
     with tempfile.TemporaryDirectory() as td:
         tdp = Path(td)
@@ -163,7 +164,7 @@ def pypi_rows(oh_full: int, oh_ref: int) -> list[dict]:
             for w, key in ((w_old, "old_sha256"), (w_new, "new_sha256")):
                 h = hashlib.sha256(w.read_bytes()).hexdigest()
                 if h != rec[key]:
-                    raise SystemExit(f"{pkg}: wheel hash mismatch vs committed trace ({key})")
+                    raise SystemExit(f"{pkg}: wheel hash mismatch vs committed version-pair study ({key})")
             old_root = tdp / f"{pkg}-ox"; new_root = tdp / f"{pkg}-nx"
             with zipfile.ZipFile(w_old) as z: z.extractall(old_root)
             with zipfile.ZipFile(w_new) as z: z.extractall(new_root)

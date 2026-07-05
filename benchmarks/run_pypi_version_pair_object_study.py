@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent captured positive trace: real PyPI package upgrades.
+"""Independent PyPI version-pair object study.
 
 This runner does NOT construct or synthesize repeated bytes. It downloads real,
 hash-pinned wheel distributions for consecutive released versions of widely used
@@ -77,8 +77,8 @@ def model_roundtrip(old_root: Path, new_root: Path):
     return st.effective_multiplier, st.reconstruction_ok
 
 def main() -> None:
-    out_csv = ROOT / "results" / "pypi_object_trace.csv"
-    out_json = ROOT / "results" / "pypi_object_trace.json"
+    out_csv = ROOT / "results" / "pypi_version_pair_object_study.csv"
+    out_json = ROOT / "results" / "pypi_version_pair_object_study.json"
     rows = []
     with tempfile.TemporaryDirectory() as td:
         tdp = Path(td)
@@ -120,7 +120,7 @@ def main() -> None:
         print("no rows produced", file=sys.stderr); sys.exit(1)
     with out_csv.open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
-    out_json.write_text(json.dumps({"experiment": "pypi_object_upgrade_trace", "pairs": rows}, indent=2))
+    out_json.write_text(json.dumps({"experiment": "pypi_version_pair_object_study", "pairs": rows}, indent=2))
     print(out_csv)
 
 if __name__ == "__main__":

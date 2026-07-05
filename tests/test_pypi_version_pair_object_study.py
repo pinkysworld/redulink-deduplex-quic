@@ -1,4 +1,4 @@
-"""CI-safe validation of the committed independent PyPI object-upgrade trace.
+"""CI-safe validation of the committed independent PyPI version-pair object study.
 
 Does not re-download anything; it checks the committed result file is well-formed,
 hash-pinned, and reports byte-exact reconstruction for every real package pair.
@@ -8,13 +8,14 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CSV = ROOT / "results" / "pypi_object_trace.csv"
+CSV = ROOT / "results" / "pypi_version_pair_object_study.csv"
 
 
-class TestPypiObjectTrace(unittest.TestCase):
-    def test_trace_is_wellformed_and_reconstructs(self):
-        self.assertTrue(CSV.exists(), "pypi_object_trace.csv missing")
-        rows = list(csv.DictReader(CSV.open()))
+class TestPypiVersionPairObjectStudy(unittest.TestCase):
+    def test_study_file_is_wellformed_and_reconstructs(self):
+        self.assertTrue(CSV.exists(), "pypi_version_pair_object_study.csv missing")
+        with CSV.open(newline="") as fh:
+            rows = list(csv.DictReader(fh))
         self.assertGreaterEqual(len(rows), 3, "expected several package pairs")
         required = {
             "package", "old_version", "new_version", "old_sha256", "new_sha256",

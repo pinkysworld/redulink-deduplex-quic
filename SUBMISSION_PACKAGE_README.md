@@ -1,9 +1,9 @@
-# ReduLink v3.9 submission package
+# ReduLink v3.10 submission package
 
 Primary manuscript files:
 
-- `paper/submission/ReduLink_journal_ready_v3_9.pdf`
-- `paper/submission/ReduLink_journal_ready_v3_9.docx`
+- `paper/submission/ReduLink_journal_ready_v3_10.pdf`
+- `paper/submission/ReduLink_journal_ready_v3_10.docx`
 
 Quick validation:
 
@@ -19,13 +19,21 @@ python3 -m venv .venv
 python -m pip install -r requirements-dev.txt
 ```
 
+For exact dependency reproduction, use `requirements-lock.txt` instead of
+`requirements-dev.txt`, or build and run the pinned container:
+
+```bash
+docker build -t redulink-artifact:v3.10 .
+docker run --rm redulink-artifact:v3.10
+```
+
 Full validation:
 
 ```bash
 python3 scripts/run_full_validation.py
 ```
 
-Aioquic-dependent tests skip gracefully when aioquic is absent. The v3.9
+Aioquic-dependent tests skip gracefully when aioquic is absent. The v3.10
 revision refreshes the repeated local QUIC evidence at 20 rounds per reported
 grid point and includes both macOS pf/dnctl and Linux `tc/netem` kernel-path
 harnesses. The kernel harnesses are reviewer-runnable infrastructure; no live

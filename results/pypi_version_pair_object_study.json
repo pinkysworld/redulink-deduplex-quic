@@ -1,5 +1,5 @@
 {
-  "experiment": "pypi_object_upgrade_trace",
+  "experiment": "pypi_version_pair_object_study",
   "pairs": [
     {
       "package": "rich",
