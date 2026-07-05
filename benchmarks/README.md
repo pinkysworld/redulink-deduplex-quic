@@ -197,3 +197,24 @@ python3 benchmarks/run_wire_fairness_accounting.py
 ```
 
 This is not a competing-flow QUIC congestion-control experiment.
+
+## Native QUIC miss-rate sensitivity
+
+Run the reviewer-facing miss-rate sweep on the full-duplex userspace
+path-emulation harness:
+
+```bash
+python3 benchmarks/run_quic_miss_rate_sensitivity.py
+```
+
+Output:
+
+```text
+results/quic_miss_rate_sensitivity.csv
+results/quic_miss_rate_sensitivity.json
+```
+
+The sweep varies receiver dictionary thinning on the byte-stable demo payload at
+5 Mbps and 20 ms RTT. It is a sensitivity check for semantic MISS/FULL repair
+overheads, not a replacement for kernel `tc/netem`, Mininet, or a broader
+bandwidth/RTT grid.

@@ -38,6 +38,7 @@ benchmarks/run_quic_bottleneck_emulation.py
 benchmarks/run_quic_competing_flows.py
 benchmarks/run_quic_emulated_path.py
 benchmarks/run_quic_flow_comparison.py
+benchmarks/run_quic_miss_rate_sensitivity.py
 benchmarks/run_real_workload_manifest.py
 benchmarks/run_repeated_quic_trials.py
 benchmarks/run_rsync_baseline_manifest.py
@@ -95,14 +96,15 @@ figures/target_class/savings_warm_update.png
 paper/README.md
 paper/evidence_tables.md
 paper/submission/README.md
-paper/submission/ReduLink_journal_ready_v3_7.docx
-paper/submission/ReduLink_journal_ready_v3_7.pdf
+paper/submission/ReduLink_journal_ready_v3_8.docx
+paper/submission/ReduLink_journal_ready_v3_8.pdf
 prototypes/README.md
 prototypes/redulink_aioquic_experiment.py
 prototypes/redulink_authenticated_udp_experiment.py
 prototypes/redulink_semantic_repair_demo.py
 prototypes/redulink_socket_prototype.py
 prototypes/redulink_udp_repair_experiment.py
+pyproject.toml
 requirements-dev.txt
 results/aioquic_binary_experiment.json
 results/aioquic_binary_lossy_experiment.json
@@ -140,6 +142,8 @@ results/quic_emulated_path_redis.csv
 results/quic_emulated_path_redis.json
 results/quic_flow_comparison.csv
 results/quic_flow_comparison.json
+results/quic_miss_rate_sensitivity.csv
+results/quic_miss_rate_sensitivity.json
 results/real_workload_suite.csv
 results/repeated_quic_trials.csv
 results/repeated_quic_trials_summary.csv
@@ -155,7 +159,7 @@ results/target_class_warm_update_summary.csv
 results/udp_repair_experiment.json
 results/wire_fairness_accounting.csv
 results/wire_fairness_accounting.json
-scripts/build_manuscript_v3_7.py
+scripts/build_manuscript_v3_8.py
 scripts/check_manuscript_citations.py
 scripts/make_journal_figures_v2_8.py
 scripts/plot_quic_flow_comparison.py
@@ -184,6 +188,7 @@ tests/test_public_manifest_validation.py
 tests/test_pypi_object_trace.py
 tests/test_quic_competing_flows.py
 tests/test_quic_emulated_path.py
+tests/test_quic_miss_rate_sensitivity.py
 tests/test_random_negative_control.py
 tests/test_real_workload_manifest.py
 tests/test_reconstruction.py

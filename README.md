@@ -1,14 +1,26 @@
-# ReduLink journal-ready package v3.7
+# ReduLink journal-ready package v3.8
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.7-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.8-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+
+## Reviewer start here
+
+1. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
+2. Read `paper/submission/ReduLink_journal_ready_v3_8.pdf` or `.docx`.
+3. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
+4. Use `python3 scripts/run_full_validation.py` only after installing
+   `requirements-dev.txt`; aioquic-dependent transport tests skip when aioquic
+   is absent.
+
+The canonical public artifact is the GitHub release/tag
+`v3.8-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_7.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_7.pdf`
-- Build source: `scripts/build_manuscript_v3_7.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_8.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_8.pdf`
+- Build source: `scripts/build_manuscript_v3_8.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed
@@ -46,6 +58,21 @@ The full suite includes aioquic-dependent integration tests. If aioquic is
 unavailable, those tests skip gracefully; install `requirements-dev.txt` for
 complete QUIC stream validation.
 
+## Environment
+
+The artifact targets Python 3.10 or newer. A clean reviewer environment is:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+```
+
+The smoke command is intended to finish quickly on a clean clone because it
+skips external corpora until they are fetched. The full command runs every
+unittest module in isolated processes with a 60 second per-module timeout; wall
+time depends on host speed and whether aioquic and external corpora are present.
+
 ## What is implemented
 
 - Authenticated FULL/REF/MISS reference substitution model with fail-closed
@@ -58,13 +85,15 @@ complete QUIC stream validation.
 - Deterministic journal fixtures (with disclosed unchanged fractions), public
   source-release negative pairs, object-aligned public release workloads, a
   Redis-derived layer-like positive case, and an independent hash-pinned PyPI
-  package-upgrade trace (`benchmarks/run_pypi_object_trace.py`).
+  package version-pair study (`benchmarks/run_pypi_object_trace.py`).
 - Real rsync and compression baselines, block-size sensitivity, repeated QUIC
   trials, scaling, component costs, and conservative accounting-layer separation.
 - Measured competing-flow fairness and a measured full-duplex userspace path
   emulation (per-direction token buckets + delay shared by both flows), run on
   both byte-stable and real Redis-layered payloads
   (`benchmarks/run_quic_emulated_path.py [--payload demo|redis]`).
+- Native QUIC miss-rate sensitivity on the same full-duplex path-emulation
+  harness (`benchmarks/run_quic_miss_rate_sensitivity.py`).
 - Framing repricing at the measured 108-byte binary wire cost and a zstd
   `--patch-from` dictionary-delta baseline
   (`benchmarks/run_framing_dictionary_baseline.py`).

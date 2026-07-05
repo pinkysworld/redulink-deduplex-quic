@@ -1,4 +1,4 @@
-# Evidence hierarchy (v3.6)
+# Evidence hierarchy (v3.8)
 
 | Evidence level | What it supports | What it does not prove |
 |---|---|---|
@@ -12,3 +12,4 @@
 | Object-aligned public release workloads | Positive external transfer-model evidence | Captured production registry traces |
 | PyPI version-pair study (Sec. 7.5) | Positive/negative evidence from author-independent overlap | Client-trace frequency or population weighting |
 | Measured competing flows + userspace path emulation | Encoded-byte accounting, completion/queueing behavior on an emulated grid | Kernel tc/netem, Mininet, or Internet paths |
+| Native QUIC miss-rate sensitivity | How semantic repairs erode path-emulation byte savings on one constrained point | A full bandwidth/RTT miss-rate grid |

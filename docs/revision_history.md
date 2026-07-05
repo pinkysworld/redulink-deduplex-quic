@@ -1,5 +1,13 @@
 # Revision history (factual changelog)
 
+- v3.8: external-review cleanup for journal submission: GitHub-facing package
+  metadata is made self-consistent; `SOURCE_GIT_STATUS.txt` now points to the
+  current release tag rather than v3.6; reviewer-start/environment guidance is
+  added; the isolated unittest runner no longer depends on GNU `timeout`; and a
+  native QUIC miss-rate sensitivity sweep varies semantic misses from about 1%
+  to 49% at 5 Mbps and 20 ms RTT, showing the stream multiplier falling from
+  5.75x to 1.48x and the completion-time advantage narrowing.
+
 - v3.7: path emulator corrected to a full-duplex per-direction token bucket
   (fixes a half-duplex artifact that had wrongly shown ReduLink ~74% slower);
   on byte-stable content ReduLink now completes in 0.65x of raw on a constrained

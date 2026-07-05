@@ -1,0 +1,6 @@
+payload,rate_mbps,rtt_ms,rounds,missing_every,semantic_misses_mean,miss_fraction_mean,raw_completion_ms_mean,raw_completion_ms_sd,redulink_completion_ms_mean,redulink_completion_ms_sd,rl_over_raw_completion_mean,redulink_stream_multiplier_mean,all_reconstructed
+demo,5.0,20.0,3,0,1.0,0.011,925.847,289.937,664.545,76.298,0.744,5.75,True
+demo,5.0,20.0,3,16,6.0,0.067,1284.523,3.346,825.454,5.721,0.643,4.309,True
+demo,5.0,20.0,3,8,12.0,0.133,1319.457,1.823,968.205,12.502,0.734,3.313,True
+demo,5.0,20.0,3,4,24.0,0.267,1662.362,11.682,1322.303,1.278,0.795,2.266,True
+demo,5.0,20.0,3,2,44.0,0.489,2018.884,11.067,1722.823,12.532,0.853,1.484,True
