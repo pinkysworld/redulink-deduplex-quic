@@ -255,6 +255,37 @@ handshakes intermittently timed out under loopback dummynet, so no
 local kernel path-emulation experiment, not a WAN, Mininet, or Linux `tc/netem`
 deployment.
 
+## Linux kernel tc/netem QUIC path sweep
+
+On Linux reviewers can inspect and run a loopback `tc/netem` path sweep. The
+script compares native aioquic raw-stream transfers with ReduLink binary-stream
+transfers while a temporary qdisc is attached to the selected device. The live
+run requires Linux, root privileges (or passwordless sudo), and iproute2 `tc`;
+the dry run works on any platform and prints the exact setup/cleanup commands:
+
+```bash
+python3 benchmarks/run_linux_netem_quic_path.py --dry-run
+sudo -v
+python3 benchmarks/run_linux_netem_quic_path.py \
+  --payload demo redis \
+  --rate-mbps 5 20 \
+  --rtt-ms 20 80 \
+  --loss-percent 0 \
+  --rounds 20
+```
+
+Output:
+
+```text
+results/linux_netem_quic_path.csv
+results/linux_netem_quic_path.json
+```
+
+The harness always attempts `tc qdisc del dev <device> root` cleanup after each
+scenario. This repository does not include live `results/linux_netem_quic_path.*`
+files because the current development host is macOS; the script is included so
+the same aioquic comparison can be executed on a privileged Linux host.
+
 ## QUIC statistical evidence table
 
 To report uncertainty from the existing repeated QUIC measurements:

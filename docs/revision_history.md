@@ -1,5 +1,13 @@
 # Revision history (factual changelog)
 
+- v3.9: package metadata, manuscript filenames, citation metadata, and build
+  script names are promoted consistently from v3.8 to v3.9; repeated local QUIC
+  evidence is refreshed at 20 rounds for the path-emulation grid, concurrent
+  localhost pair, and sequential QUIC repeats; bootstrap confidence intervals
+  are regenerated; and a Linux `tc/netem` kernel-path harness is added alongside
+  the macOS dummynet harness. The package still does not claim a completed live
+  kernel-path aioquic sweep.
+
 - v3.8: external-review cleanup for journal submission: GitHub-facing package
   metadata is made self-consistent; `SOURCE_GIT_STATUS.txt` now points to the
   current release tag rather than v3.6; reviewer-start/environment guidance is

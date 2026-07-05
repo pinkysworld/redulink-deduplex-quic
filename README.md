@@ -1,26 +1,26 @@
-# ReduLink journal-ready package v3.8
+# ReduLink journal-ready package v3.9
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.8-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.9-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Reviewer start here
 
 1. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
-2. Read `paper/submission/ReduLink_journal_ready_v3_8.pdf` or `.docx`.
+2. Read `paper/submission/ReduLink_journal_ready_v3_9.pdf` or `.docx`.
 3. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
 4. Use `python3 scripts/run_full_validation.py` only after installing
    `requirements-dev.txt`; aioquic-dependent transport tests skip when aioquic
    is absent.
 
 The canonical public artifact is the GitHub release/tag
-`v3.8-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
+`v3.9-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_8.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_8.pdf`
-- Build source: `scripts/build_manuscript_v3_8.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_9.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_9.pdf`
+- Build source: `scripts/build_manuscript_v3_9.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed
@@ -90,10 +90,14 @@ time depends on host speed and whether aioquic and external corpora are present.
   trials, scaling, component costs, and conservative accounting-layer separation.
 - Measured competing-flow fairness and a measured full-duplex userspace path
   emulation (per-direction token buckets + delay shared by both flows), run on
-  both byte-stable and real Redis-layered payloads
+  both byte-stable and real Redis-layered payloads with 20 rounds per grid point
   (`benchmarks/run_quic_emulated_path.py [--payload demo|redis]`).
 - Native QUIC miss-rate sensitivity on the same full-duplex path-emulation
   harness (`benchmarks/run_quic_miss_rate_sensitivity.py`).
+- Reviewer-runnable kernel-path harnesses for macOS pf/dnctl and Linux
+  `tc/netem`, with tested dry-run command rendering
+  (`benchmarks/run_macos_dummynet_quic_path.py`,
+  `benchmarks/run_linux_netem_quic_path.py`).
 - Framing repricing at the measured 108-byte binary wire cost and a zstd
   `--patch-from` dictionary-delta baseline
   (`benchmarks/run_framing_dictionary_baseline.py`).
@@ -106,6 +110,7 @@ time depends on host speed and whether aioquic and external corpora are present.
   live private QUIC TLS exporter bytes.
 - Public object-aligned and package-upgrade workloads are derived from real
   public bytes but are transfer-model evidence, not captured production traces.
-- Path emulation is userspace (asyncio token bucket + delay), not kernel
-  `tc/netem` or Mininet; a privileged-host congestion-control study remains
-  future work.
+- The committed path-emulation results are userspace measurements
+  (asyncio token bucket + delay). Kernel-path harnesses are included, but the
+  package does not claim a completed `tc/netem`, dummynet, Mininet, or WAN
+  congestion-control study.

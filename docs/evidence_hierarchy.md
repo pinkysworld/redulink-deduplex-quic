@@ -1,4 +1,4 @@
-# Evidence hierarchy (v3.8)
+# Evidence hierarchy (v3.9)
 
 | Evidence level | What it supports | What it does not prove |
 |---|---|---|
@@ -11,6 +11,7 @@
 | External source-release pairs | Negative evidence for ordinary source-tree transfer | Registry/layer transfer gains |
 | Object-aligned public release workloads | Positive external transfer-model evidence | Captured production registry traces |
 | PyPI version-pair study (Sec. 7.5) | Positive/negative evidence from author-independent overlap | Client-trace frequency or population weighting |
-| Measured competing flows + userspace path emulation | Encoded-byte accounting, completion/queueing behavior on an emulated grid | Kernel tc/netem, Mininet, or Internet paths |
+| Measured competing flows + userspace path emulation | Encoded-byte accounting, completion/queueing behavior on an emulated grid with 20-round local QUIC repeats | Kernel tc/netem, Mininet, or Internet paths |
 | Native QUIC miss-rate sensitivity | How semantic repairs erode path-emulation byte savings on one constrained point | A full bandwidth/RTT miss-rate grid |
 | macOS pf/dnctl dummynet QUIC path harness | Reviewer-runnable dry-run rules and local UDP probe viability on macOS | Completed aioquic sweep; WAN, Mininet, Linux tc/netem, or production registry traces |
+| Linux tc/netem QUIC path harness | Reviewer-runnable dry-run rules and a concrete privileged Linux loopback qdisc sweep path | Completed kernel-path result in this package; WAN, Mininet, or production registry traces |

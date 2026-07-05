@@ -1,31 +1,31 @@
 experiment,scenario,metric,n,mean,stdev,ci95_low,ci95_high,min,max
-quic_emulated_path,demo; rate=20.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,5,1.015493,0.0261,0.999059,1.036952,0.998062,1.05966
-quic_emulated_path,demo; rate=20.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,5,0.313487,0.0,0.313487,0.313487,0.313487,0.313487
-quic_emulated_path,demo; rate=20.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,5,3.189928,0.0,3.189928,3.189928,3.189928,3.189928
-quic_emulated_path,demo; rate=20.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,5,1.003885,0.009578,0.996632,1.011099,0.989794,1.014095
-quic_emulated_path,demo; rate=20.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,5,0.313497,0.0,0.313497,0.313497,0.313497,0.313497
-quic_emulated_path,demo; rate=20.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,5,3.189824,0.0,3.189824,3.189824,3.189824,3.189824
-quic_emulated_path,demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,5,0.656262,0.042698,0.627675,0.69317,0.621917,0.726588
-quic_emulated_path,demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,5,0.313495,5e-06,0.313491,0.313497,0.313487,0.313497
-quic_emulated_path,demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,5,3.189845,4.6e-05,3.189824,3.189886,3.189824,3.189928
-quic_emulated_path,demo; rate=5.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,5,0.842643,0.017887,0.829879,0.856692,0.823903,0.870444
-quic_emulated_path,demo; rate=5.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,5,0.313495,5e-06,0.313491,0.313497,0.313487,0.313497
-quic_emulated_path,demo; rate=5.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,5,3.189845,4.6e-05,3.189824,3.189886,3.189824,3.189928
-quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,3,1.068253,0.035223,1.030687,1.100535,1.030687,1.100535
-quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,3,0.26084,1e-06,0.260839,0.260841,0.260839,0.260841
-quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,3,3.833766,1.6e-05,3.833748,3.833776,3.833748,3.833776
-quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,3,0.853918,0.014067,0.837684,0.862506,0.837684,0.862506
-quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,3,0.260841,0.0,0.260841,0.260841,0.260841,0.260841
-quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,3,3.833748,0.0,3.833748,3.833748,3.833748,3.833748
-quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,3,1.136774,0.244518,0.961088,1.416033,0.961088,1.416033
-quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,3,0.260841,1e-06,0.260839,0.260841,0.260839,0.260841
-quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,3,3.833757,1.6e-05,3.833748,3.833776,3.833748,3.833776
-quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,3,1.279041,0.064383,1.228575,1.35155,1.228575,1.35155
-quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,3,0.260841,0.0,0.260841,0.260841,0.260841,0.260841
-quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,3,3.833748,0.0,3.833748,3.833748,3.833748,3.833748
-quic_competing_flows,localhost concurrent aioquic pair; rate_hint=25Mbps,completion_ratio_redulink_over_raw,12,1.083443,0.214936,0.965505,1.1959,0.732891,1.361321
-quic_competing_flows,localhost concurrent aioquic pair; rate_hint=25Mbps,encoded_byte_ratio_redulink_over_raw,12,0.313492,5e-06,0.313489,0.313494,0.313487,0.313497
-quic_competing_flows,localhost concurrent aioquic pair; rate_hint=25Mbps,redulink_stream_multiplier,12,3.189876,5.4e-05,3.18985,3.189902,3.189824,3.189928
-repeated_quic_trials,native aioquic sequential smoke repeats,redulink_stream_multiplier,3,3.189928,0.0,3.189928,3.189928,3.189928,3.189928
-repeated_quic_trials,native aioquic sequential smoke repeats,redulink_udp_est_multiplier,3,2.578853,0.003857,2.574954,2.582666,2.574954,2.582666
-repeated_quic_trials,native aioquic sequential smoke repeats,completion_ratio_redulink_over_raw,3,0.607306,0.064625,0.565583,0.681747,0.565583,0.681747
+quic_emulated_path,demo; rate=20.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,0.892309,0.0674,0.866734,0.923119,0.830301,1.115085
+quic_emulated_path,demo; rate=20.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.313486,2e-06,0.313485,0.313487,0.313477,0.313487
+quic_emulated_path,demo; rate=20.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,20,3.189933,2.3e-05,3.189928,3.189943,3.189928,3.190031
+quic_emulated_path,demo; rate=20.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,1.019316,0.009953,1.015012,1.023239,0.991121,1.037704
+quic_emulated_path,demo; rate=20.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.313496,2e-06,0.313495,0.313497,0.313487,0.313497
+quic_emulated_path,demo; rate=20.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,20,3.189829,2.3e-05,3.189824,3.18984,3.189824,3.189928
+quic_emulated_path,demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,1.012161,0.149712,0.948105,1.069738,0.755017,1.131717
+quic_emulated_path,demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.313495,4e-06,0.313493,0.313496,0.313487,0.313497
+quic_emulated_path,demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,20,3.189845,4.2e-05,3.189829,3.189866,3.189824,3.189928
+quic_emulated_path,demo; rate=5.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,0.876639,0.040319,0.862351,0.896413,0.839229,1.026019
+quic_emulated_path,demo; rate=5.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.313495,4e-06,0.313494,0.313497,0.313487,0.313497
+quic_emulated_path,demo; rate=5.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,20,3.18984,3.8e-05,3.189824,3.189855,3.189824,3.189928
+quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,1.119964,0.048595,1.101522,1.142155,1.062965,1.288968
+quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.260841,1e-06,0.260841,0.260841,0.260838,0.260841
+quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,20,3.833753,1.5e-05,3.833748,3.83376,3.833748,3.833804
+quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,0.818233,0.029838,0.807317,0.832245,0.784525,0.926409
+quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.260841,1e-06,0.26084,0.260841,0.260838,0.260841
+quic_emulated_path_redis,redis; rate=20.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,20,3.833756,1.8e-05,3.833749,3.833765,3.833748,3.833804
+quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,0.947609,0.036551,0.93163,0.962612,0.842944,0.981358
+quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.260841,1e-06,0.260841,0.260841,0.260839,0.260841
+quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0,redulink_stream_multiplier,20,3.83375,9e-06,3.833748,3.833755,3.833748,3.833776
+quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=80.0ms; loss_every=0,completion_ratio_redulink_over_raw,20,1.278881,0.0747,1.248118,1.310017,1.157066,1.370129
+quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=80.0ms; loss_every=0,encoded_byte_ratio_redulink_over_raw,20,0.260841,0.0,0.260841,0.260841,0.260839,0.260841
+quic_emulated_path_redis,redis; rate=5.0Mbps; rtt=80.0ms; loss_every=0,redulink_stream_multiplier,20,3.833749,6e-06,3.833748,3.833752,3.833748,3.833776
+quic_competing_flows,localhost concurrent aioquic pair; rate_hint=25Mbps,completion_ratio_redulink_over_raw,20,0.920653,0.240798,0.825733,1.030859,0.536707,1.63105
+quic_competing_flows,localhost concurrent aioquic pair; rate_hint=25Mbps,encoded_byte_ratio_redulink_over_raw,20,0.313488,6e-06,0.313486,0.313491,0.313477,0.313497
+quic_competing_flows,localhost concurrent aioquic pair; rate_hint=25Mbps,redulink_stream_multiplier,20,3.189912,6.1e-05,3.189886,3.189938,3.189824,3.190031
+repeated_quic_trials,native aioquic sequential smoke repeats,redulink_stream_multiplier,20,3.190036,2.3e-05,3.190031,3.190047,3.190031,3.190135
+repeated_quic_trials,native aioquic sequential smoke repeats,redulink_udp_est_multiplier,20,2.605427,0.003688,2.603705,2.606797,2.596856,2.608571
+repeated_quic_trials,native aioquic sequential smoke repeats,completion_ratio_redulink_over_raw,20,0.980671,0.028697,0.968993,0.992939,0.928898,1.031079

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Repeat the native aioquic comparison and summarize variance."""
 from __future__ import annotations
-import csv, json, statistics, sys
+import argparse, csv, json, statistics, sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'benchmarks'))
@@ -20,7 +20,14 @@ def summarize(vals):
     }
 
 def main():
-    n=3
+    ap=argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--rounds", type=int, default=20,
+                    help="number of raw/ReduLink paired repetitions")
+    ap.add_argument("--output-csv", type=Path, default=ROOT/'results/repeated_quic_trials.csv')
+    ap.add_argument("--output-json", type=Path, default=ROOT/'results/repeated_quic_trials_summary.json')
+    ap.add_argument("--summary-csv", type=Path, default=ROOT/'results/repeated_quic_trials_summary.csv')
+    args=ap.parse_args()
+    n=args.rounds
     warm,data=demo_payload(96)
     raw_mult=[]; raw_ms=[]; rl_mult=[]; rl_ms=[]; rl_udp=[]
     rows=[]
@@ -33,7 +40,7 @@ def main():
         rl_ms.append(float(rl['client_elapsed_ms']))
         rl_udp.append(float(rl.get('approx_ipv4_udp_multiplier_seen', 0)))
         rows.append({'trial': i+1, 'raw_stream_multiplier': raw_mult[-1], 'raw_client_ms': raw_ms[-1], 'redulink_stream_multiplier': rl_mult[-1], 'redulink_udp_est_multiplier': rl_udp[-1], 'redulink_client_ms': rl_ms[-1], 'redulink_reconstruction_ok': rl['reconstruction_ok']})
-    out=ROOT/'results/repeated_quic_trials.csv'
+    out=args.output_csv
     with out.open('w', newline='') as fh:
         writer=csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator='\n')
         writer.writeheader(); writer.writerows(rows)
@@ -44,11 +51,11 @@ def main():
         'redulink_udp_est_multiplier': summarize(rl_udp),
         'redulink_client_ms': summarize(rl_ms),
     }
-    (ROOT/'results/repeated_quic_trials_summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True)+'\n')
+    args.output_json.write_text(json.dumps(summary, indent=2, sort_keys=True)+'\n')
     sum_rows=[]
     for metric, stats in summary.items():
         sum_rows.append({'metric': metric, **{k: f'{v:.6f}' if isinstance(v,float) else v for k,v in stats.items()}})
-    with (ROOT/'results/repeated_quic_trials_summary.csv').open('w', newline='') as fh:
+    with args.summary_csv.open('w', newline='') as fh:
         writer=csv.DictWriter(fh, fieldnames=list(sum_rows[0].keys()), lineterminator='\n')
         writer.writeheader(); writer.writerows(sum_rows)
     print(out)

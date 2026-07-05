@@ -163,7 +163,8 @@ def main() -> None:
     args.output_json.write_text(json.dumps(result, indent=2))
     rows = result["rows"]
     with args.output_csv.open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n")
+        w.writeheader(); w.writerows(rows)
     for sm in result["summary"]:
         print(sm)
     print(args.output_csv)
