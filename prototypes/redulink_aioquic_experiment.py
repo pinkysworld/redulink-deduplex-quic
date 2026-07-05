@@ -406,7 +406,8 @@ class LossyUdpProxy(asyncio.DatagramProtocol):
 async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every: int,
                     wire_format: str = "binary", loss_every: int = 0,
                     account_datagrams: bool = False, shaper: Any = None,
-                    max_dict_chunks: int | None = None) -> dict[str, Any]:
+                    max_dict_chunks: int | None = None,
+                    server_port: int = 0) -> dict[str, Any]:
     global WIRE_FORMAT
     WIRE_FORMAT = wire_format
     master_secret = b"redulink-aioquic-artifact-master-secret"
@@ -459,7 +460,7 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
             asyncio.create_task(server_state.handle_stream(reader, writer))
 
-        server = await serve("127.0.0.1", 0, configuration=server_conf, stream_handler=stream_handler)
+        server = await serve("127.0.0.1", server_port, configuration=server_conf, stream_handler=stream_handler)
         assert server._transport is not None  # aioquic server exposes the bound datagram transport
         server_port = int(server._transport.get_extra_info("sockname")[1])
         proxy_transport = None
@@ -560,7 +561,8 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
 
 def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_format: str = "binary",
                    loss_every: int = 0, payload_blocks: int = 96,
-                   account_datagrams: bool = False, max_dict_chunks: int | None = None) -> dict[str, Any]:
+                   account_datagrams: bool = False, max_dict_chunks: int | None = None,
+                   server_port: int = 0) -> dict[str, Any]:
     warm, data = demo_payload(payload_blocks)
     return asyncio.run(run_async(
         warm=warm,
@@ -571,6 +573,7 @@ def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_forma
         loss_every=loss_every,
         account_datagrams=account_datagrams,
         max_dict_chunks=max_dict_chunks,
+        server_port=server_port,
     ))
 
 

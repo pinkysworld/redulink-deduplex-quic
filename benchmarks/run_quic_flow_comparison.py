@@ -40,7 +40,8 @@ def _pack_stats(stats: dict) -> bytes:
 
 
 async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 4096,
-                        account_datagrams: bool = False, shaper=None) -> dict:
+                        account_datagrams: bool = False, shaper=None,
+                        server_port: int = 0) -> dict:
     expected = hashlib.sha256(data).hexdigest()
     with tempfile.TemporaryDirectory(prefix="redulink-raw-quic-") as tmp:
         cert, key = write_self_signed_cert(Path(tmp))
@@ -70,7 +71,7 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
         def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
             asyncio.create_task(handler(reader, writer))
 
-        server = await serve("127.0.0.1", 0, configuration=server_conf, stream_handler=stream_handler)
+        server = await serve("127.0.0.1", server_port, configuration=server_conf, stream_handler=stream_handler)
         assert server._transport is not None
         server_port = int(server._transport.get_extra_info("sockname")[1])
         proxy_transport = None

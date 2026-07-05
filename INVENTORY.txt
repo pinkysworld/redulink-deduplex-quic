@@ -32,6 +32,7 @@ benchmarks/run_external_object_workload_suite.py
 benchmarks/run_framing_dictionary_baseline.py
 benchmarks/run_journal_block_size_sensitivity.py
 benchmarks/run_journal_workload_suite.sh
+benchmarks/run_macos_dummynet_quic_path.py
 benchmarks/run_public_artifacts.sh
 benchmarks/run_pypi_object_trace.py
 benchmarks/run_quic_bottleneck_emulation.py
@@ -47,6 +48,8 @@ benchmarks/run_target_class_suite.sh
 benchmarks/run_udp_repair_experiment.sh
 benchmarks/run_v2_evaluation.sh
 benchmarks/run_wire_fairness_accounting.py
+benchmarks/stats_utils.py
+benchmarks/summarize_quic_statistical_evidence.py
 benchmarks/target_class_manifest.csv
 data/external_positive_corpora/redis-layered-public-positive/update.bin
 data/external_positive_corpora/redis-layered-public-positive/warm.bin
@@ -144,6 +147,8 @@ results/quic_flow_comparison.csv
 results/quic_flow_comparison.json
 results/quic_miss_rate_sensitivity.csv
 results/quic_miss_rate_sensitivity.json
+results/quic_statistical_evidence.csv
+results/quic_statistical_evidence.json
 results/real_workload_suite.csv
 results/repeated_quic_trials.csv
 results/repeated_quic_trials_summary.csv
@@ -183,12 +188,14 @@ tests/test_framing_dictionary_baseline.py
 tests/test_journal_workload_and_performance.py
 tests/test_key_schedule.py
 tests/test_miss_rate_and_accounting.py
+tests/test_macos_dummynet_quic_path.py
 tests/test_plot_results.py
 tests/test_public_manifest_validation.py
 tests/test_pypi_object_trace.py
 tests/test_quic_competing_flows.py
 tests/test_quic_emulated_path.py
 tests/test_quic_miss_rate_sensitivity.py
+tests/test_quic_statistical_evidence.py
 tests/test_random_negative_control.py
 tests/test_real_workload_manifest.py
 tests/test_reconstruction.py

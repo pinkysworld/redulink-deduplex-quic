@@ -1,1 +1,1 @@
-Exported from a clean working tree; verify with: git status --porcelain (empty) at tag v3.8-journal-submission. Manuscript hashes: MANUSCRIPT_SHA256.txt
+Exported from main after v3.8 with v3.9 manuscript/evidence updates; verify with: git status --porcelain (empty) after commit. Manuscript hashes: MANUSCRIPT_SHA256.txt

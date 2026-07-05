@@ -1,4 +1,4 @@
-# Version 3.6 Evidence Tables
+# Version 3.9 Evidence Tables
 
 These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.
 
@@ -67,6 +67,22 @@ Synthetic rows are retained as mechanism checks and should not be read as produc
 | updates | redulink:fixed | 2,575,182 | 1,314,222 | 1.959x | 4.725 | 519.769 |
 | mixed | redulink:fixed | 3,187,727 | 651,863 | 4.890x | 4.406 | 689.980 |
 | mixed | redulink:cdc | 3,187,727 | 667,559 | 4.775x | 1017.794 | 2.987 |
+
+## QUIC Statistical Evidence
+
+Source: `results/quic_statistical_evidence.csv`. Confidence intervals are deterministic percentile bootstrap intervals over repeated local measurements; paired raw/ReduLink rows are used where available.
+
+| Experiment | Scenario | Metric | n | Mean | 95% CI |
+|---|---|---|---:|---:|---:|
+| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 5 | 0.656 | [0.628, 0.693] |
+| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 5 | 0.313 | [0.313, 0.313] |
+| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 3 | 1.137 | [0.961, 1.416] |
+| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 3 | 0.261 | [0.261, 0.261] |
+| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | completion_ratio_redulink_over_raw | 12 | 1.083 | [0.966, 1.196] |
+| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | encoded_byte_ratio_redulink_over_raw | 12 | 0.313 | [0.313, 0.313] |
+| repeated_quic_trials | native aioquic sequential smoke repeats | redulink_udp_est_multiplier | 3 | 2.579 | [2.575, 2.583] |
+
+Interpretation: these rows quantify variability in the local QUIC experiments. They remain localhost/path-emulation evidence and do not replace WAN, Mininet, or production registry traces.
 
 ## Native aioquic Stream-Mapping Result
 

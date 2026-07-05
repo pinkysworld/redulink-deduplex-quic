@@ -218,3 +218,58 @@ The sweep varies receiver dictionary thinning on the byte-stable demo payload at
 5 Mbps and 20 ms RTT. It is a sensitivity check for semantic MISS/FULL repair
 overheads, not a replacement for kernel `tc/netem`, Mininet, or a broader
 bandwidth/RTT grid.
+
+## macOS kernel dummynet QUIC path sweep
+
+On macOS reviewers can run a sudo-gated loopback UDP path sweep using
+`pf`/`dnctl` dummynet pipes. The script compares native aioquic raw-stream
+transfers with ReduLink binary-stream transfers on the same shaped loopback
+path, reports per-scenario means, and adds deterministic bootstrap confidence
+intervals:
+
+```bash
+python3 benchmarks/run_macos_dummynet_quic_path.py --dry-run
+sudo -v
+python3 benchmarks/run_macos_dummynet_quic_path.py \
+  --payload demo redis \
+  --rate-mbps 5 20 100 \
+  --rtt-ms 20 80 \
+  --loss-percent 0 0.1 1 \
+  --rounds 25
+```
+
+Output:
+
+```text
+results/macos_dummynet_quic_path.csv
+results/macos_dummynet_quic_path.json
+```
+
+The dry run prints the exact `dnctl` and `pfctl` commands and the temporary
+anchor rules without changing networking. Live runs load a temporary
+`com.apple/redulink_dummynet` anchor below macOS' existing dummynet anchor point
+and attempt cleanup after each scenario. On this development Mac, direct UDP
+probes succeeded through the same `pf`/`dnctl` rules, but repeated aioquic
+handshakes intermittently timed out under loopback dummynet, so no
+`results/macos_dummynet_quic_path.*` files are included yet. This remains a
+local kernel path-emulation experiment, not a WAN, Mininet, or Linux `tc/netem`
+deployment.
+
+## QUIC statistical evidence table
+
+To report uncertainty from the existing repeated QUIC measurements:
+
+```bash
+python3 benchmarks/summarize_quic_statistical_evidence.py
+```
+
+Output:
+
+```text
+results/quic_statistical_evidence.csv
+results/quic_statistical_evidence.json
+```
+
+The script uses paired raw/ReduLink rows where available and deterministic
+percentile bootstrap confidence intervals over completion ratios,
+encoded-byte ratios, and ReduLink stream multipliers.

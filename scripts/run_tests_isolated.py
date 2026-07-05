@@ -15,16 +15,15 @@ def main() -> int:
     env.setdefault("PYTHONDONTWRITEBYTECODE", "1")
     total = 0
     for path in files:
-        mod = "tests." + path.stem
-        print(f"== {mod}", flush=True)
-        cmd = [sys.executable, "-m", "unittest", mod, "-q"]
+        print(f"== {path.name}", flush=True)
+        cmd = [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", path.name, "-q"]
         try:
             cp = subprocess.run(cmd, cwd=ROOT, text=True, env=env, timeout=PER_FILE_TIMEOUT_SECONDS)
         except subprocess.TimeoutExpired:
-            print(f"module timed out after {PER_FILE_TIMEOUT_SECONDS}s: {mod}", file=sys.stderr)
+            print(f"module timed out after {PER_FILE_TIMEOUT_SECONDS}s: {path.name}", file=sys.stderr)
             return 124
         if cp.returncode != 0:
-            print(f"module failed: {mod} (rc={cp.returncode})", file=sys.stderr)
+            print(f"module failed: {path.name} (rc={cp.returncode})", file=sys.stderr)
             return cp.returncode
         total += 1
     print(f"isolated unittest modules OK: {total}")

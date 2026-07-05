@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "results/target_class_suite.csv"
 PUBLIC = ROOT / "results/public_artifact_suite.csv"
 SYNTHETIC = ROOT / "results/synthetic_suite.csv"
+QUIC_STATS = ROOT / "results/quic_statistical_evidence.csv"
 SUMMARY_CSV = ROOT / "results/target_class_warm_update_summary.csv"
 OUT_MD = ROOT / "paper/evidence_tables.md"
 
@@ -229,6 +230,46 @@ def md_synthetic_excerpt(synthetic_rows: list[dict[str, str]]) -> list[str]:
     return lines
 
 
+def md_quic_statistical_evidence() -> list[str]:
+    if not QUIC_STATS.exists():
+        return []
+    stat_rows = rows(QUIC_STATS)
+    selected = [
+        ("quic_emulated_path", "demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0", "completion_ratio_redulink_over_raw"),
+        ("quic_emulated_path", "demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0", "encoded_byte_ratio_redulink_over_raw"),
+        ("quic_emulated_path_redis", "redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0", "completion_ratio_redulink_over_raw"),
+        ("quic_emulated_path_redis", "redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0", "encoded_byte_ratio_redulink_over_raw"),
+        ("quic_competing_flows", "localhost concurrent aioquic pair; rate_hint=25Mbps", "completion_ratio_redulink_over_raw"),
+        ("quic_competing_flows", "localhost concurrent aioquic pair; rate_hint=25Mbps", "encoded_byte_ratio_redulink_over_raw"),
+        ("repeated_quic_trials", "native aioquic sequential smoke repeats", "redulink_udp_est_multiplier"),
+    ]
+    by_key = {
+        (row["experiment"], row["scenario"], row["metric"]): row
+        for row in stat_rows
+    }
+    lines = [
+        "## QUIC Statistical Evidence",
+        "",
+        "Source: `results/quic_statistical_evidence.csv`. Confidence intervals are deterministic percentile bootstrap intervals over repeated local measurements; paired raw/ReduLink rows are used where available.",
+        "",
+        "| Experiment | Scenario | Metric | n | Mean | 95% CI |",
+        "|---|---|---|---:|---:|---:|",
+    ]
+    for key in selected:
+        row = by_key[key]
+        lines.append(
+            f"| {row['experiment']} | {row['scenario']} | {row['metric']} | "
+            f"{row['n']} | {fnum(row['mean'], 3)} | "
+            f"[{fnum(row['ci95_low'], 3)}, {fnum(row['ci95_high'], 3)}] |"
+        )
+    lines.extend([
+        "",
+        "Interpretation: these rows quantify variability in the local QUIC experiments. They remain localhost/path-emulation evidence and do not replace WAN, Mininet, or production registry traces.",
+        "",
+    ])
+    return lines
+
+
 def main() -> None:
     target_rows = rows(TARGET)
     public_rows = rows(PUBLIC)
@@ -237,7 +278,7 @@ def main() -> None:
     write_summary_csv(summary_rows)
 
     lines = [
-        "# Version 3.6 Evidence Tables",
+        "# Version 3.9 Evidence Tables",
         "",
         "These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.",
         "",
@@ -256,6 +297,7 @@ def main() -> None:
     lines.extend(md_public_coverage())
     lines.extend(md_public_excerpt(public_rows))
     lines.extend(md_synthetic_excerpt(synthetic_rows))
+    lines.extend(md_quic_statistical_evidence())
 
     # Native aioquic stream-mapping result, if present.
     aioquic_path = ROOT / "results" / "aioquic_native_experiment.json"

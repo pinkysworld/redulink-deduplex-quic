@@ -21,6 +21,9 @@ def run(cmd: list[str]) -> None:
     env.setdefault("PYTHONDONTWRITEBYTECODE", "1")
     subprocess.run(cmd, cwd=ROOT, env=env, check=True)
 
+def run_unittest_file(name: str) -> None:
+    run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", name])
+
 if __name__ == "__main__":
     run([sys.executable, "scripts/check_manuscript_citations.py"])
     run([sys.executable, "benchmarks/check_generated_artifacts.py"])
@@ -30,5 +33,13 @@ if __name__ == "__main__":
     else:
         print("~ skipping external object suite (corpora not fetched; run "
               "benchmarks/fetch_external_public_corpora.py to enable)", flush=True)
-    run([sys.executable, "-m", "unittest", "tests.test_reconstruction", "tests.test_secure_binding_hardening", "tests.test_external_object_workload_suite", "tests.test_redulink_wire", "tests.test_key_schedule", "tests.test_secure_verify_hardening"])
+    for test_file in [
+        "test_reconstruction.py",
+        "test_secure_binding_hardening.py",
+        "test_external_object_workload_suite.py",
+        "test_redulink_wire.py",
+        "test_key_schedule.py",
+        "test_secure_verify_hardening.py",
+    ]:
+        run_unittest_file(test_file)
     print("smoke validation OK: citations, generated artifacts, and core security/model tests passed")
