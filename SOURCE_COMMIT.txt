@@ -1,5 +1,4 @@
-package: ReduLink journal-ready v3.12 working package
-commit: this commit on main
-parent-commit: f05e89cc0087c8a6c1c2dd5712e6d5451d226754
-tag: v3.12-journal-submission
+package: ReduLink journal-ready v3.13
+parent-commit: b50a4c3bfe8aa82dfe6fa004551f25ac0aee9aa9
+tag: v3.13-journal-submission
 repository: https://github.com/pinkysworld/redulink-deduplex-quic

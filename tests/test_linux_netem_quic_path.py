@@ -95,3 +95,33 @@ class LinuxNetemQuicPathTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LinuxNetemCommittedResultTests(unittest.TestCase):
+    """Validate the committed live-netem result (produced in a rootless netns)."""
+
+    def test_committed_netem_result_is_wellformed(self):
+        import csv
+        csv_p = ROOT / "results" / "linux_netem_quic_path.csv"
+        json_p = ROOT / "results" / "linux_netem_quic_path.json"
+        if not csv_p.exists() or not json_p.exists():
+            self.skipTest("live netem result not present; run run_linux_netem_quic_path.py on Linux")
+        with csv_p.open(newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        self.assertGreaterEqual(len(rows), 8)
+        for r in rows:
+            self.assertEqual(r["reconstruction_ok"], "True")
+            self.assertIn("tc/netem", r["emulation"])
+            self.assertGreater(float(r["completion_ms_measured"]), 0.0)
+        data = json.loads(json_p.read_text())
+        self.assertEqual(data["experiment"], "linux_netem_quic_path")
+        for s in data["summary"]:
+            self.assertTrue(s["all_reconstructed"])
+            self.assertGreaterEqual(s["rounds"], 10)
+            self.assertIn("completion_ratio_ci95_low", s)
+            # ReduLink sends strictly fewer encoded bytes than raw on the wire
+            self.assertLess(s["encoded_byte_ratio_mean"], 1.0)
+
+
+if __name__ == "__main__":
+    unittest.main()

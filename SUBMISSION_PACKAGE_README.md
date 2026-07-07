@@ -1,9 +1,9 @@
-# ReduLink v3.12 submission package
+# ReduLink v3.13 submission package
 
 Primary manuscript files:
 
-- `paper/submission/ReduLink_journal_ready_v3_12.pdf`
-- `paper/submission/ReduLink_journal_ready_v3_12.docx`
+- `paper/submission/ReduLink_journal_ready_v3_13.pdf`
+- `paper/submission/ReduLink_journal_ready_v3_13.docx`
 
 Quick validation:
 
@@ -34,8 +34,8 @@ For exact dependency reproduction, use `requirements-lock.txt` instead of
 `requirements-dev.txt`, or build and run the pinned container:
 
 ```bash
-docker build -t redulink-artifact:v3.12 .
-docker run --rm redulink-artifact:v3.12
+docker build -t redulink-artifact:v3.13 .
+docker run --rm redulink-artifact:v3.13
 ```
 
 Full validation:

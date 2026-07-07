@@ -1,5 +1,17 @@
 # Revision history (factual changelog)
 
+- v3.13: added the load-bearing kernel-path result the prior versions deferred -
+  a live Linux tc/netem sweep (benchmarks/run_linux_netem_quic_path.py, run inside
+  a rootless user+network namespace with tc --no-sudo, so no host privileges are
+  needed). On a real single-queue loopback qdisc ReduLink is SLOWER for small
+  warm-update transfers (completion ratio 1.08x-1.60x demo, 1.30x-1.36x redis;
+  n>=12 with bootstrap CIs) because MISS/repair round trips dominate on a shared
+  pipe; encoded-byte reduction (0.26-0.31 of raw) and byte-exact reconstruction
+  are confirmed. This reverses the userspace full-duplex completion-time result,
+  so the paper now claims byte accounting, not latency, as the transport result.
+  New Table 23; abstract/Section 10/limitations rewritten; new committed result
+  results/linux_netem_quic_path.{csv,json}; test validates it.
+
 - v3.12: final reviewer-facing public-state cleanup and top-venue framing pass:
   adds `PUBLIC_REVIEWER_CHECKLIST.md` and an unauthenticated public-release
   verifier for raw/API/fresh-clone checks; sharpens the dictionary-delta/CDT

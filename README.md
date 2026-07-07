@@ -1,15 +1,15 @@
-# ReduLink journal-ready package v3.12
+# ReduLink journal-ready package v3.13
 
 This package contains the ReduLink manuscript and reproducibility artifact for an
 applied networking/systems journal submission. The submission snapshot is tagged
-`v3.12-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+`v3.13-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
 
 ## Reviewer start here
 
 1. Use `PUBLIC_REVIEWER_CHECKLIST.md` if a GitHub HTML page or raw CDN view
    appears stale.
 2. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
-3. Read `paper/submission/ReduLink_journal_ready_v3_12.pdf` or `.docx`.
+3. Read `paper/submission/ReduLink_journal_ready_v3_13.pdf` or `.docx`.
 4. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
 5. Use `python3 scripts/run_full_validation.py` only after installing
    `requirements-dev.txt`; aioquic-dependent transport tests skip when aioquic
@@ -17,13 +17,13 @@ applied networking/systems journal submission. The submission snapshot is tagged
    directly or build the included `Dockerfile`.
 
 The canonical public artifact is the GitHub release/tag
-`v3.12-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
+`v3.13-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
 
 ## Main manuscript
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_12.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_12.pdf`
-- Build source: `scripts/build_manuscript_v3_12.py`
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_13.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_13.pdf`
+- Build source: `scripts/build_manuscript_v3_13.py`
   (figures: `scripts/make_journal_figures_v2_8.py`)
 
 Every table and figure in the manuscript is regenerated from the committed
@@ -95,8 +95,8 @@ python -m pip install -r requirements-lock.txt
 The same pinned environment can be exercised through Docker:
 
 ```bash
-docker build -t redulink-artifact:v3.12 .
-docker run --rm redulink-artifact:v3.12
+docker build -t redulink-artifact:v3.13 .
+docker run --rm redulink-artifact:v3.13
 ```
 
 The smoke command is intended to finish quickly on a clean clone because it
