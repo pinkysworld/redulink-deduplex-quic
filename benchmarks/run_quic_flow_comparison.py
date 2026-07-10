@@ -48,7 +48,8 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
         server_conf = QuicConfiguration(is_client=False, alpn_protocols=ALPN)
         server_conf.load_cert_chain(str(cert), str(key))
         client_conf = QuicConfiguration(is_client=True, alpn_protocols=ALPN)
-        client_conf.verify_mode = ssl.CERT_NONE
+        client_conf.verify_mode = ssl.CERT_REQUIRED
+        client_conf.cafile = str(cert)
 
         async def handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
             start = time.perf_counter()
@@ -108,6 +109,8 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
             "effective_stream_payload_multiplier": round(len(data) / stream_payload_bytes, 6) if stream_payload_bytes else 0,
             "datagram_loss_proxy_enabled": loss_every > 0,
             "datagram_loss_every": loss_every,
+            "tls_server_certificate_verified": True,
+            "tls_client_certificate_used": False,
         })
         if proxy_protocol is not None:
             stats.update(proxy_protocol.stats())

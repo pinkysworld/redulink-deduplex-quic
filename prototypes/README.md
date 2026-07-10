@@ -76,10 +76,10 @@ This validates fail-closed authentication behavior in the artifact. It does not 
 
 ## Native aioquic stream-mapping experiment
 
-`redulink_aioquic_experiment.py` runs a real localhost QUIC client and server with the `aioquic` library. The client opens a QUIC bidirectional stream, sends authenticated ReduLink FULL/REF messages, receives semantic MISS reports from the server, repairs missing references with authenticated FULL messages, and verifies byte-exact reconstruction.
+`redulink_aioquic_experiment.py` runs a real localhost QUIC client and server with `aioquic`. The client verifies an ephemeral server certificate against a local trust anchor (no client certificate), opens a bidirectional stream, and uses a fresh private exporter surrogate plus random connection context for ReduLink key derivation. The server validates HELLO metadata and receiver-maintained sequence/offset state, sends semantic MISS reports, revalidates referenced dictionary bytes, accepts authenticated FULL repairs, and requires exact sequence completion before byte-exact reconstruction.
 
 ```bash
 python3 prototypes/redulink_aioquic_experiment.py --output results/aioquic_native_experiment.json
 ```
 
-This is a native QUIC stream-mapping prototype, not a custom extension-frame implementation. It exercises QUIC handshake, TLS-protected streams, stream flow control, packetization, ACK/loss machinery inside aioquic, and encrypted UDP transport. It does not yet modify aioquic internals to add Deduplex-QUIC extension frames or transport parameters.
+This is a native QUIC stream-mapping prototype, not a custom extension-frame implementation. QUIC AEAD supplies on-path integrity; the inner tags exercise post-TLS reference/dictionary-state binding. The prototype does not expose live TLS exporter bytes, authenticate the client, or add Deduplex-QUIC extension frames or transport parameters.

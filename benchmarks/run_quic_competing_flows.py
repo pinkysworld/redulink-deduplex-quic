@@ -42,6 +42,7 @@ class FlowOutcome:
     reconstruction_ok: bool
     semantic_misses: int = 0
     repair_full_frames: int = 0
+    round_id: int = 0
     note: str = ""
 
 
@@ -74,7 +75,8 @@ async def _run_pair(round_id: int, *, loss_every: int, rate_hint_mbps: float) ->
             elapsed_ms=raw_elapsed,
             effective_multiplier=float(raw.get("effective_stream_payload_multiplier", 1.0)),
             reconstruction_ok=bool(raw.get("reconstruction_ok", False)),
-            note=f"concurrent round {round_id}; shared localhost schedule; rate_hint_mbps={rate_hint_mbps}",
+            round_id=round_id,
+            note=f"concurrent round {round_id}; unshaped localhost schedule; rate_hint_mbps={rate_hint_mbps} is metadata only",
         ),
         FlowOutcome(
             method="redulink-binary-quic-stream",
@@ -86,7 +88,8 @@ async def _run_pair(round_id: int, *, loss_every: int, rate_hint_mbps: float) ->
             reconstruction_ok=bool(rl.get("reconstruction_ok", False)),
             semantic_misses=int(rl.get("semantic_misses", 0)),
             repair_full_frames=int(rl.get("repair_full_frames", 0)),
-            note=f"concurrent round {round_id}; shared localhost schedule; rate_hint_mbps={rate_hint_mbps}",
+            round_id=round_id,
+            note=f"concurrent round {round_id}; unshaped localhost schedule; rate_hint_mbps={rate_hint_mbps} is metadata only",
         ),
     ]
 
@@ -102,21 +105,36 @@ async def run(rounds: int, *, loss_every: int, rate_hint_mbps: float) -> dict[st
     rows: list[FlowOutcome] = []
     for i in range(rounds):
         rows.extend(await _run_pair(i + 1, loss_every=loss_every, rate_hint_mbps=rate_hint_mbps))
-    encoded_rates = []
-    reconstructed_rates = []
-    for r in rows:
-        seconds = max(r.elapsed_ms / 1000.0, 1e-9)
-        encoded_rates.append(r.encoded_stream_payload_bytes / seconds)
-        reconstructed_rates.append(r.reconstructed_bytes / seconds)
+    encoded_balance = []
+    reconstructed_balance = []
+    for round_id in range(1, rounds + 1):
+        pair = [r for r in rows if r.round_id == round_id]
+        encoded_rates = []
+        reconstructed_rates = []
+        for r in pair:
+            seconds = max(r.elapsed_ms / 1000.0, 1e-9)
+            encoded_rates.append(r.encoded_stream_payload_bytes / seconds)
+            reconstructed_rates.append(r.reconstructed_bytes / seconds)
+        encoded_balance.append(jain(encoded_rates))
+        reconstructed_balance.append(jain(reconstructed_rates))
+    mean = lambda values: round(sum(values) / len(values), 6) if values else 0.0
     return {
         "experiment": "concurrent_aioquic_raw_vs_redulink_stream_mapping",
-        "scope": "localhost concurrent QUIC stream smoke test, not a full congestion-control study",
+        "scope": "unshaped localhost concurrency diagnostic; no controlled bottleneck and not a fairness or congestion-control study",
         "rounds": rounds,
         "loss_every": loss_every,
         "rate_hint_mbps": rate_hint_mbps,
         "all_reconstructed": all(r.reconstruction_ok for r in rows),
-        "encoded_rate_jain_index": jain(encoded_rates),
-        "reconstructed_rate_jain_index": jain(reconstructed_rates),
+        "encoded_rate_balance_index_mean": mean(encoded_balance),
+        "reconstructed_rate_balance_index_mean": mean(reconstructed_balance),
+        "per_round_balance_diagnostic": [
+            {
+                "round": index + 1,
+                "encoded_rate_balance_index": encoded_balance[index],
+                "reconstructed_rate_balance_index": reconstructed_balance[index],
+            }
+            for index in range(len(encoded_balance))
+        ],
         "rows": [r.__dict__ for r in rows],
     }
 
@@ -136,7 +154,7 @@ def main() -> None:
     with args.output_csv.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n")
         writer.writeheader(); writer.writerows(rows)
-    print(json.dumps({k: summary[k] for k in ["experiment", "all_reconstructed", "encoded_rate_jain_index", "reconstructed_rate_jain_index"]}, indent=2))
+    print(json.dumps({k: summary[k] for k in ["experiment", "all_reconstructed", "encoded_rate_balance_index_mean", "reconstructed_rate_balance_index_mean"]}, indent=2))
 
 
 if __name__ == "__main__":

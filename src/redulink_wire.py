@@ -22,6 +22,7 @@ except Exception:  # pragma: no cover
     from redulink_secure import SecureFrame  # type: ignore
 
 LEN_BYTES = 4
+MAX_MESSAGE_BYTES = 16 * 1024 * 1024
 HELLO = 1
 END_ROUND = 2
 MISSING = 3
@@ -114,6 +115,8 @@ def encode_message(obj: dict[str, Any]) -> bytes:
         body = bytes([ERROR]) + payload
     else:
         raise ValueError(f"unsupported message type: {t}")
+    if not body or len(body) > MAX_MESSAGE_BYTES:
+        raise ValueError(f"message length must be between 1 and {MAX_MESSAGE_BYTES} bytes")
     return _HEADER.pack(len(body)) + body
 
 
@@ -123,6 +126,8 @@ def decode_payload(body: bytes) -> DecodedMessage:
     mt = body[0]
     data = body[1:]
     if mt == HELLO:
+        if len(data) != _HELLO_FIXED.size:
+            raise ValueError("invalid HELLO length")
         version, chunk_size, frame_count, digest = _HELLO_FIXED.unpack(data)
         return DecodedMessage("HELLO", {
             "t": "HELLO",
@@ -132,18 +137,33 @@ def decode_payload(body: bytes) -> DecodedMessage:
             "input_sha256": digest.hex(),
         })
     if mt == END_ROUND:
+        if data:
+            raise ValueError("invalid END_ROUND length")
         return DecodedMessage("END_ROUND", {"t": "END_ROUND"})
     if mt == FINISH:
+        if data:
+            raise ValueError("invalid FINISH length")
         return DecodedMessage("FINISH", {"t": "FINISH"})
     if mt == FRAME:
         fixed_len = _FRAME_FIXED.size
+        if len(data) < fixed_len:
+            raise ValueError("truncated FRAME header")
         seq, repair, kind_id, scope_len, epoch, stream_id, offset, nonce, length, cid_b, tag_b, payload_len = _FRAME_FIXED.unpack(data[:fixed_len])
+        if repair not in (0, 1):
+            raise ValueError("invalid FRAME repair flag")
+        if kind_id not in NAME_BY_KIND:
+            raise ValueError("invalid FRAME kind")
         start = fixed_len
         end = start + scope_len
+        message_end = end + payload_len
+        if end > len(data):
+            raise ValueError("truncated FRAME scope")
         scope = data[start:end].decode("utf-8")
-        payload = data[end:end + payload_len]
+        payload = data[end:message_end]
         if len(payload) != payload_len:
             raise ValueError("truncated FRAME payload")
+        if message_end != len(data):
+            raise ValueError("trailing bytes after FRAME")
         frame = SecureFrame(
             kind=NAME_BY_KIND[kind_id],
             epoch=epoch,
@@ -158,7 +178,12 @@ def decode_payload(body: bytes) -> DecodedMessage:
         )
         return DecodedMessage("FRAME", {"t": "FRAME", "seq": seq, "repair": bool(repair), "frame": frame})
     if mt == MISSING:
+        if len(data) < _MISSING_HEADER.size:
+            raise ValueError("truncated MISSING header")
         count = _MISSING_HEADER.unpack(data[:_MISSING_HEADER.size])[0]
+        expected_len = _MISSING_HEADER.size + count * _MISSING_ITEM.size
+        if len(data) != expected_len:
+            raise ValueError("invalid MISSING length")
         pos = _MISSING_HEADER.size
         items = []
         for _ in range(count):
@@ -183,6 +208,8 @@ async def send_message(writer: Any, obj: dict[str, Any]) -> int:
 async def read_message(reader: Any) -> tuple[dict[str, Any], int]:
     header = await reader.readexactly(LEN_BYTES)
     length = int.from_bytes(header, "big")
+    if length < 1 or length > MAX_MESSAGE_BYTES:
+        raise ValueError(f"message length must be between 1 and {MAX_MESSAGE_BYTES} bytes")
     body = await reader.readexactly(length)
     decoded = decode_payload(body)
     return decoded.obj, LEN_BYTES + length

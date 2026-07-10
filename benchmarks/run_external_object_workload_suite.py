@@ -21,26 +21,45 @@ from __future__ import annotations
 import csv
 import gzip
 import hashlib
-import io
+import hmac
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
 import time
-from dataclasses import asdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-import redulink_model as model  # type: ignore
 import redulink_secure as secure  # type: ignore
 
 CHUNK_SIZE = 4096
 TOKEN_BYTES = 32
 HEADER_BYTES = 32
+OBJECT_HEADER_FIXED_BYTES = 12
+OBJECT_AUTH_TAG_BYTES = 16
+SECURE_SECRET = hashlib.sha256(b"ReduLink reproducible object-suite test key v1").digest()
+SECURE_SCOPE = "same-origin-object-suite-v1"
+
+
+@dataclass(frozen=True)
+class PlainFrame:
+    kind: str
+    cid: str
+    length: int
+    payload: bytes = b""
+
+
+@dataclass(frozen=True)
+class ObjectRecord:
+    name: str
+    length: int
+    frames: tuple[PlainFrame | secure.SecureFrame, ...]
+    auth_tag: bytes = b""
 
 
 def sha256_file(path: Path) -> str:
@@ -72,56 +91,169 @@ def iter_files(root: Path) -> Iterable[tuple[str, bytes]]:
         rel = path.relative_to(root).as_posix()
         if rel.startswith(".git/"):
             continue
-        data = path.read_bytes()
-        if data:
-            yield rel, data
+        yield rel, path.read_bytes()
 
 
 def chunk_bytes(data: bytes) -> list[bytes]:
     return [data[i:i+CHUNK_SIZE] for i in range(0, len(data), CHUNK_SIZE)]
 
 
-def object_aligned_redulink(old_root: Path, new_root: Path, *, secure_mode: bool = False) -> dict[str, object]:
-    """Manual object-aligned ReduLink accounting.
+def _object_tag(name: str, length: int, index: int) -> bytes:
+    name_bytes = name.encode("utf-8")
+    fields = (
+        index.to_bytes(8, "big") + len(name_bytes).to_bytes(4, "big") +
+        name_bytes + length.to_bytes(8, "big")
+    )
+    return hmac.new(
+        SECURE_SECRET, b"object-boundary\0" + fields, hashlib.sha256,
+    ).digest()[:OBJECT_AUTH_TAG_BYTES]
 
-    We avoid repeatedly initializing the full warm dictionary for each file. The
-    formula mirrors the model constants: unauthenticated FULL=24+literal,
-    REF=32; secure FULL=56+literal, REF=56. Reconstruction is byte-exact by
-    construction because every referenced chunk is taken from the old public
-    object dictionary and every non-reference chunk is transmitted literally.
-    """
-    known = set()
-    for _, data in iter_files(old_root):
-        for ch in chunk_bytes(data):
-            known.add(hashlib.sha256(ch).digest())
-    input_bytes = 0
-    wire_bytes = 0
-    full_frames = 0
-    ref_frames = 0
-    chunks = 0
+
+def _stream_id(name: str) -> int:
+    return int.from_bytes(hashlib.sha256(name.encode("utf-8")).digest()[:8], "big")
+
+
+def _warm_dictionary(root: Path, *, secure_mode: bool) -> dict[str, bytes]:
+    known: dict[str, bytes] = {}
+    for _, data in iter_files(root):
+        for chunk in chunk_bytes(data):
+            cid = (
+                secure.secure_cid(chunk, secret=SECURE_SECRET, epoch=1, scope=SECURE_SCOPE)
+                if secure_mode else hashlib.sha256(chunk).hexdigest()
+            )
+            known[cid] = chunk
+    return known
+
+
+def _decode_object_records(
+    records: list[ObjectRecord], *, warm_root: Path, secure_mode: bool,
+) -> list[tuple[str, bytes]]:
+    dictionary = _warm_dictionary(warm_root, secure_mode=secure_mode)
+    seen_nonces = secure.NonceWindow()
+    decoded: list[tuple[str, bytes]] = []
+    names: set[str] = set()
+    for index, record in enumerate(records):
+        if record.name in names:
+            raise ValueError("duplicate object name")
+        names.add(record.name)
+        if secure_mode and not hmac.compare_digest(
+            record.auth_tag, _object_tag(record.name, record.length, index),
+        ):
+            raise ValueError("object header authentication failed")
+        output = bytearray()
+        expected_offset = 0
+        for frame in record.frames:
+            if secure_mode:
+                if not isinstance(frame, secure.SecureFrame):
+                    raise TypeError("secure record contains a plain frame")
+                secure.verify_frame(
+                    frame, secret=SECURE_SECRET, expected_epoch=1,
+                    expected_scope=SECURE_SCOPE, expected_stream_id=_stream_id(record.name),
+                    expected_offset=expected_offset, seen_nonces=seen_nonces,
+                )
+                seen_nonces.add(frame.nonce)
+                cid = frame.cid
+                if frame.kind == "FULL":
+                    chunk = frame.payload
+                    if len(chunk) != frame.length or secure.secure_cid(
+                        chunk, secret=SECURE_SECRET, epoch=1, scope=SECURE_SCOPE,
+                    ) != cid:
+                        raise ValueError("invalid secure FULL frame")
+                    dictionary[cid] = chunk
+                elif frame.kind == "REF":
+                    chunk = dictionary.get(cid)
+                    if chunk is None or len(chunk) != frame.length or secure.secure_cid(
+                        chunk, secret=SECURE_SECRET, epoch=1, scope=SECURE_SCOPE,
+                    ) != cid:
+                        raise ValueError("invalid secure REF frame")
+                else:
+                    raise ValueError("unknown secure frame kind")
+            else:
+                if not isinstance(frame, PlainFrame):
+                    raise TypeError("plain record contains a secure frame")
+                cid = frame.cid
+                if frame.kind == "FULL":
+                    chunk = frame.payload
+                    if len(chunk) != frame.length or hashlib.sha256(chunk).hexdigest() != cid:
+                        raise ValueError("invalid plain FULL frame")
+                    dictionary[cid] = chunk
+                elif frame.kind == "REF":
+                    chunk = dictionary.get(cid)
+                    if chunk is None or len(chunk) != frame.length or hashlib.sha256(chunk).hexdigest() != cid:
+                        raise ValueError("invalid plain REF frame")
+                else:
+                    raise ValueError("unknown plain frame kind")
+            output.extend(chunk)
+            expected_offset += len(chunk)
+        if len(output) != record.length:
+            raise ValueError("object boundary length mismatch")
+        decoded.append((record.name, bytes(output)))
+    return decoded
+
+
+def object_aligned_redulink(old_root: Path, new_root: Path, *, secure_mode: bool = False) -> dict[str, object]:
+    """Encode and decode the exact ordered ``(name, bytes)`` object sequence."""
+    known = _warm_dictionary(old_root, secure_mode=secure_mode)
+    expected_objects = list(iter_files(new_root))
+    records: list[ObjectRecord] = []
+    input_bytes = wire_bytes = full_frames = ref_frames = chunks = 0
+    object_header_bytes = 0
+    nonce = 1
     start = time.perf_counter()
-    for _, data in iter_files(new_root):
+    for object_index, (name, data) in enumerate(expected_objects):
         input_bytes += len(data)
-        for ch in chunk_bytes(data):
+        header_bytes = OBJECT_HEADER_FIXED_BYTES + len(name.encode("utf-8"))
+        if secure_mode:
+            header_bytes += OBJECT_AUTH_TAG_BYTES
+        object_header_bytes += header_bytes
+        wire_bytes += header_bytes
+        frames: list[PlainFrame | secure.SecureFrame] = []
+        offset = 0
+        for chunk in chunk_bytes(data):
             chunks += 1
-            h = hashlib.sha256(ch).digest()
-            if h in known:
+            cid = (
+                secure.secure_cid(chunk, secret=SECURE_SECRET, epoch=1, scope=SECURE_SCOPE)
+                if secure_mode else hashlib.sha256(chunk).hexdigest()
+            )
+            if cid in known:
+                kind, payload = "REF", b""
                 wire_bytes += 56 if secure_mode else 32
                 ref_frames += 1
             else:
-                wire_bytes += (56 if secure_mode else 24) + len(ch)
+                kind, payload = "FULL", chunk
+                wire_bytes += (56 if secure_mode else 24) + len(chunk)
                 full_frames += 1
-                known.add(h)
+                known[cid] = chunk
+            if secure_mode:
+                tag = secure.frame_tag(
+                    secret=SECURE_SECRET, kind=kind, epoch=1, scope=SECURE_SCOPE,
+                    stream_id=_stream_id(name), offset=offset, cid=cid,
+                    length=len(chunk), nonce=nonce, payload=payload,
+                )
+                frames.append(secure.SecureFrame(
+                    kind, 1, SECURE_SCOPE, _stream_id(name), offset, cid,
+                    len(chunk), nonce, tag, payload,
+                ))
+                nonce += 1
+            else:
+                frames.append(PlainFrame(kind, cid, len(chunk), payload))
+            offset += len(chunk)
+        records.append(ObjectRecord(
+            name=name, length=len(data), frames=tuple(frames),
+            auth_tag=_object_tag(name, len(data), object_index) if secure_mode else b"",
+        ))
+    reconstructed = _decode_object_records(records, warm_root=old_root, secure_mode=secure_mode)
     elapsed_ms = (time.perf_counter() - start) * 1000
-    mult = input_bytes / wire_bytes if wire_bytes else 0.0
     return {
         "input_bytes": input_bytes,
         "wire_bytes": wire_bytes,
-        "multiplier": mult,
+        "multiplier": input_bytes / wire_bytes if wire_bytes else 0.0,
         "chunks": chunks,
         "full_frames": full_frames,
         "ref_frames": ref_frames,
-        "reconstruction_ok": True,
+        "object_count": len(records),
+        "object_header_bytes": object_header_bytes,
+        "reconstruction_ok": reconstructed == expected_objects,
         "elapsed_ms": elapsed_ms,
     }
 
@@ -134,15 +266,18 @@ def object_aligned_fixed_reuse(old_root: Path, new_root: Path) -> dict[str, obje
     wire = 0
     full = 0
     ref = 0
-    for _, data in iter_files(new_root):
+    for name, data in iter_files(new_root):
         input_bytes += len(data)
+        wire += OBJECT_HEADER_FIXED_BYTES + len(name.encode("utf-8"))
         for ch in chunk_bytes(data):
-            if hashlib.sha256(ch).digest() in known:
+            digest = hashlib.sha256(ch).digest()
+            if digest in known:
                 wire += TOKEN_BYTES
                 ref += 1
             else:
                 wire += len(ch) + HEADER_BYTES
                 full += 1
+                known.add(digest)
     return {"wire_bytes": wire, "multiplier": input_bytes / wire if wire else 0.0, "full_frames": full, "ref_frames": ref}
 
 
@@ -152,7 +287,8 @@ def gzip_multiplier(root: Path) -> float:
         rb = rel.encode("utf-8")
         out += len(rb).to_bytes(4, "big") + rb + len(data).to_bytes(8, "big") + data
     compressed = gzip.compress(bytes(out), compresslevel=6)
-    return len(out) / len(compressed) if compressed else 0.0
+    input_bytes = sum(len(data) for _, data in iter_files(root))
+    return input_bytes / len(compressed) if compressed else 0.0
 
 
 def rsync_total_multiplier(old_root: Path, new_root: Path) -> float | None:
@@ -228,15 +364,17 @@ def run_pair(label: str, old_tar: Path, new_tar: Path) -> dict[str, str]:
             "redulink_multiplier": f"{rl['multiplier']:.6f}",
             "redulink_full_frames": str(rl["full_frames"]),
             "redulink_ref_frames": str(rl["ref_frames"]),
+            "redulink_object_header_bytes": str(rl["object_header_bytes"]),
             "redulink_reconstruction_ok": str(rl["reconstruction_ok"]),
             "secure_wire_bytes": str(sec["wire_bytes"]),
             "secure_multiplier": f"{sec['multiplier']:.6f}",
+            "secure_object_header_bytes": str(sec["object_header_bytes"]),
             "secure_reconstruction_ok": str(sec["reconstruction_ok"]),
             "fixed_object_reuse_wire_bytes": str(reuse["wire_bytes"]),
             "fixed_object_reuse_multiplier": f"{reuse['multiplier']:.6f}",
             "gzip_new_object_stream_multiplier": f"{gz:.6f}",
             "rsync_total_multiplier": "not_measured_for_object_stream",
-            "interpretation": "Object-aligned transfer from public release files; not raw source-tree tarball transfer and not a production trace.",
+            "interpretation": "Exact named-object encode/decode from public release files with shared warm state; not raw source-tree tarball transfer and not a production trace.",
         }
 
 

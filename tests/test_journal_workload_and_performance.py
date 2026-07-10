@@ -1,5 +1,6 @@
 import csv
 import importlib.util
+import json
 import subprocess
 import sys
 import unittest
@@ -51,6 +52,10 @@ class JournalWorkloadAndPerformanceTests(unittest.TestCase):
         self.assertEqual(raw["reconstruction_ok"], "True")
         self.assertEqual(rl["reconstruction_ok"], "True")
         self.assertGreater(float(rl["effective_multiplier"]), 1.0)
+        evidence = json.loads((ROOT / "results" / "quic_flow_comparison.json").read_text())
+        for item in evidence["results"]:
+            self.assertTrue(item["stats"]["tls_server_certificate_verified"])
+            self.assertFalse(item["stats"]["tls_client_certificate_used"])
 
 
 if __name__ == "__main__":

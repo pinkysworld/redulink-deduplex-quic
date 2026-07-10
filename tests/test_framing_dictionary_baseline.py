@@ -16,6 +16,9 @@ class FramingDictionaryBaselineTests(unittest.TestCase):
             rows = list(csv.DictReader(fh))
         self.assertGreaterEqual(len(rows), 4)
         meta = json.loads(JSON.read_text())
+        self.assertEqual(meta["wire_overhead_formula"], "79 + UTF-8 scope length")
+        self.assertIn("v1.5.7", meta["provenance"]["zstd_version"])
+        self.assertEqual(meta["measured_frame_overhead_bytes"]["ref"], 108)
         self.assertGreater(meta["measured_frame_overhead_bytes"]["ref"],
                            meta["model_overhead_bytes"]["ref"],
                            "measured wire framing must exceed the model framing")
@@ -25,6 +28,7 @@ class FramingDictionaryBaselineTests(unittest.TestCase):
             self.assertLessEqual(repriced, model,
                                  f"{r['label']}: repricing can only lower the multiplier")
             self.assertGreater(float(r["zstd_patch_multiplier"]), 0.0)
+            self.assertIn("v1.5.7", r["zstd_version"])
             self.assertEqual(r["reconstruction_ok"], "True")
 
 

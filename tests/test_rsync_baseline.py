@@ -24,6 +24,8 @@ class RsyncBaselineTests(unittest.TestCase):
             self.assertEqual(row["reconstruction_ok"], "True")
             self.assertGreater(int(row["rsync_control_plus_data_bytes"]), 0)
             self.assertGreater(float(row["rsync_effective_multiplier_control_plus_data"]), 1.0)
+            self.assertTrue(row["rsync_executable"])
+            self.assertTrue(row["rsync_version"])
 
 
 if __name__ == "__main__":

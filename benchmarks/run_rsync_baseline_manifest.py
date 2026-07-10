@@ -25,6 +25,16 @@ RSYNC = shutil.which("rsync")
 RSYNC_FLAGS = ["-r", "-l", "-c", "--delete", "--no-whole-file", "--stats"]
 
 
+def rsync_version() -> str:
+    if RSYNC is None:
+        raise SystemExit("rsync is not available")
+    proc = subprocess.run(
+        [RSYNC, "--version"], capture_output=True, text=True, check=True,
+    )
+    lines = (proc.stdout or proc.stderr).splitlines()
+    return lines[0].strip() if lines else "unknown"
+
+
 def as_path(row: dict[str, str], *names: str) -> Path:
     for name in names:
         value = row.get(name, "")
@@ -117,6 +127,8 @@ def run_pair(row: dict[str, str]) -> dict[str, str]:
         "rsync_effective_multiplier_sent_only": f"{(new_bytes / sent) if sent else 0:.6f}",
         "rsync_effective_multiplier_control_plus_data": f"{(new_bytes / (sent + received)) if (sent + received) else 0:.6f}",
         "reconstruction_ok": str(after_bytes == new_bytes),
+        "rsync_executable": RSYNC,
+        "rsync_version": rsync_version(),
         "rsync_command": " ".join(cmd[:-2] + ["<new>", "<receiver>"]),
     }
 

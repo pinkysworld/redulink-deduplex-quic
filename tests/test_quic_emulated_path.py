@@ -26,7 +26,8 @@ class TestQuicEmulatedPath(unittest.TestCase):
         for s in data["summary"]:
             self.assertTrue(s["all_reconstructed"])
             self.assertIn("raw_completion_ms_sd", s)
-            self.assertGreater(s["rl_over_raw_completion"], 0.0)
+            self.assertGreater(s["completion_ratio_paired_mean"], 0.0)
+            self.assertGreater(s["completion_ratio_ratio_of_means"], 0.0)
 
     def test_demo_payload_results(self):
         self._check("quic_emulated_path", "demo")

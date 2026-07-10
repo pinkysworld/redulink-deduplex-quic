@@ -76,9 +76,9 @@ burst policy is invalid even if its wire encoding is small.
 
 ## A.2.1 Current aioquic Stream-Mapping Prototype
 
-The current package includes `prototypes/redulink_aioquic_experiment.py` and `src/redulink_wire.py`. The prototype starts a real aioquic server and client over localhost UDP, performs a QUIC handshake with a self-signed test certificate, opens a bidirectional QUIC stream, sends authenticated ReduLink FULL/REF messages using compact length-prefixed binary stream data, receives semantic MISS reports, sends authenticated FULL repairs, and verifies byte-exact reconstruction.
+The current package includes `prototypes/redulink_aioquic_experiment.py` and `src/redulink_wire.py`. The prototype starts a real aioquic server and client over localhost UDP, verifies an ephemeral self-signed server certificate against the client's local trust anchor (without client-certificate authentication), opens a bidirectional stream, sends bounded compact-binary FULL/REF messages, receives MISS reports, sends authenticated FULL repairs, and verifies byte-exact reconstruction.
 
-This validates a practical pre-encryption application mapping. The optional JSON mode is retained only as a readable baseline; the default artifact path uses compact binary encoding and can run through a deterministic lossy UDP proxy. ReduLink can be carried inside QUIC STREAM data without middleboxes seeing plaintext. It exercises native QUIC stream delivery, TLS packet protection, ACK/loss machinery inside aioquic, and encrypted UDP packetization. It does not assign custom QUIC extension-frame type codes, modify aioquic packet parsing, negotiate ReduLink transport parameters, enable 0-RTT references, or derive ReduLink keys from a QUIC TLS exporter. Those steps remain required for the stricter Deduplex-QUIC extension-frame profile.
+This validates a practical pre-encryption application mapping. The receiver validates HELLO metadata, derives expected sequence/offset from independent accepted state, rejects malformed/trailing wire data, revalidates referenced dictionary contents, and requires exact sequence completion. The native run derives keys from fresh private exporter-surrogate input and random connection context because aioquic does not expose live exporter bytes. It does not assign custom extension-frame types, negotiate transport parameters, enable 0-RTT references, authenticate the client, or use a live TLS exporter.
 
 ## A.3 Frame Types
 
@@ -174,15 +174,18 @@ stable -> evicted_or_expired
 ## A.5 Receiver State Machine
 
 1. Reject frames whose epoch does not match the active epoch.
-2. For `REDULINK_FULL`, validate the authentication tag and chunk identifier,
+2. Check stream sequence and reconstructed offset against receiver-maintained
+   state rather than values copied from the incoming frame.
+3. For `REDULINK_FULL`, validate the authentication tag and chunk identifier,
    admit the payload to the dictionary, and deliver the bytes at the intended
    stream offset.
-3. For `REDULINK_REF`, validate the authentication tag, expansion bound,
+4. For `REDULINK_REF`, validate the authentication tag, expansion bound,
    stream offset, original length, nonce, and dictionary presence.
-4. Deliver reconstructed bytes only after all REF checks succeed.
-5. Emit `REDULINK_MISS` when the referenced chunk is unavailable or policy
+5. Recompute the referenced dictionary chunk identifier and deliver only after
+   every REF check succeeds.
+6. Emit `REDULINK_MISS` when the referenced chunk is unavailable or policy
    refuses the reference.
-6. Apply stream ordering and flow-control rules to reconstructed bytes, while
+7. Apply stream ordering and flow-control rules to reconstructed bytes, while
    applying congestion accounting to transmitted wire bytes.
 
 Additional receiver rules:
@@ -371,6 +374,6 @@ multiplexing, and migration to future Deduplex-QUIC work.
 
 ## Current artifact additions
 
-The package includes an exporter-style ReduLink key schedule (`src/redulink_key_schedule.py`). In a production Deduplex-QUIC profile, the input keying material should be obtained from QUIC TLS exporter bytes. In this artifact, the key schedule uses HKDF over an explicit experiment secret plus ALPN, epoch, scope, connection context, and stream context. This gives reviewers runnable context-separation tests without claiming access to private aioquic TLS exporter internals.
+The package includes an exporter-style ReduLink key schedule (`src/redulink_key_schedule.py`). Production input keying material should come from QUIC TLS exporter bytes. The native artifact uses fresh random exporter-surrogate input and connection context per run; deterministic standalone tests use explicit test secrets. This gives reviewers runnable context separation without claiming access to private aioquic TLS internals.
 
 The version also adds a real workload manifest runner. This is intended to let external reviewers add frozen OCI layers, package update files, Git snapshots, disk images, or log corpora without changing ReduLink code. The included deterministic journal fixtures remain self-contained smoke evidence rather than production traces.

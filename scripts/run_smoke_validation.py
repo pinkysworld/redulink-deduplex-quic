@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,12 +26,19 @@ def run_unittest_file(name: str) -> None:
     run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", name])
 
 if __name__ == "__main__":
+    # Generated target fixtures are not committed. Recreate them before the
+    # consistency check so a reviewer can run this directly after cloning.
+    run([sys.executable, "benchmarks/generate_target_corpora.py"])
     run([sys.executable, "scripts/check_text_line_endings.py"])
     run([sys.executable, "scripts/check_manuscript_citations.py"])
     run([sys.executable, "benchmarks/check_generated_artifacts.py"])
     corpora = ROOT / "data" / "external_public_corpora"
     if corpora.exists() and any(corpora.iterdir()):
-        run([sys.executable, "benchmarks/run_external_object_workload_suite.py"])
+        with tempfile.TemporaryDirectory(prefix="redulink-smoke-") as tmp:
+            run([
+                sys.executable, "benchmarks/run_external_object_workload_suite.py",
+                "--output", str(Path(tmp) / "external_object_workload_suite.csv"),
+            ])
     else:
         print("~ skipping external object suite (corpora not fetched; run "
               "benchmarks/fetch_external_public_corpora.py to enable)", flush=True)

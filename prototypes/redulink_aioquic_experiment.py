@@ -21,8 +21,9 @@ import argparse
 import asyncio
 import base64
 import hashlib
+import ipaddress
 import json
-import os
+import secrets
 import ssl
 import sys
 import tempfile
@@ -58,6 +59,7 @@ import redulink_key_schedule as key_schedule  # noqa: E402
 ALPN = ["redulink/1"]
 LEN_BYTES = 4
 WIRE_FORMAT = "binary"
+PROTOCOL_VERSION = 1
 
 
 def _json_bytes(obj: dict[str, Any]) -> bytes:
@@ -78,6 +80,8 @@ async def read_msg(reader: asyncio.StreamReader) -> tuple[dict[str, Any], int]:
         return await wire.read_message(reader)
     header = await reader.readexactly(LEN_BYTES)
     length = int.from_bytes(header, "big")
+    if length < 1 or length > wire.MAX_MESSAGE_BYTES:
+        raise ValueError(f"message length must be between 1 and {wire.MAX_MESSAGE_BYTES} bytes")
     payload = await reader.readexactly(length)
     return json.loads(payload.decode("utf-8")), LEN_BYTES + length
 
@@ -197,7 +201,13 @@ def write_self_signed_cert(directory: Path) -> tuple[Path, Path]:
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.now(timezone.utc) - timedelta(days=1))
         .not_valid_after(datetime.now(timezone.utc) + timedelta(days=7))
-        .add_extension(x509.SubjectAlternativeName([x509.DNSName("localhost")]), critical=False)
+        .add_extension(
+            x509.SubjectAlternativeName([
+                x509.DNSName("localhost"),
+                x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+            ]),
+            critical=False,
+        )
         .sign(key, hashes.SHA256())
     )
     cert_path = directory / "cert.pem"
@@ -226,9 +236,94 @@ class QuicReduLinkServer:
         self.epoch = epoch
         self.scope = scope
         self.stream_id = stream_id
+        self.chunk_size = chunk_size
         self.delivered: dict[int, bytes] = {}
         self.seen_nonces = secure.NonceWindow()
+        self.expected_frame_count: int | None = None
+        self.next_initial_seq = 0
+        self.next_initial_offset = 0
+        self.pending_repairs: dict[int, tuple[str, int, int]] = {}
+        self.round_ended = False
         self.stats: dict[str, Any] = {}
+
+    def accept_hello(self, msg: dict[str, Any]) -> None:
+        if int(msg.get("version", -1)) != PROTOCOL_VERSION:
+            raise ValueError("unsupported protocol version")
+        if int(msg.get("chunk_size", -1)) != self.chunk_size:
+            raise ValueError("chunk size mismatch")
+        if str(msg.get("input_sha256", "")) != self.expected_sha256:
+            raise ValueError("input digest mismatch")
+        frame_count = int(msg.get("frame_count", -1))
+        if frame_count < 0 or frame_count > 10_000_000:
+            raise ValueError("invalid frame count")
+        self.expected_frame_count = frame_count
+
+    def accept_frame(self, *, seq: int, frame: secure.SecureFrame, repair: bool) -> str:
+        """Validate authenticated state before mutating reconstruction state."""
+        if self.expected_frame_count is None:
+            raise ValueError("HELLO not accepted")
+        if repair:
+            expected = self.pending_repairs.get(seq)
+            if expected is None:
+                raise ValueError("unexpected repair sequence")
+            expected_cid, expected_length, expected_offset = expected
+            if frame.kind != "FULL":
+                raise ValueError("repair must be FULL")
+            if frame.cid != expected_cid or frame.length != expected_length:
+                raise ValueError("repair metadata mismatch")
+        else:
+            if self.round_ended:
+                raise ValueError("initial frame after END_ROUND")
+            if seq != self.next_initial_seq or seq >= self.expected_frame_count:
+                raise ValueError("unexpected initial sequence")
+            expected_offset = self.next_initial_offset
+
+        secure.verify_frame(
+            frame,
+            secret=self.secret,
+            expected_epoch=self.epoch,
+            expected_scope=self.scope,
+            expected_stream_id=self.stream_id,
+            expected_offset=expected_offset,
+            seen_nonces=self.seen_nonces,
+        )
+        self.seen_nonces.add(frame.nonce)
+
+        if frame.kind == "FULL":
+            if len(frame.payload) != frame.length:
+                raise ValueError("FULL length mismatch")
+            if secure.secure_cid(
+                frame.payload, secret=self.secret, epoch=self.epoch, scope=self.scope,
+            ) != frame.cid:
+                raise ValueError("FULL cid mismatch")
+            redulink.touch_lru(self.dictionary, frame.cid, frame.payload, self.max_dict_chunks)
+            self.delivered[seq] = frame.payload
+            result = "repair" if repair else "full"
+            if repair:
+                del self.pending_repairs[seq]
+        elif frame.kind == "REF":
+            if repair:
+                raise ValueError("repair must be FULL")
+            chunk = self.dictionary.get(frame.cid)
+            if chunk is None:
+                self.pending_repairs[seq] = (frame.cid, frame.length, frame.offset)
+                result = "miss"
+            elif len(chunk) != frame.length:
+                raise ValueError("REF length mismatch")
+            elif secure.secure_cid(
+                chunk, secret=self.secret, epoch=self.epoch, scope=self.scope,
+            ) != frame.cid:
+                raise ValueError("REF dictionary chunk id mismatch")
+            else:
+                self.delivered[seq] = chunk
+                result = "ref"
+        else:
+            raise ValueError("unknown frame kind")
+
+        if not repair:
+            self.next_initial_seq += 1
+            self.next_initial_offset += frame.length
+        return result
 
     async def handle_stream(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         client_to_server_bytes = 0
@@ -247,15 +342,34 @@ class QuicReduLinkServer:
             if msg.get("t") != "HELLO":
                 server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": "missing HELLO"})
                 return
+            try:
+                self.accept_hello(msg)
+            except (TypeError, ValueError) as exc:
+                server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": str(exc)})
+                return
             while True:
                 msg, size = await read_msg(reader)
                 client_to_server_bytes += size
                 t = msg.get("t")
                 if t == "END_ROUND":
+                    if self.round_ended or self.next_initial_seq != self.expected_frame_count:
+                        server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": "incomplete or duplicate initial round"})
+                        return
+                    self.round_ended = True
+                    missing = [
+                        {"seq": seq, "cid": cid, "length": length}
+                        for seq, (cid, length, _offset) in sorted(self.pending_repairs.items())
+                    ]
                     server_to_client_bytes += await send_msg(writer, {"t": "MISSING", "items": missing})
-                    missing = []
                 elif t == "FINISH":
-                    output = b"".join(self.delivered[i] for i in sorted(self.delivered))
+                    if not self.round_ended or self.pending_repairs:
+                        server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": "unfinished reconstruction"})
+                        return
+                    expected_sequences = set(range(self.expected_frame_count or 0))
+                    if set(self.delivered) != expected_sequences:
+                        server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": "incomplete reconstruction sequence"})
+                        return
+                    output = b"".join(self.delivered[i] for i in range(self.expected_frame_count or 0))
                     reconstruction_ok = hashlib.sha256(output).hexdigest() == self.expected_sha256
                     stats = {
                         "experiment": "aioquic_native_stream_mapping",
@@ -288,48 +402,24 @@ class QuicReduLinkServer:
                     seq = int(msg["seq"])
                     frame = msg_to_frame(msg)
                     try:
-                        secure.verify_frame(
-                            frame,
-                            secret=self.secret,
-                            expected_epoch=self.epoch,
-                            expected_scope=self.scope,
-                            expected_stream_id=self.stream_id,
-                            expected_offset=frame.offset,
-                            seen_nonces=self.seen_nonces,
+                        outcome = self.accept_frame(
+                            seq=seq, frame=frame, repair=bool(msg.get("repair", False)),
                         )
                     except ValueError as exc:
                         if "replayed" in str(exc):
                             replay_rejections += 1
                         else:
                             auth_failures += 1
-                        missing.append({"seq": seq, "error": str(exc)})
-                        continue
-                    self.seen_nonces.add(frame.nonce)
-                    if frame.kind == "FULL":
-                        if len(frame.payload) != frame.length:
-                            auth_failures += 1
-                            missing.append({"seq": seq, "error": "FULL length mismatch"})
-                            continue
-                        if secure.secure_cid(frame.payload, secret=self.secret, epoch=self.epoch, scope=self.scope) != frame.cid:
-                            auth_failures += 1
-                            missing.append({"seq": seq, "error": "FULL cid mismatch"})
-                            continue
-                        redulink.touch_lru(self.dictionary, frame.cid, frame.payload, self.max_dict_chunks)
-                        self.delivered[seq] = frame.payload
+                        server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": str(exc)})
+                        return
+                    if outcome == "full":
                         full_frames += 1
-                        if bool(msg.get("repair", False)):
-                            repair_full_frames += 1
-                    elif frame.kind == "REF":
-                        chunk = self.dictionary.get(frame.cid)
-                        if chunk is None or len(chunk) != frame.length:
-                            semantic_misses += 1
-                            missing.append({"seq": seq, "cid": frame.cid, "length": frame.length})
-                        else:
-                            self.delivered[seq] = chunk
-                            ref_frames += 1
-                    else:
-                        auth_failures += 1
-                        missing.append({"seq": seq, "error": "unknown frame kind"})
+                    elif outcome == "ref":
+                        ref_frames += 1
+                    elif outcome == "miss":
+                        semantic_misses += 1
+                    elif outcome == "repair":
+                        repair_full_frames += 1
                 else:
                     server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": f"unknown message {t}"})
                     return
@@ -407,20 +497,29 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                     wire_format: str = "binary", loss_every: int = 0,
                     account_datagrams: bool = False, shaper: Any = None,
                     max_dict_chunks: int | None = None,
-                    server_port: int = 0) -> dict[str, Any]:
+                    server_port: int = 0, exporter_secret: bytes | None = None,
+                    connection_context: bytes | None = None) -> dict[str, Any]:
     global WIRE_FORMAT
     WIRE_FORMAT = wire_format
-    master_secret = b"redulink-aioquic-artifact-master-secret"
+    # aioquic does not expose TLS exporter bytes through its public API. Use a
+    # fresh, private per-run surrogate so the artifact never reuses a hardcoded
+    # authentication key; production integration must supply real exporter bytes.
+    if exporter_secret is None:
+        exporter_secret = secrets.token_bytes(32)
+    if connection_context is None:
+        connection_context = secrets.token_bytes(32)
+    if not exporter_secret or not connection_context:
+        raise ValueError("exporter secret and connection context must not be empty")
     epoch = 7
     scope = "artifact-aioquic"
     stream_id = 0
     secret = key_schedule.derive_redulink_secret(
-        master_secret,
+        exporter_secret,
         key_schedule.ReduLinkKeyContext(
             alpn=ALPN[0],
             epoch=epoch,
             scope=scope,
-            connection_context=b"localhost-aioquic-stream-mapping",
+            connection_context=connection_context,
             stream_context=b"bidirectional-stream-0",
         ),
     )
@@ -442,7 +541,8 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         server_conf = QuicConfiguration(is_client=False, alpn_protocols=ALPN)
         server_conf.load_cert_chain(str(cert_path), str(key_path))
         client_conf = QuicConfiguration(is_client=True, alpn_protocols=ALPN)
-        client_conf.verify_mode = ssl.CERT_NONE
+        client_conf.verify_mode = ssl.CERT_REQUIRED
+        client_conf.cafile = str(cert_path)
 
         server_state = QuicReduLinkServer(
             warm=warm,
@@ -481,7 +581,7 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                 reader, writer = await protocol.create_stream()
                 client_to_server_bytes += await send_msg(writer, {
                     "t": "HELLO",
-                    "version": 1,
+                    "version": PROTOCOL_VERSION,
                     "input_sha256": hashlib.sha256(data).hexdigest(),
                     "chunk_size": chunk_size,
                     "frame_count": len(frames),
@@ -542,7 +642,10 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         "wire_format": WIRE_FORMAT,
         "datagram_loss_proxy_enabled": loss_every > 0,
         "datagram_loss_every": loss_every,
-        "redulink_key_derivation": "HKDF exporter-style artifact key schedule; production profile should use QUIC TLS exporter bytes",
+        "tls_server_certificate_verified": True,
+        "tls_client_certificate_used": False,
+        "connection_context_sha256": hashlib.sha256(connection_context).hexdigest(),
+        "redulink_key_derivation": "fresh per-run exporter surrogate plus random connection context; production profile must use QUIC TLS exporter bytes",
     })
     if proxy_protocol is not None:
         stats.update(proxy_protocol.stats())

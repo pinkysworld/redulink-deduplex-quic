@@ -5,9 +5,9 @@ Two review-driven additions in one runner:
 
 1. Repriced ReduLink multipliers. The offline model charges 24 bytes per FULL
    and 32 bytes per REF of framing. The artifact's own compact binary wire
-   format costs 108 bytes of metadata per frame (measured by encoding
-   representative frames with ``redulink_wire``: 4-byte length prefix, 74-byte
-   fixed header, 29-byte scope, cid/tag). This runner re-prices each workload's
+   format costs ``79 + UTF-8 scope length`` bytes of metadata per frame
+   (4-byte length prefix, 1-byte message type, 74-byte fixed frame fields, and
+   the scope). The 29-byte repricing scope therefore costs 108 bytes. This runner re-prices each workload's
    wire bytes at the measured per-frame cost so the paper can report both the
    modeled and the wire-format-priced multiplier.
 
@@ -32,6 +32,7 @@ import csv
 import dataclasses
 import hashlib
 import json
+import platform
 import subprocess
 import sys
 import tempfile
@@ -41,29 +42,31 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "benchmarks"))
-sys.path.insert(0, str(ROOT / "prototypes"))
 
 import redulink_secure as secure  # noqa: E402
 import redulink_wire as wire  # noqa: E402
-import redulink_aioquic_experiment as ax  # noqa: E402
 from run_external_object_workload_suite import (  # noqa: E402
     extract_tarball, iter_files, object_aligned_redulink, gzip_multiplier,
 )
 
 MODEL_FULL_OH = 24
 MODEL_REF_OH = 32
+WIRE_SCOPE = "per-connection-artifact-scope"
+WIRE_FIXED_OH = 79
+ZSTD_REQUIRED_VERSION = "v1.5.7"
+ZSTD_COMMAND = "zstd -3 --patch-from OLD NEW -o PATCH -f -q"
 
 
 def measured_frame_overheads() -> tuple[int, int]:
     frames, _ = secure.encode(
         b"B" * 8192, secret=b"probe", epoch=7,
-        scope="per-connection-artifact-scope", stream_id=0,
+        scope=WIRE_SCOPE, stream_id=0,
         chunker="fixed", chunk_size=4096,
     )
     full = frames[0]
     ref = dataclasses.replace(full, kind="REF", payload=b"")
-    oh_full = len(wire.encode_message(ax.frame_to_msg(0, full))) - len(full.payload)
-    oh_ref = len(wire.encode_message(ax.frame_to_msg(1, ref)))
+    oh_full = len(wire.encode_message({"t": "FRAME", "seq": 0, "frame": full})) - len(full.payload)
+    oh_ref = len(wire.encode_message({"t": "FRAME", "seq": 1, "frame": ref}))
     return oh_full, oh_ref
 
 
@@ -86,6 +89,11 @@ def zstd_patch_bytes(old_stream: bytes, new_stream: bytes, level: int = 3) -> in
         return out_p.stat().st_size
 
 
+def zstd_version() -> str:
+    cp = subprocess.run(["zstd", "--version"], check=True, capture_output=True, text=True)
+    return cp.stdout.strip()
+
+
 def reprice(rl: dict, oh_full: int, oh_ref: int) -> float:
     full = int(rl["full_frames"]); ref = int(rl["ref_frames"])
     literal = int(rl["wire_bytes"]) - MODEL_FULL_OH * full - MODEL_REF_OH * ref
@@ -106,8 +114,12 @@ def case_row(label: str, old_root: Path, new_root: Path, oh_full: int, oh_ref: i
         "repriced_multiplier": round(reprice(rl, oh_full, oh_ref), 6),
         "oh_full_bytes": oh_full,
         "oh_ref_bytes": oh_ref,
+        "wire_scope_bytes": len(WIRE_SCOPE.encode("utf-8")),
+        "wire_fixed_overhead_bytes": WIRE_FIXED_OH,
         "zstd_patch_bytes": patch,
-        "zstd_patch_multiplier": round(len(new_s) / patch, 6) if patch else 0.0,
+        "zstd_patch_multiplier": round(int(rl["input_bytes"]) / patch, 6) if patch else 0.0,
+        "zstd_version": zstd_version(),
+        "zstd_command": ZSTD_COMMAND,
         "gzip_multiplier": round(gzip_multiplier(new_root), 6),
         "reconstruction_ok": bool(rl["reconstruction_ok"]),
     }
@@ -136,8 +148,12 @@ def layer_row(oh_full: int, oh_ref: int) -> dict:
         "model_multiplier": round(rl["multiplier"], 6),
         "repriced_multiplier": round(reprice(rl, oh_full, oh_ref), 6),
         "oh_full_bytes": oh_full, "oh_ref_bytes": oh_ref,
+        "wire_scope_bytes": len(WIRE_SCOPE.encode("utf-8")),
+        "wire_fixed_overhead_bytes": WIRE_FIXED_OH,
         "zstd_patch_bytes": patch,
         "zstd_patch_multiplier": round(len(update) / patch, 6) if patch else 0.0,
+        "zstd_version": zstd_version(),
+        "zstd_command": ZSTD_COMMAND,
         "gzip_multiplier": round(len(update) / len(_gz.compress(update, 6)), 6),
         "reconstruction_ok": True,
     }
@@ -179,7 +195,15 @@ def main() -> None:
     ap.add_argument("--sets", choices=["local", "pypi", "all"], default="all")
     ap.add_argument("--output", type=Path, default=ROOT / "results" / "framing_dictionary_baseline.csv")
     args = ap.parse_args()
+    version = zstd_version()
+    if ZSTD_REQUIRED_VERSION not in version:
+        raise SystemExit(
+            f"zstd {ZSTD_REQUIRED_VERSION} is required for reproducible results; found: {version}"
+        )
     oh_full, oh_ref = measured_frame_overheads()
+    expected_oh = WIRE_FIXED_OH + len(WIRE_SCOPE.encode("utf-8"))
+    if (oh_full, oh_ref) != (expected_oh, expected_oh):
+        raise SystemExit(f"unexpected wire overhead: {(oh_full, oh_ref)} != {(expected_oh, expected_oh)}")
     rows: list[dict] = []
     if args.sets in ("local", "all"):
         base = ROOT / "data" / "external_public_corpora"
@@ -207,7 +231,19 @@ def main() -> None:
     args.output.with_suffix(".json").write_text(json.dumps(
         {"experiment": "framing_repricing_and_zstd_patch_baseline",
          "measured_frame_overhead_bytes": {"full": oh_full, "ref": oh_ref},
+         "wire_overhead_formula": "79 + UTF-8 scope length",
+         "wire_scope": WIRE_SCOPE,
          "model_overhead_bytes": {"full": MODEL_FULL_OH, "ref": MODEL_REF_OH},
+         "provenance": {
+             "python": sys.version,
+             "platform": platform.platform(),
+             "zstd_version": version,
+             "zstd_command": ZSTD_COMMAND,
+             "git_commit": subprocess.run(
+                 ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True,
+                 capture_output=True, text=True,
+             ).stdout.strip(),
+         },
          "rows": rows}, indent=2))
     for r in rows:
         print(f"{r['label']:48s} model={float(r['model_multiplier']):>8.2f}x repriced={float(r['repriced_multiplier']):>7.2f}x zstd-patch={float(r['zstd_patch_multiplier']):>9.2f}x gzip={float(r['gzip_multiplier']):.2f}x")

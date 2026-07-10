@@ -11,8 +11,9 @@ already installed version N upgrades to version N+1, retaining a warm same-origi
 dictionary. Each distribution member (file inside the wheel) is treated as an
 individually framed object, exactly as in ``run_external_object_workload_suite``;
 the same object-aligned accounting functions are imported from that module so the
-methodology is identical. Reconstruction is additionally proven byte-exact by a
-real ``redulink_model`` encode/decode round trip against the warm dictionary.
+methodology is identical. Reconstruction is proven byte-exact for the complete
+ordered mapping of object names (including empty objects) to object contents in
+both the plain and authenticated profiles.
 
 All numbers are reproducible: the package@version pairs and the SHA-256 of every
 downloaded wheel are recorded in the output CSV/JSON.
@@ -24,7 +25,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "benchmarks"))
-import redulink_model as model  # type: ignore
 from run_external_object_workload_suite import (  # reuse identical methodology
     object_aligned_redulink, object_aligned_fixed_reuse, gzip_multiplier, iter_files,
 )
@@ -69,13 +69,6 @@ def file_stability(old_root: Path, new_root: Path):
     removed = sum(1 for r in oldf if r not in newf)
     return len(oldf), len(newf), unchanged, changed, added, removed
 
-def model_roundtrip(old_root: Path, new_root: Path):
-    """Prove byte-exact reconstruction with the real model against a warm dict."""
-    warm = b"".join(d for _, d in iter_files(old_root))
-    new = b"".join(d for _, d in iter_files(new_root))
-    st = model.run_bytes(new, chunker="fixed", chunk_size=4096, warm=warm)
-    return st.effective_multiplier, st.reconstruction_ok
-
 def main() -> None:
     out_csv = ROOT / "results" / "pypi_version_pair_object_study.csv"
     out_json = ROOT / "results" / "pypi_version_pair_object_study.json"
@@ -95,7 +88,6 @@ def main() -> None:
             sec = object_aligned_redulink(old_root, new_root, secure_mode=True)
             reuse = object_aligned_fixed_reuse(old_root, new_root)
             gz = gzip_multiplier(new_root)
-            m_mult, m_ok = model_roundtrip(old_root, new_root)
             row = {
                 "package": pkg, "old_version": vold, "new_version": vnew,
                 "old_wheel": w_old.name, "new_wheel": w_new.name,
@@ -108,8 +100,8 @@ def main() -> None:
                 "secure_multiplier": round(sec["multiplier"], 6),
                 "fixed_object_reuse_multiplier": round(reuse["multiplier"], 6),
                 "gzip_new_object_stream_multiplier": round(gz, 6),
-                "model_roundtrip_multiplier": round(m_mult, 6),
-                "reconstruction_ok": bool(rl["reconstruction_ok"] and m_ok),
+                "object_roundtrip_multiplier": round(rl["multiplier"], 6),
+                "reconstruction_ok": bool(rl["reconstruction_ok"] and sec["reconstruction_ok"]),
                 "source": "real PyPI wheel upgrade (pip download), object-aligned",
             }
             rows.append(row)

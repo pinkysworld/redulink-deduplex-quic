@@ -1,152 +1,104 @@
-# ReduLink journal-ready package v3.13
+# ReduLink journal-ready package v3.14 candidate
 
-This package contains the ReduLink manuscript and reproducibility artifact for an
-applied networking/systems journal submission. The submission snapshot is tagged
-`v3.13-journal-submission`; manuscript hashes are pinned in `MANUSCRIPT_SHA256.txt`.
+This is the reviewer-adapted v3.14 candidate of the ReduLink manuscript and
+reproducibility artifact. It is based on public v3.13 commit
+`dd7d52623b96af85e7e5ad19e587c060a3384b3a`; it is not yet a public v3.14 tag or
+release. `SOURCE_GIT_STATUS.txt` records that distinction explicitly.
 
 ## Reviewer start here
 
-1. Use `PUBLIC_REVIEWER_CHECKLIST.md` if a GitHub HTML page or raw CDN view
-   appears stale.
-2. Verify the submitted files against `MANUSCRIPT_SHA256.txt`.
-3. Read `paper/submission/ReduLink_journal_ready_v3_13.pdf` or `.docx`.
-4. Run `python3 scripts/run_smoke_validation.py` for a fast local check.
-5. Use `python3 scripts/run_full_validation.py` only after installing
-   `requirements-dev.txt`; aioquic-dependent transport tests skip when aioquic
-   is absent. For pinned dependency reproduction, use `requirements-lock.txt`
-   directly or build the included `Dockerfile`.
+1. Read `paper/submission/ReduLink_journal_ready_v3_14.pdf` or `.docx`.
+2. Verify both against `MANUSCRIPT_SHA256.txt`.
+3. Use `REVIEWER_RESPONSE_v3_14.md` to trace every v3.13 review finding.
+4. Install `requirements-lock.txt` and run the smoke and full validators below.
+5. Read `PUBLIC_REVIEWER_CHECKLIST.md` before checking public GitHub state.
 
-The canonical public artifact is the GitHub release/tag
-`v3.13-journal-submission` on `pinkysworld/redulink-deduplex-quic`.
+Main files:
 
-## Main manuscript
-
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_13.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_13.pdf`
-- Build source: `scripts/build_manuscript_v3_13.py`
-  (figures: `scripts/make_journal_figures_v2_8.py`)
-
-Every table and figure in the manuscript is regenerated from the committed
-result files, so the reported numbers can be reproduced from this artifact.
+- DOCX: `paper/submission/ReduLink_journal_ready_v3_14.docx`
+- PDF: `paper/submission/ReduLink_journal_ready_v3_14.pdf`
+- Builder: `scripts/build_manuscript_v3_14.py`
+- Figures: `scripts/make_journal_figures_v2_8.py`
 
 ## Claim boundary
 
-ReduLink is authenticated, scoped, QUIC-compatible reference substitution for
-selected warm-state transfers. It is not a new matching algorithm, not a
-universal accelerator, not a replacement for compression or rsync, and not a
-custom QUIC extension-frame implementation. The native QUIC artifact maps
-compact binary ReduLink records into encrypted aioquic streams. Measured
-path-emulation results show that byte savings do not automatically shorten
-completion time for small repair-bearing transfers on constrained shared paths;
-the measured benefit there is byte-cost reduction at equal congestion fairness.
+ReduLink is endpoint-cooperative, scoped reference substitution for selected
+warm-state transfers over QUIC streams. QUIC TLS/AEAD already supplies on-path
+confidentiality and integrity. ReduLink's record HMACs bind dictionary epoch,
+scope, stream, offset, nonce, identifier, length, and payload state after TLS;
+they are intended to detect reference/dictionary-state confusion and fail closed,
+not to claim a second independent defense against an on-path attacker.
 
-## Validation commands
+The artifact is a compact binary application-stream mapping, not a custom QUIC
+extension-frame implementation. Its native experiment verifies the ephemeral
+server certificate but does not authenticate the client, and aioquic's public API
+does not expose TLS exporter bytes. It therefore derives record keys from a fresh
+private per-run exporter surrogate and random connection context; production
+integration must use real exporter bytes.
 
-Fast reviewer smoke validation (citation check, artifact consistency, selected
-unit tests, and LF-only raw-file formatting; prints a success summary). It works
-on a clean clone: steps that need the hash-pinned external corpora are skipped
-until you run
-`python3 benchmarks/fetch_external_public_corpora.py` once:
+ReduLink is not a universal accelerator or a replacement for gzip, zstd, rsync,
+or HTTP Compression Dictionary Transport. RFC 9842 uses SHA-256 dictionary hashes,
+same-origin/availability rules, and failure handling in an HTTP content-coding
+deployment. The committed `zstd --patch-from` experiment is only a strong
+whole-stream dictionary-delta byte baseline, not an implementation of RFC 9842.
 
-```bash
-python3 scripts/run_smoke_validation.py
-```
-
-Full validation (entire unit suite plus benchmark regeneration):
-
-```bash
-python3 scripts/run_full_validation.py
-```
-
-The line-ending guard can also be run directly with:
-
-```bash
-python3 scripts/check_text_line_endings.py
-```
-
-The public GitHub state can be checked without login through the GitHub API,
-raw tag URLs, raw branch URLs, and the latest-release endpoint:
-
-```bash
-python3 scripts/verify_public_release.py --version 3.12
-```
-
-The full suite includes aioquic-dependent integration tests. If aioquic is
-unavailable, those tests skip gracefully; install `requirements-dev.txt` for
-complete QUIC stream validation or `requirements-lock.txt` for the exact
-dependency set used by this submission package.
-
-## Environment
-
-The artifact targets Python 3.10 or newer. A clean reviewer environment is:
+## Validation
 
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install -r requirements-dev.txt
-```
-
-For exact dependency reproduction, use the committed lockfile instead:
-
-```bash
 python -m pip install -r requirements-lock.txt
+python3 scripts/run_smoke_validation.py
+python3 scripts/run_full_validation.py
 ```
 
-The same pinned environment can be exercised through Docker:
+Both commands generate `data/target_corpora` before checking its hashes, so they
+work from a clean clone. The smoke command checks core security, model, object,
+wire, citation, and line-ending properties. Full validation runs every unittest
+module in an isolated process. These commands validate committed results; they do
+not silently rerun privileged network experiments or re-download all external
+datasets.
+
+Fetch the hash-pinned external public-release corpora when reproducing the
+object-transfer suite:
 
 ```bash
-docker build -t redulink-artifact:v3.13 .
-docker run --rm redulink-artifact:v3.13
+python3 benchmarks/fetch_external_public_corpora.py
+python3 benchmarks/run_external_object_workload_suite.py
 ```
 
-The smoke command is intended to finish quickly on a clean clone because it
-skips external corpora until they are fetched. The full command runs every
-unittest module in isolated processes with a 60 second per-module timeout; wall
-time depends on host speed and whether aioquic and external corpora are present.
+The pinned container also installs zstd 1.5.7, GNU rsync, `tc/netem`, and
+`taskset`:
 
-## What is implemented
+```bash
+docker build -t redulink-artifact:v3.14 .
+docker run --rm redulink-artifact:v3.14
+```
 
-- Authenticated FULL/REF/MISS reference substitution model with fail-closed
-  validation and semantic repair.
-- Compact binary ReduLink stream messages over native aioquic QUIC streams.
-- Exporter-style HKDF key schedule model for context separation, with a formal
-  adversary model and reduction-style analysis in the manuscript (Section 4.5).
-- Tamper, replay, wrong-scope, wrong-epoch, wrong-stream, wrong-offset, and
-  wrong-length rejection tests.
-- Deterministic journal fixtures (with disclosed unchanged fractions), public
-  source-release negative pairs, object-aligned public release workloads, a
-  Redis-derived layer-like positive case, and an independent hash-pinned PyPI
-  package version-pair study (`benchmarks/run_pypi_version_pair_object_study.py`).
-- Real rsync and compression baselines, block-size sensitivity, repeated QUIC
-  trials, scaling, component costs, and conservative accounting-layer separation.
-- Measured competing-flow fairness and a measured full-duplex userspace path
-  emulation (per-direction token buckets + delay shared by both flows), run on
-  both byte-stable and real Redis-layered payloads with 20 rounds per grid point
-  (`benchmarks/run_quic_emulated_path.py [--payload demo|redis]`).
-- Native QUIC miss-rate sensitivity on the same full-duplex path-emulation
-  harness (`benchmarks/run_quic_miss_rate_sensitivity.py`).
-- Reviewer-runnable kernel-path harnesses for macOS pf/dnctl and Linux
-  `tc/netem`, with tested dry-run command rendering
-  (`benchmarks/run_macos_dummynet_quic_path.py`,
-  `benchmarks/run_linux_netem_quic_path.py`).
-- Framing repricing at the measured 108-byte binary wire cost and a zstd
-  `--patch-from` dictionary-delta baseline
-  (`benchmarks/run_framing_dictionary_baseline.py`).
+After a v3.14 release is actually published, its unauthenticated GitHub surfaces
+can be checked with:
 
-## Important limitations
+```bash
+python3 scripts/verify_public_release.py --version 3.14
+```
 
-- Native QUIC stream mapping, not custom QUIC extension frames or transport
-  parameters.
-- The key schedule is exporter-style and context separated, but does not use
-  live private QUIC TLS exporter bytes.
-- Public object-aligned and package-upgrade workloads are derived from real
-  public bytes but are transfer-model evidence, not captured production traces.
-- The committed path-emulation results are userspace measurements
-  (asyncio token bucket + delay). Kernel-path harnesses are included, but the
-  package does not claim a completed `tc/netem`, dummynet, Mininet, or WAN
-  congestion-control study.
-- When the receiver can retain the exact prior byte stream and codec-level
-  trust is acceptable, dictionary delta (`zstd --patch-from`, the CDT-style
-  baseline) is the stronger byte-saving choice. ReduLink is for authenticated,
-  object-granular, fail-closed reference substitution over encrypted endpoint
-  streams, not byte-optimal codec delta.
+## Implemented evidence
+
+- Plain and authenticated FULL/REF encode/decode models with fail-closed MISS
+  repair, bounded replay state, independently checked offsets, and dictionary
+  content revalidation.
+- Bounded compact-binary messages over server-authenticated aioquic streams,
+  including loss, repair, scaling, and dictionary-budget tests.
+- Exact named-object reconstruction for public release and PyPI version pairs,
+  including empty objects and authenticated object boundaries.
+- Deterministic positive/negative fixtures, hash-pinned public pairs, real rsync,
+  gzip/zstd, block-size, component-cost, framing, and miss-rate studies.
+- Local 20-round userspace path emulation with paired completion ratios. The
+  unshaped concurrent run is labeled a balance diagnostic, not fairness proof.
+- A legacy v3.13 Linux `tc/netem` concurrent result, clearly marked as contention
+  evidence. The corrected v3.14 runner defaults to isolated, order-alternated
+  pairs and records command, host, tool, commit, and qdisc provenance. It still
+  needs a fresh Linux rerun before supporting isolated kernel-path latency claims.
+
+Bootstrap intervals in the artifact describe variability among repeated local
+runs. They are not WAN or deployment-population confidence intervals.
