@@ -33,5 +33,20 @@ provided, but a new external/kernel execution is still required.
 - PDF/DOCX hashes: verified by `MANUSCRIPT_SHA256.txt`.
 - PDF layout: all 18 rendered pages visually inspected.
 
+## Fresh v3.14 candidate review disposition
+
+The subsequent Claude Opus review independently confirmed the core v3.14
+corrections and raised three follow-up findings. They are dispositioned as
+follows rather than treated as new empirical evidence by assertion:
+
+| Follow-up finding | Disposition | Evidence / next gate |
+|---|---|---|
+| F1: the reviewed candidate was not committed, tagged, or released | Partially resolved. The complete v3.14 candidate is committed and publicly visible on `agent/v3-14-reviewer-adaptations` and draft PR #1. It is not represented as the immutable release until it is merged and a v3.14 tag/Release is deliberately created. | `SOURCE_COMMIT.txt`, `SOURCE_GIT_STATUS.txt`, public draft PR #1 |
+| F2: the corrected isolated Linux netem harness lacks a committed result | Accepted. A dedicated GitHub Actions workflow now runs the four-row, 20-pair corrected sweep inside an isolated Linux network namespace, verifies reconstruction/mode/round count, and uploads the raw JSON, CSV, and log. The legacy Table 23 remains explicitly non-load-bearing until that workflow produces a successful artifact and the result is reviewed and incorporated. | `.github/workflows/linux-netem-isolated.yml`, `benchmarks/run_linux_netem_quic_path.py` |
+| F3: custom QUIC frames/live exporter, production traces, mechanized proof, and broader scale are absent | Accepted as research scope, not silently “fixed.” These gaps are already stated in the abstract, scope notes, limitations, and future work. Closing them would require new implementation and empirical studies rather than editorial changes. | Manuscript Sections 3.3, 4.4-4.5, 10-13; `docs/evidence_hierarchy.md` |
+| Minor: external presentation material may still quote the old object-workload multipliers | No stale PyPI/object-workload headline claim of `9.70x` or `12.41x` occurs in the active manuscript/documentation; the current values are `9.31x` and `12.05x`. A separate `12.417x` generated-corpus fixed-block result remains valid and is not the retired PyPI value. Presentation files outside this repository should be audited separately before reuse. | Repository-wide text search and current result tables |
+
 The candidate branch commit/push is version-control delivery only. No immutable
-tag, GitHub Release, or corrected Linux kernel sweep is implied by this matrix.
+tag, GitHub Release, or corrected Linux kernel result is implied by this matrix.
+The paper and recorded hashes intentionally remain unchanged until an actual
+isolated Linux result is captured, inspected, and incorporated.

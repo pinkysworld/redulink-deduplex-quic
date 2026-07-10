@@ -14,4 +14,4 @@
 | Concurrent localhost diagnostic + userspace path emulation | Encoded-byte accounting and completion/queueing behavior on an emulated grid with 20-round local QUIC repeats | Internet fairness or population-level inference |
 | Native QUIC miss-rate sensitivity | How semantic repairs erode path-emulation byte savings on one constrained point | A full bandwidth/RTT miss-rate grid |
 | macOS pf/dnctl dummynet QUIC path harness | Reviewer-runnable dry-run rules and local UDP probe viability on macOS | Completed aioquic sweep; WAN, Mininet, Linux tc/netem, or production registry traces |
-| Legacy Linux tc/netem result + corrected harness | v3.13 concurrent contention diagnostic; v3.14 isolated order-alternated runner with provenance capture | A rerun of the corrected isolated sweep; WAN, Mininet, or production registry traces |
+| Legacy Linux tc/netem result + corrected harness/workflow | v3.13 concurrent contention diagnostic; reviewer-runnable v3.14 isolated order-alternated protocol with provenance capture | A successful, inspected rerun of the corrected isolated sweep; WAN, Mininet, or production registry traces |

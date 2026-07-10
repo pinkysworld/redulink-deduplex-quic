@@ -10,8 +10,10 @@
   generates ignored fixtures. System baselines pin zstd 1.5.7 and record
   commands/versions. Transport summaries use paired ratios; unshaped Jain values
   are balance diagnostics, and the legacy concurrent netem run is no longer
-  presented as isolated single-flow evidence. Security/CDT claims and manuscript
-  layout are correspondingly revised.
+  presented as isolated single-flow evidence. A manual Linux Actions workflow
+  now runs the corrected protocol in a dedicated network namespace and exports
+  raw evidence without treating an unexecuted harness as a result. Security/CDT
+  claims and manuscript layout are correspondingly revised.
 
 - v3.13: added the load-bearing kernel-path result the prior versions deferred -
   a live Linux tc/netem sweep (benchmarks/run_linux_netem_quic_path.py, run inside

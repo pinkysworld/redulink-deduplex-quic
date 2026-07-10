@@ -97,8 +97,11 @@ python3 scripts/verify_public_release.py --version 3.14
   unshaped concurrent run is labeled a balance diagnostic, not fairness proof.
 - A legacy v3.13 Linux `tc/netem` concurrent result, clearly marked as contention
   evidence. The corrected v3.14 runner defaults to isolated, order-alternated
-  pairs and records command, host, tool, commit, and qdisc provenance. It still
-  needs a fresh Linux rerun before supporting isolated kernel-path latency claims.
+  pairs and records command, host, tool, commit, and qdisc provenance. The manual
+  `isolated Linux netem evidence` workflow executes that protocol in a dedicated
+  Linux network namespace and uploads its raw JSON/CSV/log artifact. It still
+  needs a successful run and result review before supporting isolated kernel-path
+  latency claims.
 
 Bootstrap intervals in the artifact describe variability among repeated local
 runs. They are not WAN or deployment-population confidence intervals.
