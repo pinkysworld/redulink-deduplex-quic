@@ -6,7 +6,9 @@ verifies byte-exact reconstruction and selected fail-closed conditions, but the 
 
 ## Assumptions
 
-- Endpoints are authenticated by the underlying secure transport.
+- Production endpoints are authorized by the application and authenticated as
+  required by deployment policy. The native artifact verifies only the server
+  certificate; it does not use a client certificate.
 - ReduLink runs only after negotiation by cooperating endpoints.
 - Dictionaries are per-connection by default.
 - Shared origin dictionaries are allowed only for public artifacts, one
@@ -18,7 +20,7 @@ verifies byte-exact reconstruction and selected fail-closed conditions, but the 
 | Property | Claim | Required mechanism | Current artifact status |
 |---|---|---|---|
 | Integrity | Receiver output equals sender input or fails closed. | FULL/REF authentication, chunk-id validation, offset binding, length binding. | Modeled by reconstruction and mismatch tests; production crypto is not implemented. |
-| Context binding | REF cannot be replayed across connection, epoch, stream, offset, origin, or dictionary scope. | QUIC exporter-derived keys, epoch id, stream id, offset, dictionary id, nonce, replay window. | HMAC binding and nonce rejection are implemented in the artifact; exporter-derived keys and production replay windows remain pending. |
+| Context binding | REF cannot be replayed across connection, epoch, stream, offset, origin, or dictionary scope. | QUIC exporter-derived keys, epoch id, stream id, independently tracked offset, dictionary id, nonce, replay window. | HMAC binding, native independent sequence/offset state, and bounded nonce rejection are implemented; live exporter bytes remain pending. |
 | Dictionary safety | Receiver admits only authenticated FULL chunks or signed warm-manifest chunks. | Authenticated FULL, manifest commitment, admission policy, eviction policy. | FULL chunk-id checks are modeled; manifest policy is not implemented. |
 | Expansion bound | A small REF cannot trigger unbounded receiver work or delivery. | Per-frame, per-stream, and per-epoch reconstructed-byte caps. | Basic accounting and length checks are modeled; full QUIC flow-control enforcement is not. |
 | Privacy scope | REF success must not reveal private cross-user content possession in public mode. | Per-connection default, no global cross-user dictionary, explicit per-origin/tenant policy. | Policy is specified; cross-tenant enforcement is not implemented. |
@@ -83,9 +85,9 @@ frames. Replay state is a bounded, reorder-tolerant `NonceWindow` (default
 rejected, bounding receiver memory for long-lived sessions. Cross-session
 freshness comes from per-connection derived keys (implemented in the aioquic
 path; the standalone model and UDP prototype default to a fixed test secret).
-The authenticated-UDP server binds the expected reconstructed offset to the
-sequence number and returns a uniform on-wire error for all validation
-failures.
+The authenticated-UDP and native aioquic receivers derive expected reconstructed
+offsets from independent accepted state. The native path also validates HELLO
+metadata and exact frame-sequence completion before FINISH.
 
 ## Current Test Coverage
 
@@ -137,9 +139,13 @@ The artifact includes `benchmarks/run_wire_fairness_accounting.py`. The experime
 
 ## Native QUIC stream-mapping evidence
 
-The package includes `prototypes/redulink_aioquic_experiment.py`. The experiment uses the aioquic library to run a real QUIC client and server over localhost UDP. ReduLink messages are carried inside a TLS-protected bidirectional QUIC stream. The server intentionally lacks some warm-dictionary entries, reports semantic MISS messages, and reconstructs the update after authenticated FULL repair messages.
+The package includes `prototypes/redulink_aioquic_experiment.py`. The experiment uses aioquic over localhost UDP, verifies an ephemeral server certificate against a local trust anchor, opens a TLS-protected bidirectional stream, and uses a fresh private exporter surrogate plus random connection context for every run. The server intentionally lacks some warm entries, reports MISS, and reconstructs after authenticated FULL repairs.
 
-Security interpretation: this demonstrates compatibility with native QUIC stream transport and packet protection, but it does not yet bind ReduLink tags to a QUIC TLS exporter and does not implement custom QUIC extension frames. Therefore, it reduces the transport-deployability gap but does not close the production-security gap.
+Security interpretation: QUIC AEAD already protects the on-path channel. The
+inner tags exercise post-TLS reference and dictionary-state binding; they are not
+claimed as an additional independent network-adversary defense. The artifact
+does not expose live TLS exporter bytes, authenticate the client, or implement
+custom QUIC extension frames.
 
 ## Key-schedule note
 

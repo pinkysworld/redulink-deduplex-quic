@@ -30,6 +30,8 @@ class QuicCompetingFlowsTests(unittest.TestCase):
             methods = {row["method"] for row in data["rows"]}
             self.assertIn("raw-quic-stream", methods)
             self.assertIn("redulink-binary-quic-stream", methods)
+            self.assertIn("no controlled bottleneck", data["scope"])
+            self.assertEqual(len(data["per_round_balance_diagnostic"]), 1)
 
 
 if __name__ == "__main__":

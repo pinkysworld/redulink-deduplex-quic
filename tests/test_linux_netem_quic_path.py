@@ -52,6 +52,7 @@ class LinuxNetemQuicPathTests(unittest.TestCase):
         )
         payload = json.loads(proc.stdout)
         self.assertEqual(payload["experiment"], "linux_netem_quic_path_dry_run")
+        self.assertEqual(payload["measurement_mode"], "isolated")
         self.assertEqual(payload["setup"][0][:6], ["tc", "qdisc", "replace", "dev", "lo", "root"])
         self.assertEqual(payload["cleanup"], [["tc", "qdisc", "del", "dev", "lo", "root"]])
 

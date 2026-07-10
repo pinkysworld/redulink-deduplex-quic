@@ -132,22 +132,34 @@ async def main_async(args: argparse.Namespace) -> dict[str, Any]:
         rawc = [r["completion_ms_measured"] for r in raw]
         rlc = [r["completion_ms_measured"] for r in rl]
         mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else 0.0
+        raw_by_round = {int(r["round"]): r for r in raw}
+        rl_by_round = {int(r["round"]): r for r in rl}
+        paired_completion_ratios = [
+            float(rl_by_round[rnd]["completion_ms_measured"]) /
+            float(raw_by_round[rnd]["completion_ms_measured"])
+            for rnd in sorted(set(raw_by_round) & set(rl_by_round))
+        ]
+        ratio_of_means = mean(rlc) / mean(rawc) if mean(rawc) else 0.0
         summary.append({
             "payload": args.payload, "rate_mbps": rate, "rtt_ms": rtt,
             "rounds": args.rounds, "loss_every": args.loss_every,
             "raw_completion_ms_mean": mean(rawc), "raw_completion_ms_sd": _sd(rawc),
             "redulink_completion_ms_mean": mean(rlc), "redulink_completion_ms_sd": _sd(rlc),
-            "rl_over_raw_completion": round(mean(rlc) / mean(rawc), 3) if mean(rawc) else 0.0,
+            "completion_ratio_paired_mean": round(mean(paired_completion_ratios), 3),
+            "completion_ratio_paired_sd": _sd(paired_completion_ratios),
+            "completion_ratio_ratio_of_means": round(ratio_of_means, 3),
             "raw_app_rate_mbps_mean": mean([r["reconstructed_rate_mbps_measured"] for r in raw]),
             "redulink_app_rate_mbps_mean": mean([r["reconstructed_rate_mbps_measured"] for r in rl]),
-            "encoded_rate_jain_index": jain([mean([r["encoded_rate_mbps_measured"] for r in raw]),
-                                             mean([r["encoded_rate_mbps_measured"] for r in rl])]),
+            "encoded_rate_balance_index": jain([
+                mean([r["encoded_rate_mbps_measured"] for r in raw]),
+                mean([r["encoded_rate_mbps_measured"] for r in rl]),
+            ]),
             "mean_queue_delay_ms": mean([r["mean_queue_delay_ms"] for r in sel]),
             "all_reconstructed": all(r["reconstruction_ok"] for r in sel),
         })
     return {"experiment": "measured_fullduplex_path_emulation_competing_flows",
             "payload": args.payload,
-            "note": "both flows share one full-duplex (per-direction) token-bucket + delay path; asyncio userspace shaping, not kernel netem",
+            "note": "both flows share one full-duplex (per-direction) token-bucket + delay path; asyncio userspace shaping, not kernel netem; completion summaries use the mean of within-round ReduLink/raw ratios",
             "rows": all_rows, "summary": summary}
 
 

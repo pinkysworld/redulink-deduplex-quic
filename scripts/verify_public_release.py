@@ -61,12 +61,13 @@ def check_text_blob(name: str, data: bytes, needles: list[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=DEFAULT_REPO)
-    parser.add_argument("--version", default="3.12")
+    parser.add_argument("--version", default="3.14")
     args = parser.parse_args()
 
     tag = f"v{args.version}-journal-submission"
     stem = f"ReduLink_journal_ready_v{args.version.replace('.', '_')}"
     builder = f"scripts/build_manuscript_v{args.version.replace('.', '_')}.py"
+    response_matrix = f"REVIEWER_RESPONSE_v{args.version.replace('.', '_')}.md"
     api_base = f"https://api.github.com/repos/{args.repo}"
 
     latest = fetch_json(f"{api_base}/releases/latest")
@@ -78,6 +79,7 @@ def main() -> None:
         "Dockerfile",
         "MANUSCRIPT_SHA256.txt",
         "PUBLIC_REVIEWER_CHECKLIST.md",
+        response_matrix,
         "requirements-lock.txt",
         f"{stem}.docx",
         f"{stem}.pdf",
@@ -92,11 +94,12 @@ def main() -> None:
         ("README.md", [tag, f"{stem}.pdf", "scripts/verify_public_release.py"]),
         ("CITATION.cff", [f'version: "{args.version}"']),
         ("SOURCE_COMMIT.txt", [tag]),
-        ("SOURCE_GIT_STATUS.txt", [f"v{args.version} journal-ready"]),
+        ("SOURCE_GIT_STATUS.txt", [f"v{args.version}"]),
         ("MANUSCRIPT_SHA256.txt", [f"{stem}.docx", f"{stem}.pdf"]),
         ("pyproject.toml", [f'version = "{args.version}"', f'artifact_tag = "{tag}"']),
         ("PUBLIC_REVIEWER_CHECKLIST.md", [tag, f"{stem}.pdf"]),
-        (builder, [tag, "Repeated native QUIC trials (n = 20)"]),
+        (response_matrix, [f"v{args.version}", "Reviewer Response Matrix"]),
+        (builder, [f"{stem}.docx", "Repeated native QUIC trials (n = 20)"]),
     ]
     for ref, cachebust in [("main", True), (tag, False), (main_commit, False)]:
         for path, needles in common:

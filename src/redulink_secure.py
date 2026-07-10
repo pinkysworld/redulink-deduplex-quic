@@ -219,7 +219,7 @@ def decode(frames: Iterable[SecureFrame], *, warm_dictionary: bytes = b"",
         warm_dictionary, secret=secret, epoch=epoch, scope=scope,
         chunker=chunker, chunk_size=chunk_size, max_dict_chunks=max_dict_chunks,
     )
-    seen_nonces: set[int] = set()
+    seen_nonces = NonceWindow()
     output: List[bytes] = []
     expected_offset = 0
     for frame in frames:
@@ -242,6 +242,8 @@ def decode(frames: Iterable[SecureFrame], *, warm_dictionary: bytes = b"",
                 raise ValueError("REF miss")
             if len(chunk) != frame.length:
                 raise ValueError("REF length mismatch")
+            if secure_cid(chunk, secret=secret, epoch=epoch, scope=scope) != frame.cid:
+                raise ValueError("REF dictionary chunk id mismatch")
             output.append(chunk)
         else:
             raise ValueError(f"unknown frame kind: {frame.kind}")

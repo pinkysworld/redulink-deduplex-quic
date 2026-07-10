@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import csv
+from datetime import datetime, timezone
 import json
 import platform
 import subprocess
@@ -74,7 +75,8 @@ def netem_context(*, device: str, rate_mbps: float, rtt_ms: float,
     ):
         _run(command)
     try:
-        yield
+        active = _run(["tc", "qdisc", "show", "dev", device], check=False)
+        yield active.stdout.strip()
     finally:
         failures = []
         for command in cleanup_commands(device=device, use_sudo=use_sudo):
@@ -96,21 +98,26 @@ def _load_payload(kind: str) -> tuple[bytes, bytes, str]:
     return warm, update, "constructed byte-stable demo"
 
 
-async def run_round(*, payload: str, round_id: int) -> list[dict[str, Any]]:
+async def run_round(*, payload: str, round_id: int,
+                    measurement_mode: str = "isolated") -> list[dict[str, Any]]:
     from run_quic_flow_comparison import run_raw_async  # type: ignore
     from redulink_aioquic_experiment import run_async as run_redulink_async  # type: ignore
 
     warm, data, payload_note = _load_payload(payload)
-    raw_task = asyncio.create_task(run_raw_async(data, loss_every=0))
-    rl_task = asyncio.create_task(run_redulink_async(
-        warm=warm,
-        data=data,
-        chunk_size=1024,
-        missing_every=7,
-        wire_format="binary",
-        loss_every=0,
-    ))
-    raw, rl = await asyncio.gather(raw_task, rl_task)
+    async def run_rl() -> dict[str, Any]:
+        return await run_redulink_async(
+            warm=warm, data=data, chunk_size=1024, missing_every=7,
+            wire_format="binary", loss_every=0,
+        )
+
+    if measurement_mode == "concurrent":
+        raw, rl = await asyncio.gather(run_raw_async(data, loss_every=0), run_rl())
+    elif round_id % 2:
+        raw = await run_raw_async(data, loss_every=0)
+        rl = await run_rl()
+    else:
+        rl = await run_rl()
+        raw = await run_raw_async(data, loss_every=0)
     return [
         row_from_stats(payload=payload, payload_note=payload_note, round_id=round_id,
                        method="raw-quic-stream", stats=raw,
@@ -197,13 +204,17 @@ def summarize(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 async def run_scenario(*, payload: str, rate_mbps: float, rtt_ms: float,
-                       loss_percent: float, rounds: int) -> list[dict[str, Any]]:
+                       loss_percent: float, rounds: int,
+                       measurement_mode: str = "isolated") -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for i in range(1, rounds + 1):
-        for row in await run_round(payload=payload, round_id=i):
+        for row in await run_round(
+            payload=payload, round_id=i, measurement_mode=measurement_mode,
+        ):
             row["rate_mbps"] = rate_mbps
             row["rtt_ms"] = rtt_ms
             row["loss_percent"] = loss_percent
+            row["measurement_mode"] = measurement_mode
             rows.append(row)
     return rows
 
@@ -220,6 +231,7 @@ def scenario_grid(args: argparse.Namespace) -> list[dict[str, Any]]:
 
 async def main_async(args: argparse.Namespace) -> dict[str, Any]:
     all_rows: list[dict[str, Any]] = []
+    qdisc_configurations: list[dict[str, Any]] = []
     for scenario in scenario_grid(args):
         with netem_context(
             device=args.device,
@@ -228,12 +240,34 @@ async def main_async(args: argparse.Namespace) -> dict[str, Any]:
             loss_percent=scenario["loss_percent"],
             limit_packets=args.limit_packets,
             use_sudo=not args.no_sudo,
-        ):
-            all_rows.extend(await run_scenario(rounds=args.rounds, **scenario))
+        ) as active_qdisc:
+            qdisc_configurations.append({**scenario, "active_qdisc": active_qdisc})
+            all_rows.extend(await run_scenario(
+                rounds=args.rounds, measurement_mode=args.measurement_mode, **scenario,
+            ))
+    tc_version = _run(["tc", "-V"], check=False)
+    git_commit = _run(["git", "rev-parse", "HEAD"], check=False)
+    import aioquic  # type: ignore
     return {
         "experiment": "linux_netem_quic_path",
-        "note": "Linux tc/netem qdisc on loopback UDP; local kernel path emulation, not WAN or Mininet.",
+        "note": (
+            "Linux tc/netem qdisc on loopback UDP; local kernel path emulation, not WAN or Mininet. "
+            + ("Raw and ReduLink transfers are isolated and order-alternated within each paired round."
+               if args.measurement_mode == "isolated" else
+               "Raw and ReduLink transfers run concurrently; this mode is a contention diagnostic, not isolated single-flow latency.")
+        ),
         "device": args.device,
+        "measurement_mode": args.measurement_mode,
+        "provenance": {
+            "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+            "command": [sys.executable, *sys.argv],
+            "platform": platform.platform(),
+            "python": sys.version,
+            "aioquic_version": aioquic.__version__,
+            "tc_version": (tc_version.stdout or tc_version.stderr).strip(),
+            "git_commit": git_commit.stdout.strip() if git_commit.returncode == 0 else "unavailable",
+            "qdisc_configurations": qdisc_configurations,
+        },
         "rows": all_rows,
         "summary": summarize(all_rows),
     }
@@ -257,6 +291,10 @@ def main() -> None:
     ap.add_argument("--rtt-ms", type=float, nargs="+", default=[20.0, 80.0])
     ap.add_argument("--loss-percent", type=float, nargs="+", default=[0.0])
     ap.add_argument("--rounds", type=int, default=20)
+    ap.add_argument(
+        "--measurement-mode", choices=["isolated", "concurrent"], default="isolated",
+        help="isolated alternates transfer order per pair; concurrent is a contention diagnostic",
+    )
     ap.add_argument("--device", default="lo")
     ap.add_argument("--limit-packets", type=int, default=10000)
     ap.add_argument("--no-sudo", action="store_true", help="run tc directly, for root shells/CI containers")
@@ -271,6 +309,7 @@ def main() -> None:
             "experiment": "linux_netem_quic_path_dry_run",
             "platform": platform.system(),
             "device": args.device,
+            "measurement_mode": args.measurement_mode,
             "scenarios": scenarios,
             "setup": [
                 setup_commands(

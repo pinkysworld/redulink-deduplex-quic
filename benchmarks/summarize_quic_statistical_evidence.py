@@ -43,6 +43,7 @@ def metric_row(*, experiment: str, scenario: str, metric: str, values: Iterable[
         "ci95_high": round_float(hi),
         "min": round_float(min(vals) if vals else 0.0),
         "max": round_float(max(vals) if vals else 0.0),
+        "inference_scope": "within-run local repeat variability; not a WAN or deployment-population interval",
     }
 
 
@@ -153,7 +154,7 @@ def main() -> None:
     write_csv(out_csv, rows)
     out_json.write_text(json.dumps({
         "experiment": "quic_statistical_evidence",
-        "note": "Deterministic percentile bootstrap confidence intervals over paired repeated local QUIC measurements.",
+        "note": "Deterministic percentile bootstrap intervals over paired repeated local QUIC measurements. These describe within-run localhost variability only; they are not population, WAN, or deployment confidence intervals.",
         "rows": rows,
     }, indent=2) + "\n", encoding="utf-8")
     print(out_csv)

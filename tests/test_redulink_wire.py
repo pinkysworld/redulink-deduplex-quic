@@ -1,4 +1,5 @@
 import unittest
+import asyncio
 
 from src import redulink_secure as secure
 from src import redulink_wire as wire
@@ -31,6 +32,34 @@ class BinaryWireEncodingTests(unittest.TestCase):
         body = wire.encode_message(msg)[4:]
         decoded = wire.decode_payload(body)
         self.assertEqual(decoded.obj, msg)
+
+    def test_rejects_truncated_and_trailing_frame_data(self):
+        frame = secure.SecureFrame(
+            kind="REF", epoch=1, scope="s", stream_id=0, offset=0,
+            cid="00" * 16, length=10, nonce=1, tag="11" * 16,
+        )
+        body = wire.encode_message({"t": "FRAME", "seq": 0, "frame": frame})[4:]
+        with self.assertRaisesRegex(ValueError, "truncated"):
+            wire.decode_payload(body[:-1])
+        with self.assertRaisesRegex(ValueError, "trailing"):
+            wire.decode_payload(body + b"x")
+
+    def test_rejects_trailing_control_data_and_invalid_missing_length(self):
+        with self.assertRaisesRegex(ValueError, "END_ROUND"):
+            wire.decode_payload(bytes([wire.END_ROUND]) + b"x")
+        body = wire.encode_message({"t": "MISSING", "items": []})[4:]
+        with self.assertRaisesRegex(ValueError, "MISSING length"):
+            wire.decode_payload(body + b"x")
+
+    def test_reader_rejects_unbounded_length_before_body_read(self):
+        async def check():
+            reader = asyncio.StreamReader()
+            reader.feed_data((wire.MAX_MESSAGE_BYTES + 1).to_bytes(4, "big"))
+            reader.feed_eof()
+            with self.assertRaisesRegex(ValueError, "message length"):
+                await wire.read_message(reader)
+
+        asyncio.run(check())
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
 case,wire_format,loss_every,input_bytes,stream_payload_bytes,stream_payload_multiplier,semantic_misses,repair_full_frames,dropped_datagrams,reconstruction_ok
-json-baseline,json,0,98304,54295,1.810553,13,13,0,True
-binary,binary,0,98304,30816,3.190031,13,13,0,True
-binary-lossy,binary,9,98304,30816,3.190031,13,13,5,True
+json-baseline,json,0,98304,54294,1.810587,13,13,0,True
+binary,binary,0,98304,30815,3.190135,13,13,0,True
+binary-lossy,binary,9,98304,30817,3.189928,13,13,5,True

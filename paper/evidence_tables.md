@@ -1,4 +1,4 @@
-# Version 3.12 Evidence Tables
+# Version 3.14 Evidence Tables
 
 These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.
 
@@ -74,13 +74,13 @@ Source: `results/quic_statistical_evidence.csv`. Confidence intervals are determ
 
 | Experiment | Scenario | Metric | n | Mean | 95% CI |
 |---|---|---|---:|---:|---:|
-| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 5 | 0.656 | [0.628, 0.693] |
-| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 5 | 0.313 | [0.313, 0.313] |
-| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 3 | 1.137 | [0.961, 1.416] |
-| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 3 | 0.261 | [0.261, 0.261] |
-| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | completion_ratio_redulink_over_raw | 12 | 1.083 | [0.966, 1.196] |
-| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | encoded_byte_ratio_redulink_over_raw | 12 | 0.313 | [0.313, 0.313] |
-| repeated_quic_trials | native aioquic sequential smoke repeats | redulink_udp_est_multiplier | 3 | 2.579 | [2.575, 2.583] |
+| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 20 | 0.973 | [0.904, 1.040] |
+| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 20 | 0.313 | [0.313, 0.313] |
+| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 20 | 0.948 | [0.929, 0.964] |
+| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 20 | 0.261 | [0.261, 0.261] |
+| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | completion_ratio_redulink_over_raw | 20 | 0.801 | [0.749, 0.855] |
+| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | encoded_byte_ratio_redulink_over_raw | 20 | 0.313 | [0.313, 0.313] |
+| repeated_quic_trials | native aioquic sequential smoke repeats | redulink_udp_est_multiplier | 20 | 2.603 | [2.601, 2.604] |
 
 Interpretation: these rows quantify variability in the local QUIC experiments. They remain localhost/path-emulation evidence and do not replace WAN, Mininet, or production registry traces.
 
@@ -94,7 +94,7 @@ Source: `results/aioquic_native_experiment.json`. This experiment uses a real ai
 | Initial FULL / REF frames | 6 / 90 |
 | Semantic misses | 13 |
 | Repair FULL frames | 13 |
-| QUIC stream payload bytes after repair | 30,816 |
+| QUIC stream payload bytes after repair | 30,815 |
 | Effective stream-payload multiplier after repair | 3.190x |
 | Reconstruction | byte-exact |
 | aioquic version | 1.3.0 |

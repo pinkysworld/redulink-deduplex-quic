@@ -1,5 +1,20 @@
 # Revision history (factual changelog)
 
+- v3.14 candidate: adapts the full peer-review pass. Native QUIC now verifies
+  the ephemeral server certificate, uses fresh per-run exporter-surrogate input
+  and connection context, validates HELLO fields, and advances independently
+  tracked sequence/offset state before reconstruction. Wire decoding is bounded
+  and rejects truncation/trailing data. Public and PyPI object studies now
+  encode/decode exact names, boundaries, empty objects, and contents, with
+  authenticated object headers in the secure profile. Clean-clone validation
+  generates ignored fixtures. System baselines pin zstd 1.5.7 and record
+  commands/versions. Transport summaries use paired ratios; unshaped Jain values
+  are balance diagnostics, and the legacy concurrent netem run is no longer
+  presented as isolated single-flow evidence. A manual Linux Actions workflow
+  now runs the corrected protocol in a dedicated network namespace and exports
+  raw evidence without treating an unexecuted harness as a result. Security/CDT
+  claims and manuscript layout are correspondingly revised.
+
 - v3.13: added the load-bearing kernel-path result the prior versions deferred -
   a live Linux tc/netem sweep (benchmarks/run_linux_netem_quic_path.py, run inside
   a rootless user+network namespace with tc --no-sudo, so no host privileges are

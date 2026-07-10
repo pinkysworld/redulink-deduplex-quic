@@ -1,7 +1,13 @@
 {
   "experiment": "linux_netem_quic_path",
   "device": "lo",
-  "note": "Live Linux tc/netem qdisc on loopback UDP, run inside a rootless user+network namespace (unshare -rn, tc --no-sudo). Single shared lo qdisc emulates an aggregate (half-duplex) bottleneck. Not WAN or Mininet; competing flows are paired raw vs ReduLink.",
+  "measurement_mode": "concurrent_legacy",
+  "provenance": {
+    "status": "legacy v3.13 result; the original runner did not capture host, tool-version, command, or qdisc snapshots",
+    "known_execution_context": "rootless user+network namespace (unshare -rn), tc --no-sudo",
+    "git_commit": "dd7d52623b96af85e7e5ad19e587c060a3384b3a"
+  },
+  "note": "Legacy live Linux tc/netem qdisc result on loopback UDP. Raw and ReduLink transfers were launched concurrently, so completion ratios are a contention diagnostic, not isolated single-flow latency. The single shared lo qdisc is aggregate and not a WAN, Mininet, or production fairness result.",
   "rows": [
     {
       "payload": "demo",
