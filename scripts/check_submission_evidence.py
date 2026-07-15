@@ -32,6 +32,13 @@ SUBMISSION_FIGURE_NAMES = (
     "semantic_miss_sensitivity.png",
 )
 
+# This is a CI reproduction gate, not uncertainty on the frozen result. With
+# identical rsync 3.2.7 capabilities and delta-plan counters, Ubuntu 24.04
+# emitted at most 0.591% fewer aggregate sent+received bytes than the frozen
+# environment. The observed difference was confined to sender-side protocol
+# overhead; every semantic and reconstruction field below remains exact.
+RSYNC_PROTOCOL_TOTAL_RELATIVE_TOLERANCE = 0.01
+
 CSV_KEYS = {
     "external_public_suite.csv": "label",
     "external_object_workload_suite.csv": "label",
@@ -98,6 +105,9 @@ def compare_rsync(generated: Path) -> None:
         "reconstructed_manifest_sha256", "expected_manifest_entries",
         "reconstructed_manifest_entries", "reconstruction_ok",
         "all_rounds_reconstruction_ok", "rsync_rounds",
+        "rsync_total_bytes_received", "rsync_literal_data",
+        "rsync_matched_data", "rsync_total_file_size",
+        "rsync_total_transferred_file_size",
     ]
     for label, expected in expected_rows.items():
         actual = actual_rows[label]
@@ -106,17 +116,38 @@ def compare_rsync(generated: Path) -> None:
                 raise ValueError(f"rsync {label} {column} changed")
         expected_total = int(expected["rsync_control_plus_data_bytes"])
         actual_total = int(actual["rsync_control_plus_data_bytes"])
-        relative_change = abs(actual_total - expected_total) / expected_total
-        if relative_change > 0.005:
+        actual_sent = int(actual["rsync_total_bytes_sent"])
+        actual_received = int(actual["rsync_total_bytes_received"])
+        if actual_sent + actual_received != actual_total:
+            raise ValueError(f"rsync {label}: sent+received does not equal total")
+        actual_rounds = [
+            int(value)
+            for value in actual["rsync_control_plus_data_bytes_per_round"].split(";")
+        ]
+        if len(actual_rounds) != int(actual["rsync_rounds"]):
+            raise ValueError(f"rsync {label}: per-round total count changed")
+        ordered_rounds = sorted(actual_rounds)
+        if actual_total != ordered_rounds[len(ordered_rounds) // 2]:
+            raise ValueError(f"rsync {label}: recorded total is not the actual median")
+        if int(actual["rsync_control_plus_data_bytes_min"]) != min(actual_rounds):
+            raise ValueError(f"rsync {label}: recorded minimum is inconsistent")
+        if int(actual["rsync_control_plus_data_bytes_max"]) != max(actual_rounds):
+            raise ValueError(f"rsync {label}: recorded maximum is inconsistent")
+        relative_changes = [
+            abs(value - expected_total) / expected_total
+            for value in [actual_total, *actual_rounds]
+        ]
+        if max(relative_changes) > RSYNC_PROTOCOL_TOTAL_RELATIVE_TOLERANCE:
             raise ValueError(
-                f"rsync {label} protocol total changed by {relative_change:.3%}: "
+                f"rsync {label} protocol total changed by "
+                f"{max(relative_changes):.3%}: "
                 f"expected median {expected_total} from "
                 f"[{expected['rsync_control_plus_data_bytes_per_round']}], "
                 f"got median {actual_total} from "
                 f"[{actual['rsync_control_plus_data_bytes_per_round']}]"
             )
-        if "version 3.2.7" not in actual["rsync_version"]:
-            raise ValueError(f"rsync {label}: expected rsync 3.2.7")
+        if "version 3.2.7  protocol version 31" not in actual["rsync_version"]:
+            raise ValueError(f"rsync {label}: expected rsync 3.2.7 protocol 31")
 
 
 def validate_source_commit() -> None:

@@ -81,6 +81,13 @@ The container fixes Python 3.12.13, pins Python dependencies, and fails its
 build unless GNU rsync 3.2.7 is installed. The base-image digest and Debian OS
 packages are not content pinned, so rsync protocol totals are version-recorded
 measurements rather than a promise of byte-identical future container builds.
+The CI reproduction gate permits a 1.0% difference in aggregate rsync
+sent-plus-received protocol bytes. The maximum observed Ubuntu 24.04 difference
+from the frozen environment was 0.591%, confined to sender-side control
+overhead. Received bytes, literal and matched bytes, file-size counters, input
+sizes, manifests, entry counts, reconstruction, round count, rsync 3.2.7, and
+protocol version 31 remain exact. This tolerance is not statistical uncertainty
+on the frozen result.
 The pinned python-zstandard wheel reports libzstd 1.5.7 in the committed
 baseline. The headline dictionary comparator pins level 3 and window_log 21;
 every row also records a window_log 24 sensitivity result:
