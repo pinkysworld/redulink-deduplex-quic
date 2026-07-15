@@ -145,6 +145,7 @@ def encode(data: bytes, *, chunker: str = 'cdc', chunk_size: int = DEFAULT_CHUNK
             frames.append(Frame('REF', k, b'', len(ch)))
             wire += REF_OVERHEAD
             ref += 1
+            touch_lru(dictionary, k, dictionary[k], max_dict_chunks)
         else:
             frames.append(Frame('FULL', k, ch, len(ch)))
             wire += FULL_OVERHEAD + len(ch)
@@ -182,6 +183,7 @@ def decode(frames: List[Frame], *, warm_dictionary: bytes = b'', chunker: str = 
             chunk = dictionary[fr.cid]
             if len(chunk) != fr.length:
                 raise ValueError('REF frame length mismatch')
+            touch_lru(dictionary, fr.cid, chunk, max_dict_chunks)
             out.append(chunk)
         else:
             raise ValueError(f'unknown frame kind: {fr.kind}')

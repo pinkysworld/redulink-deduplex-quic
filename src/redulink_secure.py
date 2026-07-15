@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import hmac
 import hashlib
-import json
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Iterable, List, Tuple
@@ -33,6 +32,12 @@ TAG_BYTES = 16
 CID_HEX_CHARS = 32
 DEFAULT_SECRET = b"redulink-artifact-secret-for-tests-only"
 DEFAULT_SCOPE = "per-connection-artifact-scope"
+DEFAULT_MAX_RECONSTRUCTED_BYTES = 64 * 1024 * 1024
+CID_TRANSCRIPT_FORMAT = b"ReduLink CID transcript\x00\x01"
+FRAME_TRANSCRIPT_FORMAT = b"ReduLink frame transcript\x00\x01"
+KIND_CODE = {"FULL": 1, "REF": 2}
+MAX_U32 = (1 << 32) - 1
+MAX_U64 = (1 << 64) - 1
 
 
 @dataclass(frozen=True)
@@ -63,30 +68,89 @@ class SecureStats:
     replay_rejections: int = 0
 
 
-def _mac(secret: bytes, label: str, fields: dict[str, object]) -> bytes:
-    encoded = json.dumps(fields, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hmac.new(secret, label.encode("ascii") + b"\0" + encoded, hashlib.sha256).digest()
+def _uint(name: str, value: int, width: int) -> bytes:
+    maximum = MAX_U32 if width == 4 else MAX_U64
+    number = int(value)
+    if number < 0 or number > maximum:
+        raise ValueError(f"{name} must fit an unsigned {width * 8}-bit integer")
+    return number.to_bytes(width, "big")
+
+
+def _length_prefixed(name: str, value: bytes) -> bytes:
+    if len(value) > MAX_U32:
+        raise ValueError(f"{name} is too long")
+    return len(value).to_bytes(4, "big") + value
+
+
+def cid_transcript(chunk: bytes, *, epoch: int, scope: str) -> bytes:
+    """Return the versioned, endpoint-independent CID MAC transcript."""
+
+    scope_bytes = scope.encode("utf-8")
+    if not scope_bytes:
+        raise ValueError("scope must not be empty")
+    return (
+        CID_TRANSCRIPT_FORMAT
+        + _uint("epoch", epoch, 8)
+        + _length_prefixed("scope", scope_bytes)
+        + hashlib.sha256(chunk).digest()
+    )
+
+
+def frame_transcript(*, kind: str, epoch: int, scope: str, stream_id: int,
+                     offset: int, cid: str, length: int, nonce: int,
+                     payload: bytes) -> bytes:
+    """Return the versioned, fixed-width frame MAC transcript.
+
+    Integer fields use network byte order. Text and binary variable-length
+    fields are length-prefixed. The CID is exactly 16 bytes and the payload is
+    represented by its 32-byte SHA-256 digest. This encoding is independent of
+    Python object or JSON serialization behavior.
+    """
+
+    if kind not in KIND_CODE:
+        raise ValueError(f"unsupported frame kind: {kind}")
+    scope_bytes = scope.encode("utf-8")
+    if not scope_bytes:
+        raise ValueError("scope must not be empty")
+    try:
+        cid_bytes = bytes.fromhex(cid)
+    except ValueError as exc:
+        raise ValueError("cid must be hexadecimal") from exc
+    if len(cid_bytes) != CID_HEX_CHARS // 2:
+        raise ValueError("cid must be 16 bytes / 32 hex characters")
+    return (
+        FRAME_TRANSCRIPT_FORMAT
+        + bytes([KIND_CODE[kind]])
+        + _uint("epoch", epoch, 8)
+        + _length_prefixed("scope", scope_bytes)
+        + _uint("stream_id", stream_id, 8)
+        + _uint("offset", offset, 8)
+        + cid_bytes
+        + _uint("length", length, 4)
+        + _uint("nonce", nonce, 8)
+        + hashlib.sha256(payload).digest()
+    )
 
 
 def secure_cid(chunk: bytes, *, secret: bytes, epoch: int, scope: str) -> str:
-    digest = hashlib.sha256(chunk).hexdigest()
-    return _mac(secret, "cid", {"epoch": epoch, "scope": scope, "sha256": digest}).hex()[:CID_HEX_CHARS]
+    transcript = cid_transcript(chunk, epoch=epoch, scope=scope)
+    return hmac.new(secret, transcript, hashlib.sha256).digest()[:TAG_BYTES].hex()
 
 
 def frame_tag(*, secret: bytes, kind: str, epoch: int, scope: str, stream_id: int,
               offset: int, cid: str, length: int, nonce: int, payload: bytes) -> str:
-    fields = {
-        "kind": kind,
-        "epoch": epoch,
-        "scope": scope,
-        "stream_id": stream_id,
-        "offset": offset,
-        "cid": cid,
-        "length": length,
-        "nonce": nonce,
-        "payload_sha256": hashlib.sha256(payload).hexdigest() if payload else "",
-    }
-    return _mac(secret, "frame", fields)[:TAG_BYTES].hex()
+    transcript = frame_transcript(
+        kind=kind,
+        epoch=epoch,
+        scope=scope,
+        stream_id=stream_id,
+        offset=offset,
+        cid=cid,
+        length=length,
+        nonce=nonce,
+        payload=payload,
+    )
+    return hmac.new(secret, transcript, hashlib.sha256).digest()[:TAG_BYTES].hex()
 
 
 def _dictionary_from_bytes(data: bytes, *, secret: bytes, epoch: int, scope: str,
@@ -126,6 +190,7 @@ def encode(data: bytes, *, warm_dictionary: bytes = b"", secret: bytes = DEFAULT
             kind = "REF"
             payload = b""
             ref += 1
+            redulink.touch_lru(dictionary, c, dictionary[c], max_dict_chunks)
         else:
             kind = "FULL"
             payload = chunk
@@ -192,11 +257,14 @@ def verify_frame(frame: SecureFrame, *, secret: bytes, expected_epoch: int, expe
     """
     if len(frame.tag) != TAG_BYTES * 2 or len(frame.cid) != CID_HEX_CHARS:
         raise ValueError("frame authentication failed")
-    expected_tag = frame_tag(
-        secret=secret, kind=frame.kind, epoch=frame.epoch, scope=frame.scope,
-        stream_id=frame.stream_id, offset=frame.offset, cid=frame.cid,
-        length=frame.length, nonce=frame.nonce, payload=frame.payload,
-    )
+    try:
+        expected_tag = frame_tag(
+            secret=secret, kind=frame.kind, epoch=frame.epoch, scope=frame.scope,
+            stream_id=frame.stream_id, offset=frame.offset, cid=frame.cid,
+            length=frame.length, nonce=frame.nonce, payload=frame.payload,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError("frame authentication failed") from exc
     if not hmac.compare_digest(frame.tag, expected_tag):
         raise ValueError("frame authentication failed")
     if frame.epoch != expected_epoch:
@@ -214,7 +282,10 @@ def verify_frame(frame: SecureFrame, *, secret: bytes, expected_epoch: int, expe
 def decode(frames: Iterable[SecureFrame], *, warm_dictionary: bytes = b"",
            secret: bytes = DEFAULT_SECRET, epoch: int = 1, scope: str = DEFAULT_SCOPE,
            stream_id: int = 0, chunker: str = "fixed", chunk_size: int = redulink.DEFAULT_CHUNK,
-           max_dict_chunks: int = redulink.MAX_DICT_CHUNKS) -> bytes:
+           max_dict_chunks: int = redulink.MAX_DICT_CHUNKS,
+           max_reconstructed_bytes: int = DEFAULT_MAX_RECONSTRUCTED_BYTES) -> bytes:
+    if max_reconstructed_bytes < 0:
+        raise ValueError("max_reconstructed_bytes must be non-negative")
     dictionary = _dictionary_from_bytes(
         warm_dictionary, secret=secret, epoch=epoch, scope=scope,
         chunker=chunker, chunk_size=chunk_size, max_dict_chunks=max_dict_chunks,
@@ -223,6 +294,10 @@ def decode(frames: Iterable[SecureFrame], *, warm_dictionary: bytes = b"",
     output: List[bytes] = []
     expected_offset = 0
     for frame in frames:
+        if frame.length <= 0 or frame.length > max(chunk_size, 32768 if chunker == "cdc" else chunk_size):
+            raise ValueError("frame length exceeds configured chunk bound")
+        if expected_offset + frame.length > max_reconstructed_bytes:
+            raise ValueError("reconstructed byte limit exceeded")
         verify_frame(
             frame, secret=secret, expected_epoch=epoch, expected_scope=scope,
             expected_stream_id=stream_id, expected_offset=expected_offset,
@@ -244,6 +319,7 @@ def decode(frames: Iterable[SecureFrame], *, warm_dictionary: bytes = b"",
                 raise ValueError("REF length mismatch")
             if secure_cid(chunk, secret=secret, epoch=epoch, scope=scope) != frame.cid:
                 raise ValueError("REF dictionary chunk id mismatch")
+            redulink.touch_lru(dictionary, frame.cid, chunk, max_dict_chunks)
             output.append(chunk)
         else:
             raise ValueError(f"unknown frame kind: {frame.kind}")

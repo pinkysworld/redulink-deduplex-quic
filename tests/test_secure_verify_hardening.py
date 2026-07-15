@@ -63,7 +63,10 @@ class VerifyHardeningTests(unittest.TestCase):
         self.assertIn(1, window, "nonce below the floor must read as replayed")
 
     def test_non_canonical_tag_or_cid_rejected(self):
-        for field, value in [("tag", "ab"), ("cid", "ab"), ("tag", "z" * 64)]:
+        for field, value in [
+            ("tag", "ab"), ("cid", "ab"), ("tag", "z" * 64),
+            ("cid", "z" * 32), ("kind", "UNKNOWN"),
+        ]:
             with self.assertRaises(ValueError) as cm:
                 self._verify(make_frame(**{field: value}))
             self.assertEqual(str(cm.exception), "frame authentication failed")

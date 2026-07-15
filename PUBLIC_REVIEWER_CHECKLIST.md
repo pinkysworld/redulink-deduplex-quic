@@ -1,45 +1,53 @@
-# Reviewer Checklist
+# Artifact evaluation checklist
 
-Local reviewer-adapted candidate:
-
-- Candidate version: `v3.14-reviewer-adapted-candidate`
-- Base commit: `dd7d52623b96af85e7e5ad19e587c060a3384b3a`
 - Repository: `https://github.com/pinkysworld/redulink-deduplex-quic`
-- Manuscript PDF: `paper/submission/ReduLink_journal_ready_v3_14.pdf`
-- Manuscript DOCX: `paper/submission/ReduLink_journal_ready_v3_14.docx`
-- Finding-by-finding response: `REVIEWER_RESPONSE_v3_14.md`
+- Manuscript PDF: `paper/submission/ReduLink_journal_ready_v3_15.pdf`
+- Manuscript DOCX: `paper/submission/ReduLink_journal_ready_v3_15.docx`
+- Journal highlights: `paper/submission/HIGHLIGHTS.txt`
+- Evidence source revision: `SOURCE_COMMIT.txt`
+- Manuscript hashes: `MANUSCRIPT_SHA256.txt`
 
-This working tree is not yet a public v3.14 release. Do not treat a failed
-public-release lookup as an artifact failure until the candidate is committed,
-tagged, and published. The last immutable public snapshot remains v3.13.
-
-Local validation from a clean clone or exported candidate:
+## Integrity checks
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -r requirements-lock.txt
-python3 scripts/run_smoke_validation.py
-python3 scripts/run_full_validation.py
+python scripts/check_text_line_endings.py
+python scripts/check_manuscript_citations.py
+python scripts/check_manuscript_hashes.py
+python scripts/run_full_validation.py
 ```
 
-Both validators generate the gitignored deterministic target corpora before
-checking their hashes. External public-release corpora are fetched separately
-with `python3 benchmarks/fetch_external_public_corpora.py`.
+Expected properties:
 
-After v3.14 is published, verify its immutable public state with:
+- Every stateful method verifies exact bytes or an exact ordered object/tree
+  manifest.
+- Native QUIC rows separate forward protocol bytes, reverse repair/control
+  bytes, and excluded diagnostic STATS bytes.
+- Binary CID, frame, connection-context, exporter-context, and key-schedule
+  vectors have an independently encoded test oracle.
+- Raw-tree profile rows reconstruct from decoded binary messages.
+- zstd headline rows pin window_log 21 and include window_log 24 sensitivity.
+- The native code reads the actual aioquic application stream identifier.
+- HELLO carries a QUIC/TLS-protected reconstruction declaration that is checked
+  against server-configured expectations; the receiver also enforces per-frame,
+  declared-length, and global reconstruction bounds.
+- HELLO's exact frame count is bounded so the single MISSING batch fits under
+  the binary message-size limit.
+- Successful references refresh true-LRU state.
+- Repair is batched after `END_ROUND`; no `DICT_ACK` is implemented or claimed.
+- Public corpus versions and SHA-256 digests are retained in manifests or
+  result files.
 
-```bash
-python3 scripts/verify_public_release.py --version 3.14
-git ls-remote https://github.com/pinkysworld/redulink-deduplex-quic refs/heads/main refs/tags/v3.14-journal-submission
-```
+## Interpretation checks
 
-Expected candidate coherence:
-
-- Metadata, manuscript paths, active builder, and hashes all name v3.14.
-- `SOURCE_GIT_STATUS.txt` identifies the candidate review branch and states
-  that it is not yet the immutable public v3.14 tag/release.
-- `scripts/check_text_line_endings.py` reports LF-only reviewer-facing text.
-- The legacy v3.13 Linux netem result is labeled as concurrent contention
-  evidence; the v3.14 runner defaults to isolated, order-alternated pairs and
-  records tool, command, commit, and qdisc provenance.
+- QUIC/TLS, not the record HMAC, is the on-path security boundary.
+- Stream-payload multipliers are not packet, IP, UDP, or link-layer metrics.
+- Single-host QUIC runs support byte and state-machine claims only.
+- Public releases and wheels are reproducible workloads, not production-trace
+  samples.
+- The author-constructed Redis layer fixture is not represented as a captured
+  registry trace.
+- Historical timing and path-emulation outputs are excluded from manuscript
+  conclusions.
+- The default evidence-checker mode rebuilds figures and the normalized DOCX in
+  temporary paths and checks fixed-PDF provenance and headline claims. CI separately regenerates deterministic tables and invokes
+  the checker's `--generated-dir` comparison mode.

@@ -1,0 +1,35 @@
+{
+  "format_version": 1,
+  "integer_encoding": "unsigned big-endian",
+  "length_prefix_encoding": "uint32 big-endian byte length",
+  "record_authentication": {
+    "secret_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "chunk_hex": "526564754c696e6b20766563746f72206368756e6b00",
+    "epoch": 72623859790382856,
+    "scope_utf8": "tenant/α",
+    "cid_transcript_hex": "526564754c696e6b20434944207472616e736372697074000101020304050607080000000974656e616e742fceb12460594e63087b147fa71da51d48a7517d1dfa6c2709f6b60282ec9a9d84ab9f",
+    "cid_hex": "841470a23bad05180ab3e1db1059c455",
+    "frame": {
+      "kind": "FULL",
+      "stream_id": 4,
+      "offset": 4096,
+      "length": 22,
+      "nonce": 9,
+      "frame_transcript_hex": "526564754c696e6b206672616d65207472616e73637269707400010101020304050607080000000974656e616e742fceb100000000000000040000000000001000841470a23bad05180ab3e1db1059c4550000001600000000000000092460594e63087b147fa71da51d48a7517d1dfa6c2709f6b60282ec9a9d84ab9f",
+      "tag_hex": "0f15aa80badac926498dbd9d5c558630"
+    }
+  },
+  "key_schedule": {
+    "tls_exporter_label_ascii": "EXPERIMENTAL-ReduLink-v1",
+    "tls_exporter_output_bytes": 32,
+    "alpn_utf8": "redulink/1",
+    "application_session_id_hex": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0",
+    "connection_context_hex": "fa516dc85fafd8dd6def1dcf6ac6fa1a2be3fa8a8fd053c0e0f1e241349aa96f",
+    "tls_exporter_context_hex": "02494e778a899b9ba6153eaeb319720d992df585977b47d644a98149829627ea",
+    "exporter_surrogate_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "stream_context_hex": "0000000000000004",
+    "direction_utf8": "client-to-server",
+    "key_info_hex": "526564754c696e6b206b657920636f6e746578740001000000184558504552494d454e54414c2d526564754c696e6b2d76310000000a726564756c696e6b2f3101020304050607080000000974656e616e742fceb100000020fa516dc85fafd8dd6def1dcf6ac6fa1a2be3fa8a8fd053c0e0f1e241349aa96f00000008000000000000000400000010636c69656e742d746f2d736572766572",
+    "derived_record_secret_hex": "c4be618d7f4b090ffc2cf122c40deda0f0223c8912536284e5f65a9329a8ee2f"
+  }
+}

@@ -1,17 +1,17 @@
-# Evidence hierarchy (v3.14 candidate)
+# Evidence hierarchy for v3.15
 
-| Evidence level | What it supports | What it does not prove |
-|---|---|---|
-| Offline model | FULL/REF reconstruction and byte accounting (model framing) | Transport behavior; wire-priced costs |
-| Framing repricing + dictionary-delta baseline (Sec. 7.6) | Wire-format-priced multipliers; the byte superiority of whole-stream zstd delta where its assumptions hold | Registry deployments that cannot retain the exact prior stream |
-| Secure model + formal analysis (Sec. 4.5) | MAC-first verification, bounded replay window, tamper/replay rejection; truncated-HMAC bound under PRF/random-function and digest-collision assumptions | Machine-checked proof; live exporter keying |
-| UDP / authenticated-UDP prototypes | Semantic MISS/FULL repair; fail-closed under tamper and replay probes; seq-bound offsets | Production replay policy |
-| Native aioquic stream mapping | Server-certificate verification, fresh per-run key surrogate, independently tracked sequence/offset state, encrypted QUIC streams, loss handling | Mutual TLS, live TLS exporter bytes, custom QUIC frames |
-| Journal fixtures (disclosed unchanged fraction) | Illustrative positive/negative workload shapes | Real-world overlap estimates |
-| External source-release pairs | Negative evidence for ordinary source-tree transfer | Registry/layer transfer gains |
-| Object-aligned public release workloads | Exact reconstruction of ordered object names, boundaries, empty objects, and contents with shared warm state | Captured production registry traces |
-| PyPI version-pair study (Sec. 7.5) | Positive/negative evidence from real package bytes using the same exact object decoder | Client-trace frequency or population weighting |
-| Concurrent localhost diagnostic + userspace path emulation | Encoded-byte accounting and completion/queueing behavior on an emulated grid with 20-round local QUIC repeats | Internet fairness or population-level inference |
-| Native QUIC miss-rate sensitivity | How semantic repairs erode path-emulation byte savings on one constrained point | A full bandwidth/RTT miss-rate grid |
-| macOS pf/dnctl dummynet QUIC path harness | Reviewer-runnable dry-run rules and local UDP probe viability on macOS | Completed aioquic sweep; WAN, Mininet, Linux tc/netem, or production registry traces |
-| Legacy Linux tc/netem result + corrected harness/workflow | v3.13 concurrent contention diagnostic; reviewer-runnable v3.14 isolated order-alternated protocol with provenance capture | A successful, inspected rerun of the corrected isolated sweep; WAN, Mininet, or production registry traces |
+| Evidence | Controlled property | Supported inference | Excluded inference |
+|---|---|---|---|
+| Secure model and malformed-input tests | Context, replay, length, quota, and dictionary checks | Enumerated fail-closed implementation behavior | Formal verification or endpoint-compromise security |
+| Hash-pinned public release pairs | Exact archive bytes and ordered object extraction | Method byte counts on the named pairs | Production prevalence or traffic weighting |
+| Recorded PyPI wheel pairs | Exact wheel hashes and ordered members | Object reuse on the four recorded pairs | Package-ecosystem population claims |
+| Real rsync baseline | Recursive update plus canonical tree-manifest equality | Exact file-tree transfer bytes on three public pairs | General rsync performance |
+| Verified zstd raw-content dictionary | Pinned level 3 and window_log 21, window_log 24 sensitivity, exact decompression and SHA-256 equality | Prior-stream dictionary bytes on the named pairs | RFC 9842 interoperability |
+| Canonical raw-tree binary profile | Every encoded message is decoded before reconstruction and final digest comparison | Complete no-miss application-stream serialization bytes | Native QUIC packet behavior |
+| Native aioquic stream mapping | Actual encrypted stream, binary messages, exact digest | Protocol-stream bytes and receive-state behavior | WAN latency, congestion fairness, or throughput |
+| Chunk-size sweep | Three public object pairs and a byte-equivalent 64 MiB dictionary | Sensitivity to fixed chunk size on the named pairs | Universal optimal chunk size |
+| Capacity and miss sweeps | Deterministic workload and one changed state parameter | Break-even sensitivity to matched capacity and repair | Population statistics |
+| Independent compressed control | No warm semantic reuse | Expansion under record overhead | All compressed formats or workloads |
+
+Historical timing, userspace path-emulation, and kernel-path outputs are not
+part of the v3.15 submission artifact and do not support its conclusions.

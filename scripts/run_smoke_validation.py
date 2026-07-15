@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Fast reviewer smoke validation for the ReduLink artifact.
+"""Fast smoke validation for the ReduLink artifact.
 
 This command is intentionally narrower than the full validation suite. It checks
-that the manuscript citations are consistent, generated fixtures are present,
-external object evidence is reproducible, and core security/model tests pass.
-It should complete quickly on a reviewer machine. Use run_full_validation.py for
-all tests and optional aioquic integration checks.
+that manuscript citations are consistent, external object evidence is
+reproducible when its corpus is present, and core security/model tests pass.
+Use run_full_validation.py for all tests and aioquic integration checks.
 """
 from __future__ import annotations
 import os
@@ -26,12 +25,9 @@ def run_unittest_file(name: str) -> None:
     run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", name])
 
 if __name__ == "__main__":
-    # Generated target fixtures are not committed. Recreate them before the
-    # consistency check so a reviewer can run this directly after cloning.
-    run([sys.executable, "benchmarks/generate_target_corpora.py"])
     run([sys.executable, "scripts/check_text_line_endings.py"])
     run([sys.executable, "scripts/check_manuscript_citations.py"])
-    run([sys.executable, "benchmarks/check_generated_artifacts.py"])
+    run([sys.executable, "scripts/check_manuscript_hashes.py"])
     corpora = ROOT / "data" / "external_public_corpora"
     if corpora.exists() and any(corpora.iterdir()):
         with tempfile.TemporaryDirectory(prefix="redulink-smoke-") as tmp:
@@ -47,8 +43,9 @@ if __name__ == "__main__":
         "test_secure_binding_hardening.py",
         "test_external_object_workload_suite.py",
         "test_redulink_wire.py",
+        "test_manuscript_hashes.py",
         "test_key_schedule.py",
         "test_secure_verify_hardening.py",
     ]:
         run_unittest_file(test_file)
-    print("smoke validation OK: line endings, citations, generated artifacts, and core security/model tests passed")
+    print("smoke validation OK: line endings, citations, manuscript hashes, and core tests passed")

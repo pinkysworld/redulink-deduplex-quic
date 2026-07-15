@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "ReduLink: Authenticated Reference Substitution for Redundancy-Suppressed Transfers over Encrypted QUIC Streams"
+title: "ReduLink: Context-Bound Reference Substitution over Encrypted QUIC Streams"
 message: "If you use ReduLink, please cite it."
 type: software
 authors:
@@ -8,9 +8,9 @@ authors:
     orcid: "https://orcid.org/0000-0001-6834-4422"
     affiliation: "University of the People"
 year: 2026
-version: "3.14"
+version: "3.15"
 repository-code: "https://github.com/pinkysworld/redulink-deduplex-quic"
-abstract: "ReduLink studies authenticated, scoped reference substitution for redundancy-suppressed transfers over encrypted QUIC streams. The v3.14 artifact adds server-certificate verification, fresh per-run experiment key context, independently validated receive offsets, bounded wire parsing, exact named-object reconstruction, authenticated object boundaries, clean-clone fixture generation, pinned zstd provenance, paired transport summaries, and explicitly bounded localhost/kernel-path claims."
+abstract: "ReduLink studies context-bound reference substitution inside encrypted QUIC application streams. The v3.15 artifact implements canonical key context, authenticated FULL and REF records, bounded true-LRU receiver state, declared reconstruction limits, validated batched repair, exact object and tree reconstruction, same-layer directional stream accounting, and direct rsync, whole-object content-addressing, gzip, chunk-token, and zstd dictionary baselines. Single-host results support byte and state-machine claims, not WAN latency, congestion fairness, or production throughput."
 keywords:
   - QUIC
   - redundancy elimination

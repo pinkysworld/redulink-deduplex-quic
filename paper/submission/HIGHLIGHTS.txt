@@ -1,0 +1,7 @@
+Highlights
+
+- ReduLink maps authenticated warm-state references onto QUIC application streams.
+- Fixed binary transcripts and public vectors make commitments interoperable.
+- Every stateful baseline verifies exact reconstruction before reporting savings.
+- Public object pairs save bytes, while raw source trees strongly favor rsync.
+- Dictionary capacity and semantic misses determine the protocol break-even point.

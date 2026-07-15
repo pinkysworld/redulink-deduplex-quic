@@ -48,6 +48,42 @@ class SecureModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "epoch"):
             secure.decode(frames, warm_dictionary=warm, chunk_size=1024, epoch=2)
 
+    def test_successful_reference_refreshes_true_lru_state(self):
+        warm = (b"A" * 1024) + (b"B" * 1024) + (b"C" * 1024)
+        data = (b"B" * 1024) + (b"D" * 1024) + (b"B" * 1024)
+        frames, _ = secure.encode(
+            data,
+            warm_dictionary=warm,
+            chunk_size=1024,
+            max_dict_chunks=2,
+        )
+        self.assertEqual([frame.kind for frame in frames], ["REF", "FULL", "REF"])
+        reconstructed = secure.decode(
+            frames,
+            warm_dictionary=warm,
+            chunk_size=1024,
+            max_dict_chunks=2,
+        )
+        self.assertEqual(reconstructed, data)
+
+    def test_reconstructed_byte_quota_fails_closed(self):
+        warm, data = sample_pair()
+        frames, _ = secure.encode(data, warm_dictionary=warm, chunk_size=1024)
+        with self.assertRaisesRegex(ValueError, "reconstructed byte limit"):
+            secure.decode(
+                frames,
+                warm_dictionary=warm,
+                chunk_size=1024,
+                max_reconstructed_bytes=len(data) - 1,
+            )
+
+    def test_zero_length_record_fails_positive_length_invariant(self):
+        warm, data = sample_pair()
+        frames, _ = secure.encode(data, warm_dictionary=warm, chunk_size=1024)
+        frames[0] = replace(frames[0], length=0, payload=b"")
+        with self.assertRaisesRegex(ValueError, "chunk bound"):
+            secure.decode(frames, warm_dictionary=warm, chunk_size=1024)
+
 
 if __name__ == "__main__":
     unittest.main()

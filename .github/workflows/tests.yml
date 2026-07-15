@@ -1,75 +1,46 @@
-name: tests
+name: submission-artifact-tests
 
 on:
   push:
   pull_request:
 
 jobs:
-  unit-and-smoke:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install dev dependencies
-        run: python -m pip install -r requirements-lock.txt
-      - name: Text line-ending check
-        run: python scripts/check_text_line_endings.py
-      - name: Fetch public corpus fixture
-        run: python benchmarks/fetch_public_corpora.py
-      - name: Fetch external public corpora (needed by unit tests)
+          python-version: "3.12.13"
+      - name: Install dependencies and system baselines
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync
+          rsync --version
+          python -m pip install -r requirements-lock.txt
+      - name: Fetch hash-pinned public corpora
         run: python benchmarks/fetch_external_public_corpora.py
-      - name: Unit tests
-        run: python -m unittest discover -s tests
-      - name: Manuscript citation check
-        run: python scripts/check_manuscript_citations.py
-      - name: Benchmark smoke test
-        run: bash benchmarks/run_synthetic_suite.sh --smoke --output /tmp/redulink-smoke.csv
-      - name: Target-class generated artifact check
+      - name: Unit and manuscript validation
+        run: python scripts/run_full_validation.py
+      - name: Reproduce public object and rsync smoke outputs
         run: |
-          bash benchmarks/run_target_class_suite.sh
-          python benchmarks/check_generated_artifacts.py
-      - name: Plot selected-result CSV
-        run: python scripts/plot_results.py results/paper_real_artifact_cdc_selected.csv --output-dir /tmp/redulink-figures
-      - name: Generate paper evidence summary
+          python benchmarks/run_real_workload_manifest.py --manifest benchmarks/external_public_manifest.csv --output /tmp/external_public_suite.csv
+          python benchmarks/run_external_object_workload_suite.py --output /tmp/external_object_workload_suite.csv
+          python benchmarks/run_object_chunk_size_sensitivity.py --output-csv /tmp/object_chunk_size_sensitivity.csv --output-json /tmp/object_chunk_size_sensitivity.json
+          python benchmarks/run_rsync_baseline_manifest.py --manifest benchmarks/external_public_manifest.csv --rounds 5 --output /tmp/rsync_baseline_external_public.csv
+          cat /tmp/rsync_baseline_external_public.csv
+          python benchmarks/run_framing_dictionary_baseline.py --sets local --output /tmp/framing_dictionary_baseline.csv
+          python benchmarks/run_pypi_version_pair_object_study.py --output-csv /tmp/pypi_version_pair_object_study.csv --output-json /tmp/pypi_version_pair_object_study.json
+      - name: Reproduce native QUIC smoke outputs
         run: |
-          python scripts/summarize_benchmark_evidence.py
-          python scripts/plot_warm_update_summary.py
-      - name: Socket prototype demo
-        run: python prototypes/redulink_socket_prototype.py demo
-
-      - name: Semantic repair demo
-        run: python prototypes/redulink_semantic_repair_demo.py --output results/semantic_repair_demo.json
-
-      - name: UDP semantic repair experiment
-        run: python prototypes/redulink_udp_repair_experiment.py --output results/udp_repair_experiment.json
-
-      - name: Authenticated UDP repair experiment
-        run: python prototypes/redulink_authenticated_udp_experiment.py --output results/authenticated_udp_experiment.json
-
-      - name: Wire-byte fairness accounting experiment
-        run: python benchmarks/run_wire_fairness_accounting.py
-      - name: Native aioquic stream-mapping and lossy proxy experiments
-        run: bash benchmarks/run_aioquic_experiment.sh
-
-      - name: Journal workload suite
-        run: bash benchmarks/run_journal_workload_suite.sh
-      - name: Hash-pinned external source-release suite
-        run: |
-          python benchmarks/run_real_workload_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/external_public_suite.csv
-          python benchmarks/run_rsync_baseline_manifest.py --manifest benchmarks/external_public_manifest.csv --output results/rsync_baseline_external_public.csv
-      - name: Component performance smoke
-        run: python benchmarks/run_component_performance.py --size 524288
-      - name: QUIC raw versus ReduLink stream comparison
-        run: python benchmarks/run_quic_flow_comparison.py --loss-every 0
-      - name: Native aioquic scaling smoke
-        run: python benchmarks/run_aioquic_scaling_experiment.py --blocks 96
-      - name: Portable QUIC bottleneck emulation
-        run: python benchmarks/run_quic_bottleneck_emulation.py
-
-      - name: External object-sequence public workload suite
-        run: python benchmarks/run_external_object_workload_suite.py
-
-      - name: Text line-ending check after regenerated artifacts
-        run: python scripts/check_text_line_endings.py
+          python benchmarks/run_quic_flow_comparison.py --loss-every 0 --output-csv /tmp/quic_flow_comparison.csv --output-json /tmp/quic_flow_comparison.json
+          python benchmarks/run_protocol_stream_accounting.py --source-csv /tmp/quic_flow_comparison.csv --output-csv /tmp/protocol_stream_byte_accounting.csv --output-json /tmp/protocol_stream_byte_accounting.json
+          python benchmarks/run_aioquic_scaling_experiment.py --output-csv /tmp/aioquic_scaling_experiment.csv --output-json /tmp/aioquic_scaling_experiment.json
+          python benchmarks/run_aioquic_workload_cases.py --output-csv /tmp/aioquic_workload_cases.csv --output-json /tmp/aioquic_workload_cases.json
+          python benchmarks/run_quic_miss_rate_sensitivity.py --output-csv /tmp/quic_miss_rate_sensitivity.csv --output-json /tmp/quic_miss_rate_sensitivity.json
+      - name: Compare regenerated evidence with committed results
+        run: python scripts/check_submission_evidence.py --generated-dir /tmp
+      - name: Smoke commands do not rewrite committed evidence
+        run: git diff --exit-code

@@ -32,11 +32,24 @@ class ExternalObjectWorkloadSuiteTests(unittest.TestCase):
             secured = suite.object_aligned_redulink(old, new, secure_mode=True)
             self.assertTrue(plain["reconstruction_ok"])
             self.assertTrue(secured["reconstruction_ok"])
+            self.assertTrue(secured["wire_serialization_ok"])
             self.assertEqual(plain["object_count"], 3)
             self.assertGreater(secured["object_header_bytes"], plain["object_header_bytes"])
+            for name in ("same.bin", "empty.txt", "new.bin"):
+                self.assertLessEqual(suite._object_context_id(name), (1 << 62) - 1)
 
-            tag = suite._object_tag("same.bin", 4096, 0)
-            tampered = suite.ObjectRecord("renamed.bin", 4096, tuple(), tag)
+            cas = suite.whole_object_cas(old, new)
+            self.assertTrue(cas["reconstruction_ok"])
+            self.assertEqual(cas["ref_objects"], 1)
+            self.assertEqual(cas["full_objects"], 2)
+
+            chunk_tokens = suite.object_aligned_chunk_token_reuse(old, new)
+            self.assertTrue(chunk_tokens["reconstruction_ok"])
+            self.assertEqual(chunk_tokens["ref_frames"], 1)
+
+            header = bytearray(suite._encode_object_header("same.bin", 4096, 0, secure_mode=True))
+            header[-1] ^= 1
+            tampered = suite.ObjectRecord("same.bin", 4096, tuple(), bytes(header))
             with self.assertRaisesRegex(ValueError, "object header authentication"):
                 suite._decode_object_records([tampered], warm_root=old, secure_mode=True)
 
@@ -60,6 +73,14 @@ class ExternalObjectWorkloadSuiteTests(unittest.TestCase):
         for row in rows:
             self.assertEqual(row["redulink_reconstruction_ok"], "True")
             self.assertEqual(row["secure_reconstruction_ok"], "True")
+            self.assertEqual(row["secure_wire_serialization_ok"], "True")
+            self.assertEqual(row["secure_object_header_serialization_ok"], "True")
+            self.assertIn("deterministic artifact test key", row["secure_authentication_key_provenance"])
+            self.assertEqual(row["chunk_token_reuse_reconstruction_ok"], "True")
+            self.assertEqual(row["whole_object_cas_reconstruction_ok"], "True")
+            self.assertEqual(row["gzip_reconstruction_ok"], "True")
+            self.assertIn("level=6", row["gzip_parameters"])
+            self.assertEqual(row["dictionary_budget_chunks"], "8192")
             self.assertGreater(float(row["redulink_multiplier"]), 1.0)
             self.assertNotEqual(row["rsync_total_multiplier"], "")
             # committed evidence must be machine-independent
