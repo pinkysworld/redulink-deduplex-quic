@@ -1,30 +1,42 @@
 # Reference audit
 
-The manuscript contains 26 numbered references and every numbered reference is
-cited before the reference list. The automated checker is:
+The v3.15 manuscript contains 32 numbered references and cites every reference
+before the reference list. Verify numbering with:
 
 ```bash
-python3 scripts/check_manuscript_citations.py
+python scripts/check_manuscript_citations.py
 ```
 
 Reference roles:
 
-- [1]-[4] establish redundancy elimination, enterprise redundancy, SmartRE, and EndRE.
-- [5] establishes the low-bandwidth file-system / file-delta context.
-- [6]-[10] establish QUIC transport, QUIC TLS, loss recovery, applicability, and manageability.
-- [11]-[13] establish content-defined chunking and chunking-attack context.
-- [14] provides Ethernet line-rate context.
-- [15] cites the ReduLink artifact.
-- [16]-[17] establish deduplication privacy and server-aided deduplication context.
-- [18] cites the aioquic implementation used for the native QUIC stream-mapping artifact.
-- [19]-[22] establish the HTTP delta / shared-dictionary lineage (RFC 3229 delta
-  encoding, VCDIFF/RFC 3284, SDCH, and RFC 9842 Compression Dictionary Transport)
-  against which ReduLink is differentiated.
-- [23]-[24] (HMAC RFC 2104, HKDF RFC 5869) ground the formal security analysis
-  in Section 4.5; [25] (Jain index) supports a per-round rate-balance diagnostic,
-  not a fairness claim;
-  [26] (Zstandard RFC 8878) grounds the dictionary-delta baseline of Section 7.6.
+- [1-3] establish link and network-wide redundancy elimination.
+- [4-7] establish the closest endpoint lineage: EndRE, DOT, PACK, and CoRE.
+- [8-10] establish rsync, LBFS, and REBL as file, chunk, and collection-level
+  delta-transfer comparators.
+- [11-13] establish HTTP delta encoding, VCDIFF, and RFC 9842 Compression
+  Dictionary Transport.
+- [14-18] define QUIC transport, TLS use, recovery, applicability, and
+  manageability.
+- [19] defines the current TLS 1.3 exporter construction.
+- [20-21] define HMAC and HKDF.
+- [22] establishes FastCDC as related content-defined chunking work; the paper
+  explicitly does not attribute FastCDC behavior to its own exploratory
+  rolling-hash chunker.
+- [23-24] ground the deduplication side-channel discussion.
+- [25-26] define Zstandard and its raw-content-dictionary format.
+- [27] identifies the aioquic implementation and version used by the artifact.
+- [28] identifies the source and reproducibility package.
+- [29] supplies the standard pseudorandom-function analysis cited for the
+  deliberately qualified HMAC tag argument.
+- [30] documents Tentackle's industrial TRIP-over-QUIC transport, dictionary,
+  back-reference, and optional compression design.
+- [31] identifies the exact python-zstandard binding version used by the
+  artifact.
+- [32] defines exporter label and application-context requirements, including
+  the unregistered `EXPERIMENTAL` private-use namespace.
 
-[11] is cited as W. Xia et al. (FastCDC, IEEE TPDS 2020); [19]-[22] are the
-nearest receiver-side-reuse prior work and are contrasted in Section 3.3. The
-SDCH entry is draft-lee-sdch-spec-00 (2016), not 2008.
+The novelty boundary does not attribute endpoint substitution, hash-named
+chunks, miss recovery, file delta, HTTP dictionary transport, or carrying an
+existing dictionary-aware RPC protocol over QUIC to ReduLink.
+Its claim is limited to the implemented bounded QUIC application-stream mapping
+and the accompanying evaluation.

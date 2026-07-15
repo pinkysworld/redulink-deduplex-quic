@@ -1,116 +1,20 @@
-# Version 3.14 Evidence Tables
+# Manuscript evidence map
 
-These tables are generated from repository CSV outputs. They emphasize evidence level, raw byte context, wall-clock cost scope, and negative controls.
-
-## Evidence Levels
-
-| Level | What it supports | Current repository artifact |
+| Manuscript result | Committed evidence | Regeneration script |
 |---|---|---|
-| Representation model | FULL/REF byte reconstruction, accounting, miss failure. | `src/redulink_model.py`, `tests/`. |
-| Controlled target fixtures | Target-class behavior under deterministic generated warm/update pairs. | `benchmarks/generate_target_corpora.py`, `results/target_class_suite.csv`. |
-| Frozen public fixture | Reviewer-runnable pinned public text/version pairs. | `benchmarks/public_artifacts_manifest.csv`, `results/public_artifact_suite.csv`. |
-| Prototype | Endpoint cooperation over localhost TCP/UDP and native QUIC stream mapping. | `prototypes/redulink_socket_prototype.py`, `prototypes/redulink_udp_repair_experiment.py`, `prototypes/redulink_authenticated_udp_experiment.py`, `prototypes/redulink_aioquic_experiment.py`. |
-| Pending transport validation | Custom QUIC extension frames, competing-flow congestion fairness, migration, 0-RTT, exporter-derived keys. | Not implemented. |
+| Public named-object methods | `results/external_object_workload_suite.csv` | `benchmarks/run_external_object_workload_suite.py` |
+| Raw public trees, including decoded-wire exactness | `results/external_public_suite.csv` | `benchmarks/run_real_workload_manifest.py` |
+| Real rsync | `results/rsync_baseline_external_public.csv` | `benchmarks/run_rsync_baseline_manifest.py` |
+| zstd prior-stream dictionary at window_log 21 and 24 | `results/framing_dictionary_baseline.csv` and `.json` | `benchmarks/run_framing_dictionary_baseline.py` |
+| PyPI object pairs | `results/pypi_version_pair_object_study.csv` and `.json` | `benchmarks/run_pypi_version_pair_object_study.py` |
+| Object chunk-size sensitivity | `results/object_chunk_size_sensitivity.csv` and `.json` | `benchmarks/run_object_chunk_size_sensitivity.py` |
+| Native raw and ReduLink flow rows | `results/quic_flow_comparison.csv` and `.json` | `benchmarks/run_quic_flow_comparison.py` |
+| Same-layer protocol accounting | `results/protocol_stream_byte_accounting.csv` and `.json` | `benchmarks/run_protocol_stream_accounting.py` |
+| Native workload controls | `results/aioquic_workload_cases.csv` and `.json` | `benchmarks/run_aioquic_workload_cases.py` |
+| Dictionary-capacity sweep | `results/aioquic_scaling_experiment.csv` and `.json` | `benchmarks/run_aioquic_scaling_experiment.py` |
+| Semantic-miss sweep | `results/quic_miss_rate_sensitivity.csv` and `.json` | `benchmarks/run_quic_miss_rate_sensitivity.py` |
 
-## Target-Class Evidence Matrix
-
-Source: `results/target_class_suite.csv` and `results/target_class_warm_update_summary.csv`. These are controlled generated fixtures, not production traces.
-
-| Target | Input bytes | Warm bytes | Changed bytes | Best compression | Fixed-block | ReduLink fixed | ReduLink CDC | Interpretation |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| software update | 515,534 | 478,034 | 292,158 | zstd-3 11.958x | 1.000x | 0.997x | 0.999x | ReduLink loses; single-object compression dominates this generated update shape. |
-| container layer | 624,778 | 493,423 | 600,951 | zstd-3 4.087x | 1.799x | 1.010x | 0.999x | Weak reference identity; fixed-block baseline helps more than ReduLink. |
-| git-packlike | 1,038,009 | 973,109 | 660,483 | zstd-3 18.080x | 1.269x | 1.082x | 1.193x | Modest warm-dictionary gain, especially with CDC. |
-| VM backup | 3,686,400 | 3,686,400 | 49,623 | zstd-3 9.949x | 21.560x | 20.701x | 2.771x | Strong for aligned/page-like state; fixed-block and ReduLink fixed both benefit. |
-| structured logs | 4,980,940 | 4,075,370 | 906,941 | gzip-6 12.397x | 1.070x | 1.067x | 0.999x | Compression dominates; reference substitution is weak after overhead. |
-| random negative | 2,097,152 | 2,097,152 | 2,088,982 | zstd-3 1.000x | 1.000x | 0.997x | 0.998x | Correct no-gain random control. |
-| compressed related | 382,339 | 382,242 | 29,416 | zstd-3 2.192x | 12.417x | 12.117x | 9.623x | Diagnostic positive: related compressed streams retain reusable byte regions. |
-| compressed negative | 786,678 | 786,678 | 783,669 | zstd-3 1.000x | 1.000x | 0.997x | 0.998x | Correct no-gain compressed negative control. |
-
-Interpretation: ReduLink helps only when byte-identical chunks survive across warm dictionary state and chosen chunk boundaries. The target-class suite deliberately includes weak and negative cases, because related data does not automatically imply referenceable chunk identity.
-
-## Public-Corpus Coverage and Limits
-
-| Corpus family | Current fixture | Scale | Positive cases | Negative/weak cases | Production trace? | Limitation |
-|---|---|---:|---|---|---|---|
-| Text version pairs | Yes | 23 KB-829 KB | nginx, redis | cpython, linux-parameters, RFC pair | No | Small, text-only, smoke-level public fixture. |
-| Public source-release snapshots | Yes | 0.95 MB-15.53 MB updates | None at fixed 4 KiB | Click, Redis, nginx | No | External public corpus, but not production traces. |
-| OCI/container layers | No | - | - | - | No | Needed for claimed container workloads. |
-| Git packs | No | - | - | - | No | Needed for repository synchronization claims. |
-| Package repository metadata | No | - | - | - | No | Needed for software-update claims. |
-| VM/backup snapshots | No | - | - | - | No | Needed beyond generated sparse-block fixture. |
-| Structured log archives | No | - | - | - | No | Needed beyond generated log fixture. |
-
-## Frozen Public-Corpora Fixture Excerpt
-
-Source: `results/public_artifact_suite.csv` and `benchmarks/public_artifacts_manifest.csv`.
-
-| Artifact | Method | Input bytes | Warm bytes | Changed bytes | Wire bytes | Multiplier | Wall ms | MiB/s local |
-|---|---|---:|---:|---:|---:|---:|---:|---:|
-| nginx-changes | fixed-block-reuse:fixed | 828,922 | 827,855 | 797,468 | 11,362 | 72.956x | 1.730 | 456.982 |
-| nginx-changes | redulink:cdc | 828,922 | 827,855 | 797,468 | 15,603 | 53.126x | 319.241 | 2.476 |
-| redis-readme | redulink:cdc | 23,845 | 22,607 | 22,354 | 15,236 | 1.565x | 7.901 | 2.878 |
-| cpython-http-server | redulink:cdc | 48,516 | 47,735 | 40,101 | 48,612 | 0.998x | 17.897 | 2.585 |
-| linux-kernel-parameters | redulink:cdc | 272,692 | 269,275 | 259,568 | 273,364 | 0.998x | 98.707 | 2.635 |
-| ietf-quic-rfc | redulink:cdc | 126,175 | 403,442 | 393,620 | 126,487 | 0.998x | 113.117 | 1.064 |
-
-Interpretation: the public fixture is intentionally small but pinned and checksum-verifiable. It contains one strong public changed-version case, one modest positive case, and several weak cases.
-
-## Synthetic Excerpt
-
-Synthetic rows are retained as mechanism checks and should not be read as production trace validation.
-
-| Workload | Method | Input bytes | Wire bytes | Multiplier | Wall ms | MiB/s local |
-|---|---|---:|---:|---:|---:|---:|
-| logs | redulink:fixed | 2,578,182 | 40,518 | 63.631x | 4.034 | 609.569 |
-| logs | redulink:cdc | 2,578,182 | 57,558 | 44.793x | 944.324 | 2.604 |
-| updates | redulink:fixed | 2,575,182 | 1,314,222 | 1.959x | 4.725 | 519.769 |
-| mixed | redulink:fixed | 3,187,727 | 651,863 | 4.890x | 4.406 | 689.980 |
-| mixed | redulink:cdc | 3,187,727 | 667,559 | 4.775x | 1017.794 | 2.987 |
-
-## QUIC Statistical Evidence
-
-Source: `results/quic_statistical_evidence.csv`. Confidence intervals are deterministic percentile bootstrap intervals over repeated local measurements; paired raw/ReduLink rows are used where available.
-
-| Experiment | Scenario | Metric | n | Mean | 95% CI |
-|---|---|---|---:|---:|---:|
-| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 20 | 0.973 | [0.904, 1.040] |
-| quic_emulated_path | demo; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 20 | 0.313 | [0.313, 0.313] |
-| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | completion_ratio_redulink_over_raw | 20 | 0.948 | [0.929, 0.964] |
-| quic_emulated_path_redis | redis; rate=5.0Mbps; rtt=20.0ms; loss_every=0 | encoded_byte_ratio_redulink_over_raw | 20 | 0.261 | [0.261, 0.261] |
-| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | completion_ratio_redulink_over_raw | 20 | 0.801 | [0.749, 0.855] |
-| quic_competing_flows | localhost concurrent aioquic pair; rate_hint=25Mbps | encoded_byte_ratio_redulink_over_raw | 20 | 0.313 | [0.313, 0.313] |
-| repeated_quic_trials | native aioquic sequential smoke repeats | redulink_udp_est_multiplier | 20 | 2.603 | [2.601, 2.604] |
-
-Interpretation: these rows quantify variability in the local QUIC experiments. They remain localhost/path-emulation evidence and do not replace WAN, Mininet, or production registry traces.
-
-## Native aioquic Stream-Mapping Result
-
-Source: `results/aioquic_native_experiment.json`. This experiment uses a real aioquic client/server handshake and bidirectional QUIC stream on localhost. ReduLink messages are carried inside QUIC STREAM data; custom extension frames are not implemented.
-
-| Metric | Value |
-|---|---:|
-| Input bytes | 98,304 |
-| Initial FULL / REF frames | 6 / 90 |
-| Semantic misses | 13 |
-| Repair FULL frames | 13 |
-| QUIC stream payload bytes after repair | 30,815 |
-| Effective stream-payload multiplier after repair | 3.190x |
-| Reconstruction | byte-exact |
-| aioquic version | 1.3.0 |
-
-## Fixed-Block Baseline Definition
-
-| Parameter | Value |
-|---|---|
-| Default block size | 8192 bytes unless `--chunk-size` overrides it. |
-| Match rule | Byte-scan exact block match using a prefix lookup followed by full-block equality. |
-| Token overhead | 16 bytes per matched block reference. |
-| Literal overhead | 20 bytes per literal run plus literal bytes. |
-| Checksum exchange | Not modeled. |
-| rsync compatibility | No; this is an rsync-family fixed-block reuse approximation, not the rsync protocol. |
-| Compression order | None for fixed-block rows. |
-
-## Timing Scope
-
-`wall_ms`, `throughput_mib_s_local`, and `runner_peak_kib` are local runner measurements. They are not line-rate performance claims. `cost_scope` distinguishes compression-only rows, fixed-block scans, ReduLink encode/decode rows, and composition diagnostics.
+Every stateful method used by the manuscript reconstructs exact bytes or an
+exact ordered object/tree manifest. Diagnostic STATS responses are excluded
+from native protocol multipliers and remain separately reported. Historical
+timing and path-emulation files are outside the submission evidence set.

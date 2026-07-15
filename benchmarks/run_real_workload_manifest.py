@@ -15,15 +15,17 @@ import argparse
 import csv
 import hashlib
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-import redulink_model as model  # type: ignore
 import redulink_secure as secure  # type: ignore
 import redulink_wire as wire  # type: ignore
+
+RAW_STREAM_SCOPE = "raw-stream-artifact-v1"
+RAW_STREAM_SECRET = hashlib.sha256(b"ReduLink public raw-stream artifact test key v1").digest()
+RAW_STREAM_DICTIONARY_BUDGET = 8192
 
 
 def read_bytes(path: Path) -> bytes:
@@ -39,24 +41,76 @@ def read_bytes(path: Path) -> bytes:
     raise FileNotFoundError(path)
 
 
-def fixed_block_reuse(old: bytes, new: bytes, *, chunk_size: int) -> int:
-    """Simple exact-block reuse approximation used by the manifest runner.
-
-    This intentionally differs from `run_baseline_comparison.py`'s byte-scanning
-    fixed-block comparator. Here each update block either emits a 32-byte
-    reference token or a 32-byte literal header plus literal bytes. The result is
-    a coarse exact-block sanity check, not rsync and not the journal fixture's
-    coalesced-literal baseline.
-    """
-    known = {hashlib.sha256(old[i:i + chunk_size]).digest() for i in range(0, len(old), chunk_size)}
-    wire = 0
-    for i in range(0, len(new), chunk_size):
-        chunk = new[i:i + chunk_size]
-        if hashlib.sha256(chunk).digest() in known:
-            wire += 32
-        else:
-            wire += len(chunk) + 32
-    return wire
+def canonical_binary_redulink(old: bytes, new: bytes, *, chunk_size: int) -> dict[str, object]:
+    """Serialize the complete no-miss application-stream profile and decode it."""
+    frames, stats = secure.encode(
+        new,
+        warm_dictionary=old,
+        secret=RAW_STREAM_SECRET,
+        epoch=1,
+        scope=RAW_STREAM_SCOPE,
+        stream_id=0,
+        chunker="fixed",
+        chunk_size=chunk_size,
+        max_dict_chunks=RAW_STREAM_DICTIONARY_BUDGET,
+    )
+    messages = [wire.encode_message({
+        "t": "HELLO",
+        "version": 1,
+        "chunk_size": chunk_size,
+        "frame_count": len(frames),
+        "input_length": len(new),
+        "input_sha256": hashlib.sha256(new).hexdigest(),
+    })]
+    messages.extend(
+        wire.encode_message({"t": "FRAME", "seq": seq, "frame": frame})
+        for seq, frame in enumerate(frames)
+    )
+    messages.extend([
+        wire.encode_message({"t": "END_ROUND"}),
+        wire.encode_message({"t": "MISSING", "items": []}),
+        wire.encode_message({"t": "FINISH"}),
+    ])
+    decoded = []
+    for message in messages:
+        body_length = int.from_bytes(message[:wire.LEN_BYTES], "big")
+        if body_length != len(message) - wire.LEN_BYTES:
+            raise ValueError("binary profile length prefix mismatch")
+        decoded.append(wire.decode_payload(message[wire.LEN_BYTES:]))
+    expected_types = (
+        ["HELLO"] + ["FRAME"] * len(frames)
+        + ["END_ROUND", "MISSING", "FINISH"]
+    )
+    decoded_types = [message.t for message in decoded]
+    decoded_hello = decoded[0].obj
+    wire_decode_ok = (
+        decoded_types == expected_types
+        and int(decoded_hello["input_length"]) == len(new)
+        and str(decoded_hello["input_sha256"]) == hashlib.sha256(new).hexdigest()
+        and list(decoded[-2].obj["items"]) == []
+    )
+    decoded_frames = [message.obj["frame"] for message in decoded if message.t == "FRAME"]
+    reconstructed = secure.decode(
+        decoded_frames,
+        warm_dictionary=old,
+        secret=RAW_STREAM_SECRET,
+        epoch=1,
+        scope=RAW_STREAM_SCOPE,
+        stream_id=0,
+        chunker="fixed",
+        chunk_size=chunk_size,
+        max_dict_chunks=RAW_STREAM_DICTIONARY_BUDGET,
+        max_reconstructed_bytes=max(len(new), 1),
+    ) if decoded_frames else b""
+    wire_bytes = sum(len(message) for message in messages)
+    return {
+        "wire_bytes": wire_bytes,
+        "multiplier": len(new) / wire_bytes if wire_bytes else 0.0,
+        "full_frames": stats.full_frames,
+        "ref_frames": stats.ref_frames,
+        "wire_decode_ok": wire_decode_ok,
+        "reconstruction_ok": wire_decode_ok and reconstructed == new,
+    }
 
 
 def run_one(row: dict[str, str]) -> dict[str, str]:
@@ -65,15 +119,11 @@ def run_one(row: dict[str, str]) -> dict[str, str]:
     new_path = Path(row["new_path"])
     chunker = row.get("chunker", "fixed") or "fixed"
     chunk_size = int(row.get("chunk_size", "4096") or 4096)
+    if chunker != "fixed":
+        raise ValueError("the canonical binary evidence runner requires fixed chunking")
     old = read_bytes(old_path)
     new = read_bytes(new_path)
-    started = time.perf_counter()
-    stats = model.run_bytes(new, warm=old, chunker=chunker, chunk_size=chunk_size)
-    elapsed_ms = (time.perf_counter() - started) * 1000
-    secure_started = time.perf_counter()
-    secure_stats = secure.run_bytes(new, warm_dictionary=old, chunker=chunker, chunk_size=chunk_size)
-    secure_elapsed_ms = (time.perf_counter() - secure_started) * 1000
-    reuse_wire = fixed_block_reuse(old, new, chunk_size=chunk_size)
+    binary = canonical_binary_redulink(old, new, chunk_size=chunk_size)
     return {
         "label": label,
         "workload": row.get("workload", label),
@@ -85,17 +135,14 @@ def run_one(row: dict[str, str]) -> dict[str, str]:
         "new_sha256": hashlib.sha256(new).hexdigest(),
         "chunker": chunker,
         "chunk_size": str(chunk_size),
-        "redulink_wire_bytes": str(stats.wire_bytes),
-        "redulink_multiplier": f"{stats.effective_multiplier:.6f}",
-        "redulink_reconstruction_ok": str(stats.reconstruction_ok),
-        "secure_wire_bytes": str(secure_stats.wire_bytes),
-        "secure_multiplier": f"{secure_stats.effective_multiplier:.6f}",
-        "secure_reconstruction_ok": str(secure_stats.reconstruction_ok),
-        "fixed_block_reuse_wire_bytes": str(reuse_wire),
-        "fixed_block_reuse_multiplier": f"{(len(new) / reuse_wire) if reuse_wire else 0:.6f}",
-        "fixed_block_reuse_parameters": "exact 4096-byte block membership; 32-byte match token; 32-byte literal header per block; no rolling checksum; not rsync",
-        "redulink_elapsed_ms": f"{elapsed_ms:.3f}",
-        "secure_elapsed_ms": f"{secure_elapsed_ms:.3f}",
+        "binary_profile_wire_bytes": str(binary["wire_bytes"]),
+        "binary_profile_multiplier": f"{float(binary['multiplier']):.6f}",
+        "binary_profile_full_frames": str(binary["full_frames"]),
+        "binary_profile_ref_frames": str(binary["ref_frames"]),
+        "binary_profile_wire_decode_ok": str(binary["wire_decode_ok"]),
+        "binary_profile_reconstruction_ok": str(binary["reconstruction_ok"]),
+        "dictionary_budget_chunks": str(RAW_STREAM_DICTIONARY_BUDGET),
+        "authentication_key_provenance": "public deterministic artifact test key; byte serialization and exactness only",
     }
 
 

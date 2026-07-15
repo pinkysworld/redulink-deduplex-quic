@@ -1,152 +1,92 @@
-# ReduLink Threat Model
+# ReduLink threat model
 
-This document separates security requirements from the current Python model. The
-current Python code is a payload-representation and accounting model. It
-verifies byte-exact reconstruction and selected fail-closed conditions, but the core model itself is not a production QUIC implementation. The current package includes a native aioquic stream-mapping prototype, but production key-schedule integration, custom extension-frame parsing, replay-window policy, and production privacy enforcement remain future work.
+ReduLink is a representation layer inside cooperating endpoints. QUIC/TLS is
+responsible for confidentiality, peer authentication as configured by the
+application, integrity on the network path, loss recovery, flow control, and
+congestion control. ReduLink's record HMAC binds decoded representation state
+inside the endpoints. It is not an independent network-security boundary.
 
 ## Assumptions
 
-- Production endpoints are authorized by the application and authenticated as
-  required by deployment policy. The native artifact verifies only the server
-  certificate; it does not use a client certificate.
-- ReduLink runs only after negotiation by cooperating endpoints.
-- Dictionaries are per-connection by default.
-- Shared origin dictionaries are allowed only for public artifacts, one
-  administrative trust domain, or explicit tenant/user policy.
-- Transparent middlebox operation over QUIC/TLS plaintext is out of scope.
+- An application authorizes both endpoints and selects an appropriate QUIC
+  authentication policy. The current native artifact verifies only the server
+  certificate.
+- Receiver dictionaries are preprovisioned or agreed by a trusted, hash-pinned
+  or signed manifest. Dictionary negotiation is not implemented.
+- Per-connection or per-origin dictionaries are the conservative default.
+  Private global cross-user dictionaries are excluded.
+- A production implementation derives ReduLink keying material from a TLS
+  exporter. The artifact uses a fresh private exporter surrogate because
+  aioquic 1.3.0 does not expose exporter bytes through its public API. The
+  artifact invocation uses the RFC 5705 private-use label
+  `EXPERIMENTAL-ReduLink-v1`, a canonical 32-byte context, and a 32-byte
+  output. A nonexperimental deployment must register its exporter label.
+- Endpoint compromise and malicious code running with access to plaintext or
+  ReduLink secrets are outside the protection boundary.
 
-## Security Properties
+## Security properties and status
 
-| Property | Claim | Required mechanism | Current artifact status |
+| Property | Required behavior | Artifact evidence | Residual limitation |
 |---|---|---|---|
-| Integrity | Receiver output equals sender input or fails closed. | FULL/REF authentication, chunk-id validation, offset binding, length binding. | Modeled by reconstruction and mismatch tests; production crypto is not implemented. |
-| Context binding | REF cannot be replayed across connection, epoch, stream, offset, origin, or dictionary scope. | QUIC exporter-derived keys, epoch id, stream id, independently tracked offset, dictionary id, nonce, replay window. | HMAC binding, native independent sequence/offset state, and bounded nonce rejection are implemented; live exporter bytes remain pending. |
-| Dictionary safety | Receiver admits only authenticated FULL chunks or signed warm-manifest chunks. | Authenticated FULL, manifest commitment, admission policy, eviction policy. | FULL chunk-id checks are modeled; manifest policy is not implemented. |
-| Expansion bound | A small REF cannot trigger unbounded receiver work or delivery. | Per-frame, per-stream, and per-epoch reconstructed-byte caps. | Basic accounting and length checks are modeled; full QUIC flow-control enforcement is not. |
-| Privacy scope | REF success must not reveal private cross-user content possession in public mode. | Per-connection default, no global cross-user dictionary, explicit per-origin/tenant policy. | Policy is specified; cross-tenant enforcement is not implemented. |
+| Exact output | Accept only the complete declared byte sequence and digest | Length, sequence, offset, and SHA-256 completion checks | Tests are not a formal proof |
+| Context binding | Reject records from another epoch, scope, connection, direction, stream context, or offset | Canonical key context and record-tag tests | Live TLS exporter integration is absent |
+| Replay control | Reject duplicate or sufficiently old nonces with bounded memory | Bounded `NonceWindow` tests | Production policy for long-lived connections is unspecified |
+| Dictionary integrity | Recompute a keyed identifier over referenced bytes before acceptance | Corrupted-entry and wrong-scope tests | Manifest admission policy is outside the protocol |
+| Expansion bound | Enforce per-record, declared-transfer, and global reconstruction limits | HELLO length and quota tests | QUIC delivery credit is not coupled to reconstructed bytes |
+| Repair integrity | Match each repair request and literal to one original missing REF | Duplicate, out-of-range, non-REF, identifier, and length tests | Repair is one batch and is not optimized for latency |
+| Repair bound | Require the HELLO frame count and one MISSING batch to fit the 16 MiB message cap | Maximum-item encoder, decoder, and HELLO tests | Multi-batch repair is not implemented |
 
-## Privacy Modes
+## Principal threats
 
-| Mode | Allowed dictionary scope | Leakage risk | Default? | Required controls |
-|---|---|---|---|---|
-| Public Internet | Per-connection only | Same-connection access-pattern leakage. | Yes | No cross-user references, 1-RTT only, bounded epochs. |
-| Public artifacts | Per-origin signed manifest | Artifact-version or popularity inference. | Optional | Public-only content, manifest commitment, expiration. |
-| Enterprise VPN | Tenant or administrative domain | Intra-tenant content-existence leakage. | Optional | Tenant policy, quotas, audit, opt-out. |
-| CDN/update channel | Origin-scoped public versions | Version-possession inference. | Optional | Public artifact policy, no private-user chunks. |
-| Global cross-user | Any user | Private content-possession leakage. | No | Out of scope. |
+| Threat | Failure or oracle | Mitigation | Residual risk |
+|---|---|---|---|
+| Chosen-content probing | REF success or repair size reveals content possession | Per-connection default, authorization, public-only shared manifests, padding or minimum-size policy | Same-context access patterns remain visible |
+| Cross-user leakage | Shared dictionary reveals private content existence | Do not use global private-user dictionaries; partition by origin or tenant | Misconfiguration remains possible |
+| Dictionary poisoning | Attacker-chosen FULL records evict useful state | Authenticate FULL, bound capacity and quotas, restrict admission | Bounded denial of service remains possible |
+| Chosen eviction | Eviction changes later REF/MISSING behavior | Isolated dictionaries, quotas, rate limits, disable references after high miss rates | Shared scopes retain state-dependent leakage |
+| Replay or stale context | Old record reconstructs in another transfer | Canonical context, epoch, stream context, offset, nonce window | Key or endpoint compromise defeats the check |
+| Expansion abuse | Small reference triggers excessive output or work | Positive chunk bound, declared length, reconstruction quota | Large authorized transfers still consume resources |
+| MISS storm | Divergent state causes repair amplification | Batched repair, sender validation, miss threshold and raw-transfer fallback | Performance can approach or exceed raw transfer |
+| 0-RTT replay | Early reference uses stale receiver state | Disable 0-RTT references in this profile | A future 0-RTT design requires separate analysis |
+| Migration confusion | State is reused after identity or policy changes | Keep state inside one connection and reset epoch when key, identity, scope, or policy changes | Migration integration is not implemented |
 
-## Attack Matrix
+## Observable leakage
 
-| Attack | Oracle or failure mode | Preconditions | Required mitigation | Residual risk |
-|---|---|---|---|---|
-| Dictionary poisoning | Useful chunks are evicted by attacker-chosen FULL frames. | Attacker can send traffic into a shared dictionary. | Per-tenant quotas, admission refusal, LRU budget, epoch reset, anti-eviction policy for shared dictionaries. | Mostly denial of service; bounded by memory and quota policy. |
-| Chosen-eviction probing | Attacker-driven FULL admissions cascade-evict victim warm entries; subsequent REF/MISS behavior leaks content existence. | Shared dictionary and observable transfer size/timing. | Per-connection default scope, per-tenant quotas, eviction isolation, rate limits. | Shared-dictionary modes retain residual leakage; see Sec. 4.4. |
-| Chosen-chunk probing | REF success/MISS/timing reveals whether receiver has content. | Sender can choose references and observe fallback behavior. | Per-connection default, no speculative cross-user references, public-artifact-only shared dictionaries, rate limits, constant-error policy where needed. | Per-origin dictionaries may still leak public-artifact popularity. |
-| Cross-user leakage | Shared dictionary exposes private-user content existence. | Dictionary is shared across users or tenants. | Exclude global/private cross-user dictionaries; require explicit trust domain or tenant policy. | Misconfiguration risk remains. |
-| Replayed REF | Stale reference reconstructs bytes in the wrong epoch or offset. | Old REF is replayed or accepted after epoch change. | Epoch binding, nonce/replay window, stream offset binding in REF authentication, epoch reset on key/context changes. | Needs production implementation beyond the simulator. |
-| Expansion abuse | Small REF causes excessive reconstructed bytes. | Receiver accepts unbounded references. | Per-frame expansion cap, flow-control by reconstructed bytes, REF length equality checks, pending-byte limits. | Large legitimate chunks still require memory policy. |
-| MISS storm | Divergent dictionary causes repeated repair traffic. | Sender speculates incorrectly or receiver evicts aggressively. | MISS rate limit, sender backoff, disable references above miss threshold, semantic FULL repair. | Throughput can degrade to raw FULL mode. |
-| CPU exhaustion | Chunking or validation cost dominates transfer. | Adversary sends pathological inputs or high frame rate. | Adaptive disablement, chunking budget, validation rate limits, fast negative controls. | Implementation-specific tuning required. |
-| 0-RTT replay | Early REF is replayed against stale or unauthenticated dictionary state. | References are allowed in QUIC 0-RTT without a bound manifest and fresh epoch salt. | Disable 0-RTT REF by default; require authenticated warm manifest bound to resumption PSK or server identity, dictionary id, chunker parameters, expiration, and fresh epoch salt. | Deployments that enable 0-RTT references accept replay-policy complexity. |
-| Migration state confusion | Reference state is incorrectly reused across path, identity, exporter, or policy changes. | Connection migration or policy changes occur while dictionary references remain active. | Continue state only inside the same QUIC connection, exporter context, peer identity, dictionary scope, and epoch; pause REF generation during path validation; reset epoch on exporter, identity, scope, or policy changes. | Path changes can temporarily reduce hit rate or force FULL fallback. |
+An authorized peer can observe protocol byte count, REF/MISSING outcomes, repair
+size, timing, and whether reference use is disabled. Authentication does not
+remove these deduplication side channels. Deployment policy may require
+partitioned dictionaries, short epochs, padding, rate limits, public-only
+manifests, or disabling ReduLink for sensitive or low-reuse objects.
 
-## Chosen-Content Leakage
+## Verification order
 
-Like other deduplication systems, ReduLink can create a content-existence oracle
-when an adversary can choose payloads or references and observe transfer size,
-latency, REF/MISS behavior, fallback traffic, or DICT_ACK behavior.
-Per-connection dictionaries remove the cross-user oracle in public-WAN mode, but
-they do not remove all leakage inside one connection, one origin, one tenant, or
-one administrative domain. Shared dictionaries are therefore permitted only for
-public artifacts, same-tenant deployments, or explicitly accepted policy
-domains; private global cross-user dictionaries are a non-goal.
+`verify_frame` itself checks the HMAC over the record's own fields before
+reporting a record-context mismatch. For an authentic record, it then checks
+epoch, scope, stream context, offset, length, replay state, and dictionary bytes
+before acceptance. The native receiver performs public state-machine checks,
+including HELLO presence, phase, sequence range, and reconstruction quotas,
+before calling `verify_frame`; those checks have distinct protocol errors. It
+buffers reconstructed output until FINISH, then fails closed unless the complete
+sequence set, length, and digest match.
 
-Observable signals include:
+## Deliberately unimplemented security work
 
-- Wire byte count and effective transfer size.
-- Timing and application-visible latency.
-- MISS count, fallback FULL size, and repair timing.
-- DICT_ACK presence, absence, or generation changes.
-- Reference disablement or epoch reset behavior.
+- TLS exporter integration and mutual client authentication.
+- On-wire dictionary discovery, admission, revocation, and synchronization.
+- Cross-tenant policy enforcement.
+- 0-RTT reference semantics and connection-migration state policy.
+- Coupling reconstructed-byte release to QUIC flow-control credit and
+  incremental delivery before FINISH.
+- Formal verification, memory-safety proof, and production denial-of-service
+  analysis.
 
-Mitigations are policy-specific: default per-connection dictionaries, short
-epochs, no 0-RTT references by default, public-only manifests for public
-artifact mode, per-tenant quotas, and constant-error or padding policies where a
-deployment accepts the overhead.
+The manuscript cites prior work on deduplication side channels and server-aided
+deduplicated encryption. Those references motivate the conservative dictionary
+scope; ReduLink does not claim to solve the general content-existence oracle.
 
-## Verification order and replay window (v3.6)
-
-`verify_frame` is authentication-first: the MAC over the frame's own fields is
-checked before any context field, and failures return one generic error, so an
-attacker without the key cannot use error classes as a parsing/validation
-oracle. Context mismatches are distinguishable only for authentically-tagged
-frames. Replay state is a bounded, reorder-tolerant `NonceWindow` (default
-4,096 entries): repeated nonces and nonces at or below the sliding floor are
-rejected, bounding receiver memory for long-lived sessions. Cross-session
-freshness comes from per-connection derived keys (implemented in the aioquic
-path; the standalone model and UDP prototype default to a fixed test secret).
-The authenticated-UDP and native aioquic receivers derive expected reconstructed
-offsets from independent accepted state. The native path also validates HELLO
-metadata and exact frame-sequence completion before FINISH.
-
-## Current Test Coverage
-
-- Byte-exact FULL/REF reconstruction.
-- Random-data negative control.
-- Warm-dictionary gain.
-- REF miss fail-closed behavior.
-- FULL and REF length mismatch fail-closed behavior.
-- Miss-rate fallback/accounting model coverage.
-
-## Not Yet Implemented In The Python Model
-
-- QUIC TLS exporter-derived ReduLink keys.
-- Custom QUIC extension-frame parser integration.
-- Production replay-window policy beyond artifact nonce rejection.
-- Cross-tenant dictionary isolation enforcement.
-- Production MISS frame retransmission timers.
-- QUIC final-size, migration, and 0-RTT reference policy.
-- Real congestion-fairness experiments against competing flows.
-
-## Related Security Literature To Cite
-
-- Harnik, Pinkas, and Shulman-Peleg, "Side Channels in Cloud Services:
-  Deduplication in Cloud Storage."
-- Bellare, Keelveedhi, and Ristenpart, "DupLESS: Server-Aided Encryption for
-  Deduplicated Storage."
-- Modern content-defined chunking side-channel work should be cited where the
-  manuscript discusses chosen-content or chunk-boundary leakage.
-
-
-## Artifact Repair Coverage
-
-The artifact includes `prototypes/redulink_semantic_repair_demo.py`, which models a
-dictionary-mismatch case: the sender emits REF, the receiver lacks the referenced
-chunk, the receiver would emit MISS, and the sender repairs with FULL. This
-checks the fail-closed repair invariant at the representation layer. It does not
-prove QUIC loss recovery, replay-window correctness, or cryptographic binding.
-
-## Authenticated artifact additions
-
-The artifact includes `src/redulink_secure.py` and `prototypes/redulink_authenticated_udp_experiment.py`. These components implement artifact-level HMAC binding for epoch, scope, stream id, reconstructed offset, chunk id, length, nonce, and payload hash. The authenticated UDP experiment includes two negative probes: a tampered tag and a replayed nonce. Both are rejected before normal authenticated repair traffic is accepted.
-
-This strengthens the artifact evidence for fail-closed authentication behavior. It does not claim production QUIC security. A production profile should derive keys from the QUIC TLS exporter or equivalent connection-secret material, maintain replay windows appropriate to the transport, and account for key updates, 0-RTT policy, connection migration, and endpoint memory compromise.
-
-## Wire-byte accounting addition
-
-The artifact includes `benchmarks/run_wire_fairness_accounting.py`. The experiment checks the core accounting rule: bottleneck service and congestion accounting use encoded wire bytes, not reconstructed bytes. It is not a competing-flow QUIC congestion-control experiment.
-
-
-## Native QUIC stream-mapping evidence
-
-The package includes `prototypes/redulink_aioquic_experiment.py`. The experiment uses aioquic over localhost UDP, verifies an ephemeral server certificate against a local trust anchor, opens a TLS-protected bidirectional stream, and uses a fresh private exporter surrogate plus random connection context for every run. The server intentionally lacks some warm entries, reports MISS, and reconstructs after authenticated FULL repairs.
-
-Security interpretation: QUIC AEAD already protects the on-path channel. The
-inner tags exercise post-TLS reference and dictionary-state binding; they are not
-claimed as an additional independent network-adversary defense. The artifact
-does not expose live TLS exporter bytes, authenticate the client, or implement
-custom QUIC extension frames.
-
-## Key-schedule note
-
-The artifact includes an HKDF-based exporter-style ReduLink key schedule. Tests verify that derived ReduLink secrets change when ALPN, epoch, scope, or connection context changes. This strengthens the artifact's context-binding evidence. It is still not a substitute for a production QUIC TLS exporter hook, because aioquic stream-mapping code in this package does not modify QUIC internals.
+For an idealized 128-bit record tag, `q` independent online guesses succeed
+with probability at most approximately `q / 2^128`. This is distinct from the
+birthday collision probability for `n` idealized 128-bit keyed identifiers,
+approximately `n(n-1) / 2^129`. The final declared-output SHA-256 rejects an
+incorrect complete reconstruction unless that digest check also fails. These
+are qualified idealized bounds, not a protocol-composition proof.

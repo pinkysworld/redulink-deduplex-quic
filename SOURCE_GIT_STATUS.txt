@@ -1,1 +1,0 @@
-Reviewer-adapted v3.14 candidate based on dd7d52623b96af85e7e5ad19e587c060a3384b3a and published for review on branch agent/v3-14-reviewer-adaptations. This candidate is not the public v3.14-journal-submission tag or a GitHub Release. Verify the exact candidate commit with git rev-parse HEAD and validate it with python3 scripts/run_full_validation.py.

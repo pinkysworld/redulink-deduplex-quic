@@ -35,12 +35,22 @@ KIND_REF = 2
 KIND_BY_NAME = {"FULL": KIND_FULL, "REF": KIND_REF}
 NAME_BY_KIND = {KIND_FULL: "FULL", KIND_REF: "REF"}
 _HEADER = struct.Struct("!I")
-_FRAME_FIXED = struct.Struct("!IBBHQHQQI16s16sI")
+_FRAME_FIXED = struct.Struct("!IBBHQQQQI16s16sI")
 # seq:uint32 repair:uint8 kind:uint8 scope_len:uint16 epoch:uint64 stream_id:uint64
 # offset:uint64 nonce:uint64 length:uint32 cid:16 tag:16 payload_len:uint32
 _MISSING_HEADER = struct.Struct("!I")
 _MISSING_ITEM = struct.Struct("!I16sI")
-_HELLO_FIXED = struct.Struct("!HII32s")
+_HELLO_FIXED = struct.Struct("!HIIQ32s")
+MAX_MISSING_ITEMS = (MAX_MESSAGE_BYTES - 1 - _MISSING_HEADER.size) // _MISSING_ITEM.size
+MAX_QUIC_STREAM_ID = (1 << 62) - 1
+MAX_QUIC_STREAM_OFFSET = (1 << 62) - 1
+
+
+def _bounded_int(name: str, value: Any, maximum: int) -> int:
+    number = int(value)
+    if number < 0 or number > maximum:
+        raise ValueError(f"{name} must be between 0 and {maximum}")
+    return number
 
 
 @dataclass(frozen=True)
@@ -70,6 +80,7 @@ def encode_message(obj: dict[str, Any]) -> bytes:
             int(obj.get("version", 1)),
             int(obj["chunk_size"]),
             int(obj["frame_count"]),
+            _bounded_int("input length", obj["input_length"], MAX_QUIC_STREAM_OFFSET),
             bytes.fromhex(str(obj["input_sha256"])),
         )
     elif t == "END_ROUND":
@@ -86,27 +97,36 @@ def encode_message(obj: dict[str, Any]) -> bytes:
         body = (
             bytes([FRAME])
             + _FRAME_FIXED.pack(
-                int(obj["seq"]),
+                _bounded_int("seq", obj["seq"], (1 << 32) - 1),
                 1 if bool(obj.get("repair", False)) else 0,
                 KIND_BY_NAME[frame.kind],
                 len(scope),
-                frame.epoch,
-                frame.stream_id,
-                frame.offset,
-                frame.nonce,
-                frame.length,
+                _bounded_int("epoch", frame.epoch, (1 << 64) - 1),
+                _bounded_int("stream_id", frame.stream_id, MAX_QUIC_STREAM_ID),
+                _bounded_int("offset", frame.offset, MAX_QUIC_STREAM_OFFSET),
+                _bounded_int("nonce", frame.nonce, (1 << 64) - 1),
+                _bounded_int("length", frame.length, (1 << 32) - 1),
                 _cid_bytes(frame.cid),
                 _tag_bytes(frame.tag),
-                len(frame.payload),
+                _bounded_int("payload length", len(frame.payload), (1 << 32) - 1),
             )
             + scope
             + frame.payload
         )
     elif t == "MISSING":
         items = list(obj.get("items", []))
-        body = bytes([MISSING]) + _MISSING_HEADER.pack(len(items))
+        if len(items) > MAX_MISSING_ITEMS:
+            raise ValueError(f"MISSING item count exceeds {MAX_MISSING_ITEMS}")
+        body_buffer = bytearray(bytes([MISSING]) + _MISSING_HEADER.pack(len(items)))
         for item in items:
-            body += _MISSING_ITEM.pack(int(item["seq"]), _cid_bytes(str(item["cid"])), int(item["length"]))
+            body_buffer.extend(
+                _MISSING_ITEM.pack(
+                    _bounded_int("missing seq", item["seq"], (1 << 32) - 1),
+                    _cid_bytes(str(item["cid"])),
+                    _bounded_int("missing length", item["length"], (1 << 32) - 1),
+                )
+            )
+        body = bytes(body_buffer)
     elif t == "STATS":
         payload = json.dumps(obj["stats"], sort_keys=True, separators=(",", ":")).encode("utf-8")
         body = bytes([STATS]) + payload
@@ -128,12 +148,13 @@ def decode_payload(body: bytes) -> DecodedMessage:
     if mt == HELLO:
         if len(data) != _HELLO_FIXED.size:
             raise ValueError("invalid HELLO length")
-        version, chunk_size, frame_count, digest = _HELLO_FIXED.unpack(data)
+        version, chunk_size, frame_count, input_length, digest = _HELLO_FIXED.unpack(data)
         return DecodedMessage("HELLO", {
             "t": "HELLO",
             "version": version,
             "chunk_size": chunk_size,
             "frame_count": frame_count,
+            "input_length": input_length,
             "input_sha256": digest.hex(),
         })
     if mt == END_ROUND:
@@ -181,6 +202,8 @@ def decode_payload(body: bytes) -> DecodedMessage:
         if len(data) < _MISSING_HEADER.size:
             raise ValueError("truncated MISSING header")
         count = _MISSING_HEADER.unpack(data[:_MISSING_HEADER.size])[0]
+        if count > MAX_MISSING_ITEMS:
+            raise ValueError("MISSING item count exceeds message bound")
         expected_len = _MISSING_HEADER.size + count * _MISSING_ITEM.size
         if len(data) != expected_len:
             raise ValueError("invalid MISSING length")

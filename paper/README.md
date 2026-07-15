@@ -1,12 +1,24 @@
-# Paper files
+# Manuscript files
 
-The reviewer-facing manuscript files are:
+The active submission files are:
 
-- `paper/submission/ReduLink_journal_ready_v3_14.docx`
-- `paper/submission/ReduLink_journal_ready_v3_14.pdf`
+- `paper/submission/ReduLink_journal_ready_v3_15.docx`
+- `paper/submission/ReduLink_journal_ready_v3_15.pdf`
 
-The manuscript is generated from package evidence by:
+Regenerate the figures and manuscript after regenerating the committed results:
 
 ```bash
-python3 scripts/build_manuscript_v3_14.py
+python scripts/make_journal_figures_v3_15.py
+python scripts/build_manuscript_v3_15.py
 ```
+
+Validate references, file hashes, and layout before distribution:
+
+```bash
+python scripts/check_manuscript_citations.py
+python scripts/check_manuscript_hashes.py
+```
+
+The manuscript reports exact reconstruction and application-stream byte counts.
+Historical timing, path-emulation, and competing-flow outputs are not included
+in the submission evidence.

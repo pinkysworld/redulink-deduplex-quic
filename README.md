@@ -1,46 +1,45 @@
-# ReduLink journal-ready package v3.14 candidate
+# ReduLink v3.15 research artifact
 
-This is the reviewer-adapted v3.14 candidate of the ReduLink manuscript and
-reproducibility artifact. It is based on public v3.13 commit
-`dd7d52623b96af85e7e5ad19e587c060a3384b3a`; it is not yet a public v3.14 tag or
-release. `SOURCE_GIT_STATUS.txt` records that distinction explicitly.
+ReduLink is a bounded application-stream representation for cooperating QUIC
+endpoints with preprovisioned receiver state. It replaces repeated chunks with
+context-bound references and provides batched repair when receiver state is
+missing. The contribution is the QUIC mapping, receive invariants, exact byte
+accounting, and reproducible evaluation. Endpoint redundancy elimination and
+content-addressed substitution are established ideas.
 
-## Reviewer start here
+## Submission files
 
-1. Read `paper/submission/ReduLink_journal_ready_v3_14.pdf` or `.docx`.
-2. Verify both against `MANUSCRIPT_SHA256.txt`.
-3. Use `REVIEWER_RESPONSE_v3_14.md` to trace every v3.13 review finding.
-4. Install `requirements-lock.txt` and run the smoke and full validators below.
-5. Read `PUBLIC_REVIEWER_CHECKLIST.md` before checking public GitHub state.
+- Manuscript: `paper/submission/ReduLink_journal_ready_v3_15.pdf` and `.docx`
+- Journal highlights: `paper/submission/HIGHLIGHTS.txt`
+- Manuscript builder: `scripts/build_manuscript_v3_15.py`
+- Figure builder: `scripts/make_journal_figures_v3_15.py`
+- Manuscript hashes: `MANUSCRIPT_SHA256.txt`
+- Source revision used for evidence: `SOURCE_COMMIT.txt`
+- Artifact checklist: `PUBLIC_REVIEWER_CHECKLIST.md`
 
-Main files:
+## Supported claims
 
-- DOCX: `paper/submission/ReduLink_journal_ready_v3_14.docx`
-- PDF: `paper/submission/ReduLink_journal_ready_v3_14.pdf`
-- Builder: `scripts/build_manuscript_v3_14.py`
-- Figures: `scripts/make_journal_figures_v2_8.py`
+The artifact supports exact reconstruction, authenticated representation-state
+binding, bounded receive behavior, and directional QUIC application-stream byte
+counts. It includes hash-pinned public release pairs, recorded PyPI wheel pairs,
+whole-object content addressing, fixed-chunk tokens, gzip, a verified zstd
+raw-content-dictionary round trip, and real rsync with exact tree-manifest
+verification. It also includes a 0.5 to 16 KiB chunk-size sweep with a
+byte-equivalent dictionary budget.
 
-## Claim boundary
+The record HMAC is a defensive endpoint-state commitment. QUIC/TLS is the
+network-security boundary. The implementation is an application codec on a QUIC
+stream, not a custom QUIC frame. The current prototype uses a fresh per-run
+exporter surrogate because aioquic 1.3.0 does not expose TLS exporter bytes
+through its public API. The production exporter label, context derivation,
+binary MAC transcripts, and public test vectors are fixed in
+`docs/protocol_summary.md` and `docs/protocol_test_vectors.json`.
 
-ReduLink is endpoint-cooperative, scoped reference substitution for selected
-warm-state transfers over QUIC streams. QUIC TLS/AEAD already supplies on-path
-confidentiality and integrity. ReduLink's record HMACs bind dictionary epoch,
-scope, stream, offset, nonce, identifier, length, and payload state after TLS;
-they are intended to detect reference/dictionary-state confusion and fail closed,
-not to claim a second independent defense against an on-path attacker.
-
-The artifact is a compact binary application-stream mapping, not a custom QUIC
-extension-frame implementation. Its native experiment verifies the ephemeral
-server certificate but does not authenticate the client, and aioquic's public API
-does not expose TLS exporter bytes. It therefore derives record keys from a fresh
-private per-run exporter surrogate and random connection context; production
-integration must use real exporter bytes.
-
-ReduLink is not a universal accelerator or a replacement for gzip, zstd, rsync,
-or HTTP Compression Dictionary Transport. RFC 9842 uses SHA-256 dictionary hashes,
-same-origin/availability rules, and failure handling in an HTTP content-coding
-deployment. The committed `zstd --patch-from` experiment is only a strong
-whole-stream dictionary-delta byte baseline, not an implementation of RFC 9842.
+The package does not claim WAN latency, congestion fairness, production
+throughput, mutual endpoint authentication, on-wire dictionary negotiation, or
+superiority to rsync, ordinary compression, or HTTP Compression Dictionary
+Transport. Historical timing and path-emulation outputs are not packaged as
+submission evidence.
 
 ## Validation
 
@@ -48,60 +47,53 @@ whole-stream dictionary-delta byte baseline, not an implementation of RFC 9842.
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements-lock.txt
-python3 scripts/run_smoke_validation.py
-python3 scripts/run_full_validation.py
+python scripts/run_smoke_validation.py
+python scripts/run_full_validation.py
 ```
 
-Both commands generate `data/target_corpora` before checking its hashes, so they
-work from a clean clone. The smoke command checks core security, model, object,
-wire, citation, and line-ending properties. Full validation runs every unittest
-module in an isolated process. These commands validate committed results; they do
-not silently rerun privileged network experiments or re-download all external
-datasets.
-
-Fetch the hash-pinned external public-release corpora when reproducing the
-object-transfer suite:
+The validators verify the committed manuscript and PDF claims, citations,
+result schemas, exact reconstruction checks, and test suite. The local full
+validator rebuilds figures and the normalized DOCX package in temporary paths. In CI, the benchmark
+commands also regenerate deterministic result tables before the evidence checker
+compares their load-bearing fields with the committed rows. External public
+archives are fetched separately:
 
 ```bash
-python3 benchmarks/fetch_external_public_corpora.py
-python3 benchmarks/run_external_object_workload_suite.py
+python benchmarks/fetch_external_public_corpora.py
+python benchmarks/run_external_object_workload_suite.py
+python benchmarks/run_object_chunk_size_sensitivity.py
+python benchmarks/run_rsync_baseline_manifest.py \
+  --manifest benchmarks/external_public_manifest.csv \
+  --output results/rsync_baseline_external_public.csv
 ```
 
-The pinned container also installs zstd 1.5.7, GNU rsync, `tc/netem`, and
-`taskset`:
+The native QUIC evidence can be regenerated with:
 
 ```bash
-docker build -t redulink-artifact:v3.14 .
-docker run --rm redulink-artifact:v3.14
+python benchmarks/run_quic_flow_comparison.py
+python benchmarks/run_protocol_stream_accounting.py
+python benchmarks/run_aioquic_workload_cases.py
+python benchmarks/run_aioquic_scaling_experiment.py
+python benchmarks/run_quic_miss_rate_sensitivity.py
 ```
 
-After a v3.14 release is actually published, its unauthenticated GitHub surfaces
-can be checked with:
+The container fixes Python 3.12.13, pins Python dependencies, and fails its
+build unless GNU rsync 3.2.7 is installed. The base-image digest and Debian OS
+packages are not content pinned, so rsync protocol totals are version-recorded
+measurements rather than a promise of byte-identical future container builds.
+The pinned python-zstandard wheel reports libzstd 1.5.7 in the committed
+baseline. The headline dictionary comparator pins level 3 and window_log 21;
+every row also records a window_log 24 sensitivity result:
 
 ```bash
-python3 scripts/verify_public_release.py --version 3.14
+docker build -t redulink-artifact:v3.15 .
+docker run --rm redulink-artifact:v3.15
 ```
 
-## Implemented evidence
+## Evaluation boundary
 
-- Plain and authenticated FULL/REF encode/decode models with fail-closed MISS
-  repair, bounded replay state, independently checked offsets, and dictionary
-  content revalidation.
-- Bounded compact-binary messages over server-authenticated aioquic streams,
-  including loss, repair, scaling, and dictionary-budget tests.
-- Exact named-object reconstruction for public release and PyPI version pairs,
-  including empty objects and authenticated object boundaries.
-- Deterministic positive/negative fixtures, hash-pinned public pairs, real rsync,
-  gzip/zstd, block-size, component-cost, framing, and miss-rate studies.
-- Local 20-round userspace path emulation with paired completion ratios. The
-  unshaped concurrent run is labeled a balance diagnostic, not fairness proof.
-- A legacy v3.13 Linux `tc/netem` concurrent result, clearly marked as contention
-  evidence. The corrected v3.14 runner defaults to isolated, order-alternated
-  pairs and records command, host, tool, commit, and qdisc provenance. The manual
-  `isolated Linux netem evidence` workflow executes that protocol in a dedicated
-  Linux network namespace and uploads its raw JSON/CSV/log artifact. It still
-  needs a successful run and result review before supporting isolated kernel-path
-  latency claims.
-
-Bootstrap intervals in the artifact describe variability among repeated local
-runs. They are not WAN or deployment-population confidence intervals.
+Public object pairs are reproducible test artifacts, not sampled production
+traffic. The Redis-derived layer case is author constructed and labeled as
+such. Each reported stateful baseline must reconstruct exact bytes or an exact
+ordered object/tree manifest. Multipliers always state their byte layer;
+application-stream bytes are not presented as IP, UDP, or link-layer bytes.

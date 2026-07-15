@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Compare raw QUIC stream transfer with ReduLink binary stream mapping.
 
-This is a live localhost aioquic experiment. It is not a complete congestion
-fairness experiment, but it gives reviewers a transport-level baseline: the same
-update bytes are sent raw over an encrypted QUIC stream and through ReduLink's
-binary stream mapping, with optional deterministic UDP datagram loss.
+This live localhost aioquic experiment sends the same update bytes as raw QUIC
+application-stream data and through ReduLink's binary stream mapping. The
+committed result reports exact reconstruction and application-stream bytes. It
+does not report timing, packet-layer bytes, or congestion fairness.
 """
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ def _pack_stats(stats: dict) -> bytes:
 async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 4096,
                         account_datagrams: bool = False, shaper=None,
                         server_port: int = 0) -> dict:
+    end_to_end_started = time.perf_counter()
     expected = hashlib.sha256(data).hexdigest()
     with tempfile.TemporaryDirectory(prefix="redulink-raw-quic-") as tmp:
         cert, key = write_self_signed_cert(Path(tmp))
@@ -83,11 +84,14 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
             proxy_protocol = LossyUdpProxy(("127.0.0.1", server_port), loss_every=loss_every, shaper=shaper)
             proxy_transport, _ = await loop.create_datagram_endpoint(lambda: proxy_protocol, local_addr=("127.0.0.1", 0))
             port = int(proxy_transport.get_extra_info("sockname")[1])
-        start = time.perf_counter()
+        network_started = time.perf_counter()
+        application_completed = network_started
         stream_payload_bytes = 0
+        diagnostic_stats_bytes = 0
         try:
             async with connect("127.0.0.1", port, configuration=client_conf, wait_connected=True) as protocol:
                 reader, writer = await protocol.create_stream()
+                application_stream_id = int(writer.get_extra_info("stream_id"))
                 for pos in range(0, len(data), chunk_bytes):
                     part = data[pos:pos + chunk_bytes]
                     writer.write(part)
@@ -97,20 +101,42 @@ async def run_raw_async(data: bytes, *, loss_every: int = 0, chunk_bytes: int = 
                 header = await reader.readexactly(4)
                 size = int.from_bytes(header, "big")
                 payload = await reader.readexactly(size)
+                diagnostic_stats_bytes = 4 + size
                 stats = json.loads(payload.decode())
+                application_completed = time.perf_counter()
                 protocol.close()
         finally:
             if proxy_transport is not None:
                 proxy_transport.close()
             server.close()
+        network_elapsed = round((application_completed - network_started) * 1000, 3)
+        end_to_end_elapsed = round((application_completed - end_to_end_started) * 1000, 3)
+        setup_elapsed = round((network_started - end_to_end_started) * 1000, 3)
         stats.update({
-            "client_elapsed_ms": round((time.perf_counter() - start) * 1000, 3),
+            "client_elapsed_ms": network_elapsed,
+            "client_network_elapsed_ms": network_elapsed,
+            "client_end_to_end_elapsed_ms": end_to_end_elapsed,
+            "client_preparation_elapsed_ms": 0.0,
+            "environment_setup_elapsed_ms": setup_elapsed,
+            "client_timing_definition": (
+                "connection-and-application timing starts immediately before connect and stops after decoding "
+                "the diagnostic stats message; raw transfer requires no representation preparation"
+            ),
+            "forward_protocol_stream_bytes": stream_payload_bytes,
+            "reverse_repair_control_stream_bytes": 0,
+            "diagnostic_stats_stream_bytes": diagnostic_stats_bytes,
+            "protocol_stream_payload_total_bytes_excluding_diagnostics": stream_payload_bytes,
             "quic_stream_payload_total_bytes": stream_payload_bytes,
             "effective_stream_payload_multiplier": round(len(data) / stream_payload_bytes, 6) if stream_payload_bytes else 0,
+            "stream_accounting_definition": (
+                "protocol stream bytes contain the raw application body; the diagnostic stats response is "
+                "reported separately and excluded from the multiplier"
+            ),
             "datagram_loss_proxy_enabled": loss_every > 0,
             "datagram_loss_every": loss_every,
             "tls_server_certificate_verified": True,
             "tls_client_certificate_used": False,
+            "application_stream_id": application_stream_id,
         })
         if proxy_protocol is not None:
             stats.update(proxy_protocol.stats())
@@ -136,17 +162,37 @@ def row(method: str, loss: int, stats: dict) -> dict[str, str]:
         "method": method,
         "loss_every": str(loss),
         "input_bytes": str(stats.get("input_bytes", 0)),
-        "stream_payload_bytes": str(stats.get("quic_stream_payload_total_bytes", stats.get("client_to_server_stream_payload_bytes_observed", 0))),
-        "udp_payload_bytes_seen": str(stats.get("udp_payload_bytes_seen_total", "")),
-        "udp_payload_multiplier_seen": str(stats.get("udp_payload_multiplier_seen", "")),
-        "approx_ipv4_udp_bytes_seen": str(stats.get("approx_ipv4_udp_bytes_seen_total", "")),
-        "approx_ipv4_udp_multiplier_seen": str(stats.get("approx_ipv4_udp_multiplier_seen", "")),
+        "stream_payload_bytes": str(stats.get("protocol_stream_payload_total_bytes_excluding_diagnostics", stats.get("quic_stream_payload_total_bytes", 0))),
+        "forward_protocol_stream_bytes": str(stats.get("forward_protocol_stream_bytes", "")),
+        "reverse_repair_control_stream_bytes": str(stats.get("reverse_repair_control_stream_bytes", "")),
+        "diagnostic_stats_stream_bytes": str(stats.get("diagnostic_stats_stream_bytes", "")),
         "effective_multiplier": str(stats.get("effective_stream_payload_multiplier", stats.get("quic_stream_payload_multiplier_after_repair", 0))),
         "reconstruction_ok": str(stats.get("reconstruction_ok", False)),
         "semantic_misses": str(stats.get("semantic_misses", 0)),
         "repair_full_frames": str(stats.get("repair_full_frames", 0)),
-        "client_elapsed_ms": str(stats.get("client_elapsed_ms", "")),
-        "proxy_dropped": str(stats.get("proxy_client_to_server_datagrams_dropped", 0) + stats.get("proxy_server_to_client_datagrams_dropped", 0)),
+        "application_stream_id": str(stats.get("application_stream_id", "")),
+        "tls_server_certificate_verified": str(stats.get("tls_server_certificate_verified", False)),
+        "tls_client_certificate_used": str(stats.get("tls_client_certificate_used", False)),
+        "redulink_key_derivation": str(stats.get(
+            "redulink_key_derivation",
+            "not applicable to raw QUIC stream; QUIC/TLS provides transport protection",
+        )),
+        "tls_exporter_invocation": str(stats.get(
+            "tls_exporter_invocation", "not applicable to raw QUIC stream",
+        )),
+        "record_mac_transcript": str(stats.get(
+            "record_mac_transcript", "not applicable to raw QUIC stream",
+        )),
+        "chunk_size_bytes": str(stats.get("chunk_size_bytes", "not_applicable")),
+        "receiver_dictionary_thinning_every": str(stats.get(
+            "receiver_dictionary_thinning_every", "not_applicable",
+        )),
+        "sender_dictionary_budget_chunks": str(stats.get(
+            "sender_dictionary_budget_chunks", "not_applicable",
+        )),
+        "receiver_dictionary_budget_chunks": str(stats.get(
+            "receiver_dictionary_budget_chunks", "not_applicable",
+        )),
     }
 
 
@@ -159,9 +205,9 @@ def main() -> None:
     args = p.parse_args()
     warm, data = demo_payload(args.payload_blocks)
     results = []
-    losses = args.loss_every if args.loss_every is not None else [0, 9]
+    losses = args.loss_every if args.loss_every is not None else [0]
     for loss in losses:
-        raw = run_raw(data, loss_every=loss, account_datagrams=True)
+        raw = run_raw(data, loss_every=loss, account_datagrams=False)
         results.append({"method": "raw-quic-stream", "loss_every": loss, "stats": raw})
         rl = run_redulink(
             chunk_size=1024,
@@ -169,13 +215,17 @@ def main() -> None:
             wire_format="binary",
             loss_every=loss,
             payload_blocks=args.payload_blocks,
-            account_datagrams=True,
+            account_datagrams=False,
         )
         results.append({"method": "redulink-binary-quic-stream", "loss_every": loss, "stats": rl})
+    rows = [row(item["method"], item["loss_every"], item["stats"]) for item in results]
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
-    args.output_json.write_text(json.dumps({"results": results}, indent=2, sort_keys=True) + "\n")
+    args.output_json.write_text(json.dumps({
+        "experiment": "zero_loss_aioquic_protocol_stream_accounting",
+        "accounting_layer": "QUIC application-stream bytes; diagnostic STATS reported separately",
+        "results": rows,
+    }, indent=2, sort_keys=True) + "\n")
     with args.output_csv.open("w", newline="") as fh:
-        rows = [row(item["method"], item["loss_every"], item["stats"]) for item in results]
         writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()), lineterminator="\n")
         writer.writeheader(); writer.writerows(rows)
     print(args.output_csv)

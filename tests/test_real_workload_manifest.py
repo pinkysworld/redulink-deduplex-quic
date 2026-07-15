@@ -25,8 +25,10 @@ class RealWorkloadManifestTests(unittest.TestCase):
             with out.open() as fh:
                 rows = list(csv.DictReader(fh))
             self.assertEqual(rows[0]["label"], "pair")
-            self.assertEqual(rows[0]["redulink_reconstruction_ok"], "True")
-            self.assertGreater(float(rows[0]["redulink_multiplier"]), 1.0)
+            self.assertEqual(rows[0]["binary_profile_wire_decode_ok"], "True")
+            self.assertEqual(rows[0]["binary_profile_reconstruction_ok"], "True")
+            self.assertGreater(float(rows[0]["binary_profile_multiplier"]), 1.0)
+            self.assertEqual(rows[0]["dictionary_budget_chunks"], "8192")
 
 
 if __name__ == "__main__":

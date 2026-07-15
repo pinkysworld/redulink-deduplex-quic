@@ -1,306 +1,114 @@
-# Reproducible Benchmarks
+# Reproducible benchmark guide
 
-The benchmark suite is designed to make the paper tables reproducible from
-plain CSV outputs. It separates small synthetic runs from larger public-artifact
-runs so CI can stay fast while reviewers can rerun the stronger evidence path.
-It also includes deterministic target-class fixtures for controlled positive,
-weak, and negative cases.
+The v3.15 manuscript uses exact reconstruction and byte accounting. Timing,
+throughput, userspace shaping, kernel shaping, and competing-flow files are not
+manuscript evidence.
 
-## Synthetic suite
+## Public release pairs
 
-```bash
-bash benchmarks/run_synthetic_suite.sh
-```
-
-Output:
-
-```text
-results/synthetic_suite.csv
-```
-
-This suite includes raw bytes, gzip, zstd when the `zstd` CLI is installed, a
-fixed-block reuse approximation inspired by rsync-family delta transfer,
-ReduLink fixed chunking, ReduLink CDC, gzip-before-ReduLink,
-zstd-before-ReduLink when available, and ReduLink-before-gzip on the modeled
-frame stream.
-
-## Public artifact suite
-
-For a small reproducible public-corpora fixture:
+Fetch and verify the pinned Click, Redis, and Nginx archives:
 
 ```bash
-python3 benchmarks/fetch_public_corpora.py
-bash benchmarks/run_public_artifacts.sh \
-  --manifest benchmarks/public_artifacts_manifest.csv
+python benchmarks/fetch_external_public_corpora.py
 ```
 
-For larger corpora under your local storage policy, point the benchmark at the
-resulting files or directories:
+Run raw-tree, named-object, rsync, and dictionary-compression evidence:
 
 ```bash
-bash benchmarks/run_public_artifacts.sh \
-  ubuntu-base=/data/oci/ubuntu-22.04:/data/oci/ubuntu-24.04 \
-  linux-kernel=/data/tarballs/linux-6.8:/data/tarballs/linux-6.9 \
-  git-pack=/data/git-packs/repo-old:/data/git-packs/repo-new
-```
-
-Use `label=warm_path:update_path` for explicit version-pair runs. A manifest
-file is preferred for paper artifacts because it can carry URLs, checksums, byte
-sizes, license notes, and retrieval dates:
-
-```bash
-bash benchmarks/run_public_artifacts.sh \
-  --manifest benchmarks/public_artifacts_manifest.csv
-```
-
-Recommended artifact families:
-
-- OCI/container image layers, for example Ubuntu base layers across releases.
-- Linux kernel release tarballs, for version-to-version delta behavior.
-- Git pack snapshots of a medium-sized repository.
-- Package metadata directories from Debian or Ubuntu mirrors.
-- Structured log archives with repeated templates and fields.
-
-Output:
-
-```text
-results/public_artifact_suite.csv
-results/public_artifact_suite.csv.metadata.json
-```
-
-The file `benchmarks/public_artifacts_manifest.example.csv` shows the expected
-manifest columns. Fill in exact source URLs, SHA256 hashes, byte sizes,
-content-relation labels, license notes, and retrieval timestamps before using a
-public-artifact table in a paper.
-
-## External source-release and rsync baselines
-
-The v2.4 package includes hash-pinned Click, Redis, and nginx source-release
-pairs plus a real rsync baseline:
-
-```bash
-python3 benchmarks/fetch_external_public_corpora.py
-python3 benchmarks/run_real_workload_manifest.py \
+python benchmarks/run_real_workload_manifest.py \
   --manifest benchmarks/external_public_manifest.csv \
   --output results/external_public_suite.csv
-python3 benchmarks/run_rsync_baseline_manifest.py \
+python benchmarks/run_external_object_workload_suite.py \
+  --output results/external_object_workload_suite.csv
+python benchmarks/run_rsync_baseline_manifest.py \
   --manifest benchmarks/external_public_manifest.csv \
   --output results/rsync_baseline_external_public.csv
+python benchmarks/run_framing_dictionary_baseline.py --sets local
 ```
 
-`fetch_external_public_corpora.py` verifies pinned archive SHA-256 values before
-writing the manifest. `run_rsync_baseline_manifest.py` uses the system `rsync`
-binary with `--no-whole-file` against a temporary receiver copy and records
-rsync's own `--stats` byte counters. These rows are reported separately from
-the modeled fixed-block baselines.
+The object suite serializes ordered relative names, lengths, and contents and
+requires exact object-map reconstruction. Its binary HMAC-frame profile uses a
+documented deterministic public artifact key to test serialization, tag
+verification, and exactness, not key secrecy. It reports:
 
-## Target-class generated suite
+- ReduLink binary HMAC frames at their actual encoded length;
+- a 4 KiB chunk-token baseline;
+- true whole-object content addressing;
+- gzip of the new serialized object stream.
 
-The target-class suite creates deterministic generated warm/update pairs for
-software-update, container-layer, git-like, VM/backup, structured-log, random
-negative-control, related-compressed, and independent-compressed negative-control
-cases:
+The zstd baseline uses the complete prior object stream as a raw-content
+dictionary at level 3 with a frame checksum. It pins window_log 21 for headline
+rows and records window_log 24 as a sensitivity case. Both configurations
+decompress with the same dictionary and require exact bytes and SHA-256. This is
+a codec baseline, not an implementation of RFC 9842.
+
+The raw-tree runner parses every message-length prefix and decodes HELLO, every
+FRAME, END_ROUND, MISSING, and FINISH. Reconstruction consumes the decoded
+frames rather than the original in-memory frame objects.
+
+The gzip baseline fixes level 6 and mtime zero, records Python and zlib
+versions, decompresses its output, and verifies exact bytes and SHA-256.
+
+The rsync baseline runs GNU rsync 3.2.7 with recursive, symlink, checksum,
+delete, no-whole-file, fixed-checksum-seed, and stats options. It reports the
+observed median total sent plus received bytes across five runs and retains all
+per-run totals. Every run must reconstruct exactly. The canonical tree manifest
+commits to every relative path, entry type, length, file content, and symlink
+target.
+
+## PyPI wheel pairs
 
 ```bash
-bash benchmarks/run_target_class_suite.sh
-python3 benchmarks/check_generated_artifacts.py
+python benchmarks/run_pypi_version_pair_object_study.py
 ```
 
-Output:
+The result records both wheel hashes and exact ordered-member reconstruction.
+Network retrieval is not required when the pinned wheels are supplied through
+`--wheel-cache`.
 
-```text
-benchmarks/target_class_manifest.csv
-results/target_class_suite.csv
-results/target_class_suite.csv.metadata.json
-```
-
-These are controlled fixtures, not production traces. They are useful because
-they show where ReduLink helps and where it does not. The related-compressed row
-is a diagnostic positive case; the independent-compressed row is the true
-compressed negative control.
-
-Optional block-size sensitivity:
+## Native QUIC stream accounting
 
 ```bash
-bash benchmarks/run_block_size_sensitivity.sh
+python benchmarks/run_quic_flow_comparison.py
+python benchmarks/run_protocol_stream_accounting.py
 ```
 
-## Cost columns
+The first command runs raw and ReduLink transfers over an actual encrypted
+aioquic stream. The second produces a same-layer zero-loss table. ReduLink bytes
+are split into forward protocol records, reverse repair/control messages, and a
+diagnostic STATS response that is reported but excluded. The result does not
+represent QUIC packet, UDP/IP, or link-layer bytes and is not a congestion-
+fairness experiment.
 
-The baseline runner records `wall_ms`, `throughput_mib_s_local`,
-`runner_peak_kib`, and `cost_scope`. These are local elapsed wall-clock
-measurements, not machine-independent constants. `runner_peak_kib` is a coarse
-process maximum RSS from `getrusage`; use it to expose resource scale, not to
-compare implementations across machines. `cost_scope` distinguishes
-compression-only rows, fixed-block scans, ReduLink encode/decode rows, and
-composition diagnostics.
-
-## Plot generation
-
-After producing a benchmark CSV:
+## Workload controls, capacity, and misses
 
 ```bash
-python3 scripts/plot_results.py results/synthetic_suite.csv --output-dir figures
+python benchmarks/run_aioquic_workload_cases.py
+python benchmarks/run_object_chunk_size_sensitivity.py
+python benchmarks/run_aioquic_scaling_experiment.py
+python benchmarks/run_quic_miss_rate_sensitivity.py
 ```
 
-The plotting script generates:
+The workload cases include a deterministic warm update, an independent
+compressed negative control, and an author-constructed Redis-derived layer
+fixture. The object sensitivity sweep holds dictionary capacity at a
+byte-equivalent 64 MiB while varying fixed chunks from 0.5 to 16 KiB. The native
+scaling sweep gives sender and receiver matched budgets and includes paired
+16 MiB runs with 8,192 and 24,576 chunks. The miss sweep holds input and initial
+reference count fixed while thinning receiver state through the 100 percent-miss
+endpoint. Every row requires exact reconstruction.
 
-```text
-figures/effective_multiplier_by_workload.png
-figures/savings_by_workload.png
-figures/effective_multiplier_warm_update.png
-figures/savings_warm_update.png
-figures/benchmark_summary.md
-```
-
-For the paper-facing warm/update summary:
+## Figures and validation
 
 ```bash
-python3 scripts/summarize_benchmark_evidence.py
-python3 scripts/plot_warm_update_summary.py
+python scripts/make_journal_figures_v3_15.py
+python scripts/build_manuscript_v3_15.py
+python scripts/run_full_validation.py
 ```
 
-Output:
-
-```text
-results/target_class_warm_update_summary.csv
-figures/target_class/redulink_vs_baseline_warm_update.png
-paper/evidence_tables.md
-```
-
-The plotting script supports both the baseline-suite schema and the selected
-measurement schema used by `results/paper_real_artifact_cdc_selected.csv`.
-
-## Diagnostic rows
-
-Rows such as `redulink-then-gzip` compress a text serialization of modeled
-frames and are marked `comparable=False`. They remain useful for diagnostics but
-are excluded from plots and best-method summaries.
-
-## UDP endpoint repair experiment
-
-Run the localhost UDP endpoint experiment with semantic MISS repair and
-retransmission:
-
-```bash
-bash benchmarks/run_udp_repair_experiment.sh
-```
-
-The command writes `results/udp_repair_experiment.json`.
-
-## Wire-byte fairness accounting
-
-The benchmark suite includes `run_wire_fairness_accounting.py` and the native aioquic stream-mapping experiment. This is a deterministic accounting sanity check: a ReduLink-encoded flow and a raw UDP-like competitor are served by encoded wire bytes. The result demonstrates that reconstructed application bytes do not inflate bottleneck service share.
-
-```bash
-python3 benchmarks/run_wire_fairness_accounting.py
-```
-
-This is not a competing-flow QUIC congestion-control experiment.
-
-## Native QUIC miss-rate sensitivity
-
-Run the reviewer-facing miss-rate sweep on the full-duplex userspace
-path-emulation harness:
-
-```bash
-python3 benchmarks/run_quic_miss_rate_sensitivity.py
-```
-
-Output:
-
-```text
-results/quic_miss_rate_sensitivity.csv
-results/quic_miss_rate_sensitivity.json
-```
-
-The sweep varies receiver dictionary thinning on the byte-stable demo payload at
-5 Mbps and 20 ms RTT. It is a sensitivity check for semantic MISS/FULL repair
-overheads, not a replacement for kernel `tc/netem`, Mininet, or a broader
-bandwidth/RTT grid.
-
-## macOS kernel dummynet QUIC path sweep
-
-On macOS reviewers can run a sudo-gated loopback UDP path sweep using
-`pf`/`dnctl` dummynet pipes. The script compares native aioquic raw-stream
-transfers with ReduLink binary-stream transfers on the same shaped loopback
-path, reports per-scenario means, and adds deterministic bootstrap confidence
-intervals:
-
-```bash
-python3 benchmarks/run_macos_dummynet_quic_path.py --dry-run
-sudo -v
-python3 benchmarks/run_macos_dummynet_quic_path.py \
-  --payload demo redis \
-  --rate-mbps 5 20 100 \
-  --rtt-ms 20 80 \
-  --loss-percent 0 0.1 1 \
-  --rounds 25
-```
-
-Output:
-
-```text
-results/macos_dummynet_quic_path.csv
-results/macos_dummynet_quic_path.json
-```
-
-The dry run prints the exact `dnctl` and `pfctl` commands and the temporary
-anchor rules without changing networking. Live runs load a temporary
-`com.apple/redulink_dummynet` anchor below macOS' existing dummynet anchor point
-and attempt cleanup after each scenario. On this development Mac, direct UDP
-probes succeeded through the same `pf`/`dnctl` rules, but repeated aioquic
-handshakes intermittently timed out under loopback dummynet, so no
-`results/macos_dummynet_quic_path.*` files are included yet. This remains a
-local kernel path-emulation experiment, not a WAN, Mininet, or Linux `tc/netem`
-deployment.
-
-## Linux kernel tc/netem QUIC path sweep
-
-On Linux reviewers can inspect and run a loopback `tc/netem` path sweep. The
-script compares native aioquic raw-stream transfers with ReduLink binary-stream
-transfers while a temporary qdisc is attached to the selected device. The live
-run requires Linux, root privileges (or passwordless sudo), and iproute2 `tc`;
-the dry run works on any platform and prints the exact setup/cleanup commands:
-
-```bash
-python3 benchmarks/run_linux_netem_quic_path.py --dry-run
-sudo -v
-python3 benchmarks/run_linux_netem_quic_path.py \
-  --payload demo redis \
-  --rate-mbps 5 20 \
-  --rtt-ms 20 80 \
-  --loss-percent 0 \
-  --rounds 20
-```
-
-Output:
-
-```text
-results/linux_netem_quic_path.csv
-results/linux_netem_quic_path.json
-```
-
-The harness always attempts `tc qdisc del dev <device> root` cleanup after each
-scenario. This repository does not include live `results/linux_netem_quic_path.*`
-files because the current development host is macOS; the script is included so
-the same aioquic comparison can be executed on a privileged Linux host.
-
-## QUIC statistical evidence table
-
-To report uncertainty from the existing repeated QUIC measurements:
-
-```bash
-python3 benchmarks/summarize_quic_statistical_evidence.py
-```
-
-Output:
-
-```text
-results/quic_statistical_evidence.csv
-results/quic_statistical_evidence.json
-```
-
-The script uses paired raw/ReduLink rows where available and deterministic
-percentile bootstrap confidence intervals over completion ratios,
-encoded-byte ratios, and ReduLink stream multipliers.
+The committed result files retain source versions, hashes, parameters, and
+method-specific byte layers where the producing tool exposes them. The local
+full validator rebuilds figures and a normalized DOCX in temporary paths and
+extracts the PDF to check its source revision and load-bearing claims. CI
+additionally regenerates benchmark tables and invokes the semantic comparison
+mode before accepting committed evidence.
