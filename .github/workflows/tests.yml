@@ -18,6 +18,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y rsync
+          rsync --version
           python -m pip install -r requirements-lock.txt
       - name: Fetch hash-pinned public corpora
         run: python benchmarks/fetch_external_public_corpora.py
@@ -29,6 +30,7 @@ jobs:
           python benchmarks/run_external_object_workload_suite.py --output /tmp/external_object_workload_suite.csv
           python benchmarks/run_object_chunk_size_sensitivity.py --output-csv /tmp/object_chunk_size_sensitivity.csv --output-json /tmp/object_chunk_size_sensitivity.json
           python benchmarks/run_rsync_baseline_manifest.py --manifest benchmarks/external_public_manifest.csv --rounds 5 --output /tmp/rsync_baseline_external_public.csv
+          cat /tmp/rsync_baseline_external_public.csv
           python benchmarks/run_framing_dictionary_baseline.py --sets local --output /tmp/framing_dictionary_baseline.csv
           python benchmarks/run_pypi_version_pair_object_study.py --output-csv /tmp/pypi_version_pair_object_study.csv --output-json /tmp/pypi_version_pair_object_study.json
       - name: Reproduce native QUIC smoke outputs
