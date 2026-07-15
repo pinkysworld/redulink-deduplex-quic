@@ -106,8 +106,15 @@ def compare_rsync(generated: Path) -> None:
                 raise ValueError(f"rsync {label} {column} changed")
         expected_total = int(expected["rsync_control_plus_data_bytes"])
         actual_total = int(actual["rsync_control_plus_data_bytes"])
-        if abs(actual_total - expected_total) / expected_total > 0.005:
-            raise ValueError(f"rsync {label} protocol total changed by more than 0.5%")
+        relative_change = abs(actual_total - expected_total) / expected_total
+        if relative_change > 0.005:
+            raise ValueError(
+                f"rsync {label} protocol total changed by {relative_change:.3%}: "
+                f"expected median {expected_total} from "
+                f"[{expected['rsync_control_plus_data_bytes_per_round']}], "
+                f"got median {actual_total} from "
+                f"[{actual['rsync_control_plus_data_bytes_per_round']}]"
+            )
         if "version 3.2.7" not in actual["rsync_version"]:
             raise ValueError(f"rsync {label}: expected rsync 3.2.7")
 
