@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 qa_*/
 render_*/
+tmp/
 data/public_corpora/
 data/target_corpora/
 data/external_public_corpora/

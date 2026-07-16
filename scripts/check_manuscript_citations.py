@@ -12,12 +12,17 @@ from docx import Document
 ROOT = Path(__file__).resolve().parents[1]
 
 _submission = ROOT / "paper/submission"
+_submission_candidates = sorted(_submission.glob("ReduLink_submission_v*.docx"))
 _journal_candidates = sorted(_submission.glob("ReduLink_journal_ready_v*.docx"))
 _systems_candidates = sorted(_submission.glob("ReduLink_systems_ready_v*.docx"))
 DOCX = (
-    _journal_candidates[-1]
-    if _journal_candidates
-    else (_systems_candidates[-1] if _systems_candidates else _submission / "ReduLink_journal_ready_v2_5.docx")
+    _submission_candidates[-1]
+    if _submission_candidates
+    else (
+        _journal_candidates[-1]
+        if _journal_candidates
+        else (_systems_candidates[-1] if _systems_candidates else _submission / "ReduLink_journal_ready_v2_5.docx")
+    )
 )
 
 

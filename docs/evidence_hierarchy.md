@@ -1,18 +1,20 @@
-# Evidence hierarchy for v3.16
+# Evidence hierarchy for v3.17
 
 | Evidence | Controlled property | Supported inference | Excluded inference |
 |---|---|---|---|
-| Secure model and malformed-input tests | Context, replay, length, quota, and dictionary checks | Enumerated fail-closed implementation behavior | Formal verification or endpoint-compromise security |
-| Hash-pinned public release pairs | Exact archive bytes and ordered object extraction | Method byte counts on the named pairs | Production prevalence or traffic weighting |
-| Recorded PyPI wheel pairs | Exact wheel hashes and ordered members | Object reuse on the four recorded pairs | Package-ecosystem population claims |
+| IBM registry trace, complete archive | Exact blob URI, observed bytes, timestamp, anonymized client, true byte-bounded LRU | Same-client exact full-blob residency upper bound for the four source-classified production zones | Authorized client cache hit rate, payload alignment, or ReduLink bytes |
+| Pinned public registry layers | Immutable index/platform manifest, blob digest and length, whole-layer CAS removed first | Exact fixed-chunk identity within changed compressed layers on three update pairs | Registry-wide prevalence or uncompressed-layer behavior |
+| Isolated Linux tc/netem matrix | Reno, rate, RTT, random loss, paired order, one client clock, qdisc deltas | Completion, TTFB, endpoint CPU, and encrypted kernel-queue cost in 16 controlled conditions | Multi-host Internet behavior or other congestion controllers |
+| Same-connection multistream study | One live exporter, actual stream IDs, one miss-heavy blocker and four warm-hit objects | Completion isolation from independent QUIC streams in the measured condition | Custom QUIC frames, free capacity, 0-RTT, or migration |
+| Synchronized competing-flow study | Post-setup application barrier and calibrated encoded work | Jain fairness of encoded application goodput for three Reno cases | Fairness of reconstructed value or general Internet fairness |
+| Paired CPU/TTFB scaling | Fresh verified localhost connection, 64 KiB to 32 MiB, combined process CPU | Python implementation scaling and whole-object pre-encoding cost | Optimized native throughput |
+| Secure model and malformed-input tests | Context, replay, length, quota, dictionary, and repair checks | Enumerated fail-closed implementation behavior | Formal verification or endpoint-compromise security |
+| Hash-pinned public releases and wheels | Exact archive/wheel bytes and ordered object extraction | Method bytes on the named pairs | Production traffic weighting |
 | Real rsync baseline | Recursive update plus canonical tree-manifest equality | Exact file-tree transfer bytes on three public pairs | General rsync performance |
-| Verified zstd raw-content dictionary | Pinned level 3 and window_log 21, window_log 24 sensitivity, exact decompression and SHA-256 equality | Prior-stream dictionary bytes on the named pairs | RFC 9842 interoperability |
-| Canonical raw-tree binary profile | Every encoded message is decoded before reconstruction and final digest comparison | Complete no-miss application-stream serialization bytes | Native QUIC packet behavior |
-| Native aioquic stream mapping | Actual encrypted stream, binary messages, exact digest | Protocol-stream bytes and receive-state behavior | WAN latency, congestion fairness, or throughput |
-| Chunk-size sweep | Three public object pairs and a byte-equivalent 64 MiB dictionary | Sensitivity to fixed chunk size on the named pairs | Universal optimal chunk size |
-| Capacity and miss sweeps | Deterministic workload and one changed state parameter | Sensitivity to matched capacity and repair | Population statistics |
-| Derived deployment envelope | Exact native stream-byte rows plus capacity rows | For the measured profile, the algebraic miss threshold and the separate warm-state residency gate | Latency, fairness, packet cost, or workload prevalence |
-| Independent compressed control | No warm semantic reuse | Expansion under record overhead | All compressed formats or workloads |
+| Verified zstd raw-content dictionary | Pinned level/window, exact decompression and SHA-256 | Prior-stream dictionary bytes on the named pairs | RFC 9842 interoperability |
+| Capacity and semantic-miss sweeps | One controlled state variable and exact reconstruction | Profile-specific residency failure and `B(m)=15914+1149m` | Population statistics or latency |
+| Independent compressed control | No warm semantic reuse | Expansion under record overhead | All compressed formats |
 
-Historical timing, userspace path-emulation, and kernel-path outputs are not
-part of the v3.16 submission artifact and do not support its conclusions.
+All current timing claims come from the v3.17 symmetric-clock experiments.
+Earlier timing, userspace shaping, and failed macOS dummynet attempts are not
+submission evidence.

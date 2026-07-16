@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import re
 import subprocess
 import sys
@@ -21,15 +22,15 @@ from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
-MANUSCRIPT = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_16.docx"
-PDF = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_16.pdf"
-FIGURES = ROOT / "figures" / "journal_v3_16"
+MANUSCRIPT = ROOT / "paper" / "submission" / "ReduLink_submission_v3_17.docx"
+PDF = ROOT / "paper" / "submission" / "ReduLink_submission_v3_17.pdf"
+FIGURES = ROOT / "figures" / "submission_v3_17"
 SUBMISSION_FIGURE_NAMES = (
     "architecture.png",
-    "dictionary_capacity_scaling.png",
-    "object_chunk_size_sensitivity.png",
-    "public_object_baselines.png",
-    "semantic_miss_sensitivity.png",
+    "production_gates.png",
+    "kernel_path_transport.png",
+    "quic_streams_and_fairness.png",
+    "cpu_scaling.png",
 )
 
 # This is a CI reproduction gate, not uncertainty on the frozen result. With
@@ -161,6 +162,52 @@ def validate_source_commit() -> None:
     )
 
 
+def validate_v3_17_results() -> None:
+    trace = json.loads((RESULTS / "ibm_registry_trace_residency_v3_17.json").read_text())
+    if trace["source"]["archive_sha1"] != "06c4d412f85e2a307556cbf6c046002ebf6acc29":
+        raise ValueError("IBM trace archive digest is not the published value")
+    if trace["analysis"]["records_processed"] != 40_872_024:
+        raise ValueError("IBM trace is not the complete committed analysis")
+    production = [
+        row for row in read_rows(RESULTS / "ibm_registry_trace_residency_v3_17.csv")
+        if row["deployment_class"] == "production"
+    ]
+    if {float(row["budget_mib_per_client"]) for row in production} != {64.0, 256.0, 1024.0}:
+        raise ValueError("IBM production budget sweep is incomplete")
+
+    layers = json.loads(
+        (RESULTS / "public_registry_layer_chunk_sensitivity_v3_17.json").read_text()
+    )
+    if {row["chunk_size_bytes"] for row in layers["aggregate_by_chunk_size"]} != {1024, 4096, 16384}:
+        raise ValueError("registry-layer chunk sensitivity is incomplete")
+    if not all(row["all_reconstructed"] for row in layers["aggregate_by_chunk_size"]):
+        raise ValueError("registry-layer reconstruction failed")
+
+    netem = json.loads((RESULTS / "linux_netem_quic_path_v3_17.json").read_text())
+    if len(netem["summary"]) != 16 or len(netem["rows"]) != 640:
+        raise ValueError("full Linux path matrix is incomplete")
+    if not all(row["reconstruction_ok"] for row in netem["rows"]):
+        raise ValueError("Linux path reconstruction failed")
+    if not all(row["measurement_control_stream_bytes_excluded"] == 13 for row in netem["rows"]):
+        raise ValueError("Linux path measurement-control accounting changed")
+
+    streams = json.loads((RESULTS / "quic_multistream_experiment_v3_17.json").read_text())
+    if streams["aggregate"]["rounds"] != 20 or not streams["aggregate"]["all_reconstructed"]:
+        raise ValueError("full multistream evidence is incomplete")
+    if not all(mode["actual_stream_ids"] == [0, 4, 8, 12, 16] for mode in streams["modes"]):
+        raise ValueError("multistream evidence does not use the expected actual stream IDs")
+
+    fairness = json.loads((RESULTS / "quic_competing_fairness_v3_17.json").read_text())
+    if len(fairness["summary"]) != 3 or not all(row["rounds"] == 20 for row in fairness["summary"]):
+        raise ValueError("full fairness evidence is incomplete")
+    if not all(row["all_reconstructed"] for row in fairness["summary"]):
+        raise ValueError("fairness reconstruction failed")
+
+    cpu = json.loads((RESULTS / "cpu_throughput_scaling_v3_17.json").read_text())
+    if len(cpu["summary"]) != 6 or not all(row["all_reconstructed"] for row in cpu["summary"]):
+        raise ValueError("CPU scaling evidence is incomplete")
+
+
 def validate_pdf_claims() -> None:
     """Check that the fixed-layout submission carries frozen provenance and claims."""
 
@@ -171,11 +218,12 @@ def validate_pdf_claims() -> None:
     )
     source_commit = (ROOT / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
     required = (
-        "ReduLink: Context-Bound Reference Substitution over Encrypted QUIC Streams",
+        "Residency Is Not Reuse: ReduLink for Encrypted QUIC Object Streams",
         source_commit,
-        "recovers 10.10x",
-        "B(m) = 15914 + 1149m",
-        "live TLS exporter binding",
+        "40,872,024",
+        "14.8%",
+        "0.127%",
+        "live TLS 1.3 exporter",
         "Declaration of Generative AI and AI-Assisted Technologies",
     )
     missing = [claim for claim in required if claim not in text]
@@ -189,7 +237,7 @@ def compare_figures_and_docx() -> None:
         generated_figures = tmp / "figures"
         generated_docx = tmp / "manuscript.docx"
         subprocess.run([
-            sys.executable, "scripts/make_journal_figures_v3_16.py",
+            sys.executable, "scripts/make_submission_figures_v3_17.py",
             "--output-dir", str(generated_figures),
         ], cwd=ROOT, check=True)
         for name in SUBMISSION_FIGURE_NAMES:
@@ -198,7 +246,7 @@ def compare_figures_and_docx() -> None:
             if not committed.is_file() or candidate.read_bytes() != committed.read_bytes():
                 raise ValueError(f"figure is stale relative to evidence: {name}")
         subprocess.run([
-            sys.executable, "scripts/build_manuscript_v3_16.py",
+            sys.executable, "scripts/build_manuscript_v3_17.py",
             "--output", str(generated_docx),
             "--figures-dir", str(generated_figures),
         ], cwd=ROOT, check=True)
@@ -219,6 +267,7 @@ def main() -> None:
     parser.add_argument("--generated-dir", type=Path, default=None)
     args = parser.parse_args()
     validate_source_commit()
+    validate_v3_17_results()
     validate_pdf_claims()
     if args.generated_dir is not None:
         for name in CSV_KEYS:

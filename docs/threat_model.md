@@ -31,10 +31,10 @@ inside the endpoints. It is not an independent network-security boundary.
 |---|---|---|---|
 | Exact output | Accept only the complete declared byte sequence and digest | Length, sequence, offset, and SHA-256 completion checks | Tests are not a formal proof |
 | Context binding | Reject records from another epoch, scope, connection, direction, stream context, or offset | Live endpoint TLS exporter agreement, canonical key context, public vectors, and record-tag tests | Private aioquic hook, server-only certificate authentication, and shared application-session fixture |
-| Replay control | Reject duplicate or sufficiently old nonces with bounded memory | Bounded `NonceWindow` tests | Production policy for long-lived connections is unspecified |
+| Replay control | Reject duplicate or sufficiently old nonces with bounded memory | Heap-backed 4,096-entry `NonceWindow`, duplicate/old tests, and a 100,000-nonce bound regression | Production policy for long-lived connections is unspecified |
 | Dictionary integrity | Recompute a keyed identifier over referenced bytes before acceptance | Corrupted-entry and wrong-scope tests | Manifest admission policy is outside the protocol |
 | Expansion bound | Enforce per-record, declared-transfer, and global reconstruction limits | HELLO length and quota tests | QUIC delivery credit is not coupled to reconstructed bytes |
-| Repair integrity | Match each repair request and literal to one original missing REF | Duplicate, out-of-range, non-REF, identifier, and length tests | Repair is one batch and is not optimized for latency |
+| Repair integrity | Match each repair request and literal to one original missing REF | Duplicate, out-of-range, non-REF, identifier, and length tests | Repair is one batch; v3.17 measures the resulting first-byte cost |
 | Repair bound | Require the HELLO frame count and one MISSING batch to fit the 16 MiB message cap | Maximum-item encoder, decoder, and HELLO tests | Multi-batch repair is not implemented |
 
 ## Principal threats
@@ -54,8 +54,9 @@ inside the endpoints. It is not an independent network-security boundary.
 ## Observable leakage
 
 An authorized peer can observe protocol byte count, REF/MISSING outcomes, repair
-size, timing, and whether reference use is disabled. Authentication does not
-remove these deduplication side channels. Deployment policy may require
+size, timing, and whether reference use is disabled. The v3.17 path and scaling
+experiments confirm that pre-encoding changes first-byte timing. Authentication
+does not remove these deduplication side channels. Deployment policy may require
 partitioned dictionaries, short epochs, padding, rate limits, public-only
 manifests, or disabling ReduLink for sensitive or low-reuse objects.
 

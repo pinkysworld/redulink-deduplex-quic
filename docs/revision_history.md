@@ -1,5 +1,33 @@
 # Revision history
 
+## v3.17
+
+- Reframed the contribution as three necessary gates: authorized residency,
+  representation alignment, and byte economics.
+- Parsed the complete public IBM Docker Registry trace (2,791 files and
+  40,872,024 records) and reported same-client exact-blob LRU upper bounds for
+  the four production zones classified by the source paper.
+- Added immutable Redis, httpd, and Alpine linux/amd64 registry-layer pairs;
+  removed ordinary whole-layer CAS hits before measuring exact 1, 4, and 16 KiB
+  reuse inside changed compressed blobs.
+- Added a 16-condition isolated Linux tc/netem Reno matrix with 20 paired
+  rounds, one-clock client completion and FIRST_BYTE timing, combined endpoint
+  CPU, exact reconstruction, and root-qdisc packet and byte deltas.
+- Added one-connection multistream isolation using live exporter keying and
+  actual stream IDs, plus synchronized raw/raw, ReduLink/ReduLink, and
+  calibrated mixed-flow Jain fairness.
+- Added paired CPU, completion, stream-byte, and TTFB scaling through 32 MiB.
+- Replaced an O(n x 4096) replay-window update with a bounded heap-backed
+  window and added a 100,000-nonce regression.
+- Batched sender drains, excluded symmetric 13-byte FIRST_BYTE measurement
+  control, and aligned fairness timers at a post-setup application barrier.
+- Repaired Figure 1 with separate orthogonal control and repair lanes, replaced
+  the evaluation graphics, and reduced the manuscript to five tables and nine
+  pages.
+- Rewrote the abstract, evaluation, discussion, and reviewer response around
+  both positive and negative results. Security is scoped to defensive endpoint
+  state binding rather than presented as a second network security layer.
+
 ## v3.16
 
 - Replaced the per-run exporter surrogate with matching live TLS 1.3 exporter
@@ -61,5 +89,6 @@
   art.
 - Rebuilt the manuscript and figures from the corrected result schema.
 
-Earlier tagged versions remain available in Git history. Their timing and
-path-emulation outputs are not evidence for the v3.16 manuscript.
+Earlier tagged versions remain available in Git history. Timing and
+path-emulation outputs predating the symmetric-clock v3.17 harnesses are not
+evidence for the current manuscript.

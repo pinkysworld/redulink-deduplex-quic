@@ -1,6 +1,6 @@
 # Reference audit
 
-The v3.16 manuscript contains 32 numbered references and cites every reference
+The v3.17 manuscript contains 38 numbered references and cites every reference
 before the reference list. Verify numbering with:
 
 ```bash
@@ -34,9 +34,15 @@ Reference roles:
   artifact.
 - [32] defines exporter label and application-context requirements, including
   the unregistered `EXPERIMENTAL` private-use namespace.
+- [33] documents the 75-day IBM production registry workload and public trace.
+- [34-35] define the Registry HTTP API and OCI distribution objects used by the
+  pinned compressed-layer study.
+- [36] documents the Linux `tc/netem` queue used by the controlled path matrix.
+- [37] defines Jain's fairness index.
+- [38] supplies the bootstrap method used for paired interval summaries.
 
 The novelty boundary does not attribute endpoint substitution, hash-named
 chunks, miss recovery, file delta, HTTP dictionary transport, or carrying an
 existing dictionary-aware RPC protocol over QUIC to ReduLink.
-Its claim is limited to the implemented bounded QUIC application-stream mapping
-and the accompanying evaluation.
+Its claim is limited to the three-gate decision model, the implemented bounded
+QUIC application-stream mapping, and the explicitly scoped evaluation.

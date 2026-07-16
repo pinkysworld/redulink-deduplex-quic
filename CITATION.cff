@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "ReduLink: Context-Bound Reference Substitution over Encrypted QUIC Streams"
+title: "Residency Is Not Reuse: ReduLink for Encrypted QUIC Object Streams"
 message: "If you use ReduLink, please cite it."
 type: software
 authors:
@@ -8,9 +8,9 @@ authors:
     orcid: "https://orcid.org/0000-0001-6834-4422"
     affiliation: "University of the People"
 year: 2026
-version: "3.16"
+version: "3.17"
 repository-code: "https://github.com/pinkysworld/redulink-deduplex-quic"
-abstract: "ReduLink studies when context-bound reference substitution can reduce application-stream bytes between cooperating QUIC endpoints with explicit warm state. The v3.16 artifact adds matching live TLS 1.3 exporter derivation, an exact miss-cost deployment envelope with a separate residency gate, authenticated FULL and REF records, bounded true-LRU state, validated batched repair, exact reconstruction, and same-layer baselines. Single-host results support byte, exporter-binding, and state-machine claims, not WAN latency, congestion fairness, workload prevalence, or production throughput."
+abstract: "ReduLink studies reference substitution between cooperating QUIC endpoints through three necessary gates: authorized exact state remains resident, transmitted representation boundaries preserve reusable bytes, and avoided literals exceed record and repair cost. The v3.17 artifact adds a complete public IBM registry-trace analysis, immutable compressed registry-layer pairs, corrected Linux kernel-path completion and first-byte measurements, live-exporter multistream isolation, competing-flow fairness, and CPU scaling through 32 MiB. Results are bounded to the recorded single-stack, single-host conditions and do not claim production deployment or universal compression."
 keywords:
   - QUIC
   - redundancy elimination

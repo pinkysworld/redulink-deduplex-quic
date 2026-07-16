@@ -36,6 +36,9 @@ QUIC frame types or transport parameters.
 
 There is no `DICT_ACK` in the implemented profile. Warm-state advertisement,
 admission, revocation, and synchronization are future protocol work.
+Transport experiments add a symmetric 13-byte `FIRST_BYTE` acknowledgement
+when logical offset zero becomes usable. It is timestamped on receipt and is
+reported as measurement control, not counted as ReduLink protocol bytes.
 
 ## Binary records
 
@@ -109,6 +112,11 @@ repair FULL to match the pending sequence, identifier, length, and offset. HELLO
 declares the exact frame count, and the implementation rejects a count that
 could not fit in one MISSING message under the 16 MiB message cap.
 
+The replay window uses a set plus minimum heap. It retains at most 4,096
+nonces, advances a fail-closed floor, and avoids rebuilding a 4,096-element set
+for every accepted nonce. A 100,000-sequential-nonce regression checks the
+memory bound.
+
 ## Dictionary policy
 
 The implemented dictionary is bounded by chunk count. FULL admission and every
@@ -119,12 +127,17 @@ a 16 MiB capacity experiment that exposes sequential LRU thrashing.
 ## Evidence boundary
 
 Protocol-stream accounting includes HELLO, initial records, END_ROUND, MISSING,
-repair records, and FINISH in both directions. It excludes STATS diagnostics.
-QUIC packet headers, ACKs, UDP/IP headers, and link-layer bytes are outside this
-metric. The current single-host runs support exact reconstruction, state-machine,
-stream-byte, and exporter-binding claims. They do not support WAN latency,
-congestion-fairness, or production-throughput conclusions. The private bridge
-is specific to pinned aioquic 1.3.0 and is not interoperability evidence.
+repair records, and FINISH in both directions. It excludes STATS diagnostics
+and FIRST_BYTE measurement control. The deterministic stream metric excludes
+QUIC packet headers, ACKs, UDP/IP headers, and link-layer bytes.
+
+The v3.17 Linux experiments separately report root-qdisc byte and packet deltas,
+one-clock client completion and FIRST_BYTE timing, combined endpoint CPU,
+same-connection multistream completion, and Jain fairness of synchronized
+encoded goodput. These results support the recorded single-host tc/netem
+conditions only. They are not multi-host Internet, other-controller, or
+production-throughput conclusions. The private bridge is specific to pinned
+aioquic 1.3.0 and is not independent-stack interoperability evidence.
 
 HELLO, MISSING, END_ROUND, and FINISH rely on QUIC/TLS transport protection and
 do not carry the per-record HMAC. Reconstructed bytes are buffered until FINISH;

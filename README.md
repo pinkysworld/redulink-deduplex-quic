@@ -1,49 +1,64 @@
-# ReduLink v3.16 research artifact
+# ReduLink v3.17 research artifact
 
-ReduLink is a bounded application-stream representation for cooperating QUIC
-endpoints with preprovisioned receiver state. It replaces repeated chunks with
-context-bound references and provides batched repair when receiver state is
-missing. The contribution is the QUIC mapping, receive invariants, exact byte
-accounting, and reproducible evaluation. Endpoint redundancy elimination and
-content-addressed substitution are established ideas.
+ReduLink is a bounded reference-substitution codec for managed QUIC object
+streams. The v3.17 paper is organized around three necessary deployment gates:
+
+1. authorized exact state remains resident;
+2. the transmitted representation preserves reusable byte boundaries; and
+3. avoided literals exceed record, control, and repair cost.
+
+The artifact is intentionally positive and negative. It shows where ReduLink
+reduces bytes and completion time under aligned reuse, and where whole-layer
+content addressing, rsync, ordinary compression, first-byte latency, or
+fairness make it the wrong mechanism.
 
 ## Submission files
 
-- Manuscript: `paper/submission/ReduLink_journal_ready_v3_16.pdf` and `.docx`
-- Journal highlights: `paper/submission/HIGHLIGHTS.txt`
-- Manuscript builder: `scripts/build_manuscript_v3_16.py`
-- Figure builder: `scripts/make_journal_figures_v3_16.py`
+- Manuscript: `paper/submission/ReduLink_submission_v3_17.pdf` and `.docx`
+- Highlights: `paper/submission/HIGHLIGHTS.txt`
+- Reviewer-response map: `REVIEWER_RESPONSE_v3_17.md`
+- Manuscript builder: `scripts/build_manuscript_v3_17.py`
+- Figure builder: `scripts/make_submission_figures_v3_17.py`
 - Manuscript hashes: `MANUSCRIPT_SHA256.txt`
-- Source revision used for evidence: `SOURCE_COMMIT.txt`
-- Artifact checklist: `PUBLIC_REVIEWER_CHECKLIST.md`
+- Evidence revision: `SOURCE_COMMIT.txt`
+- Public checklist: `PUBLIC_REVIEWER_CHECKLIST.md`
 
-## Supported claims
+## Evidence added in v3.17
 
-The artifact supports exact reconstruction, authenticated representation-state
-binding, bounded receive behavior, and directional QUIC application-stream byte
-counts. It includes hash-pinned public release pairs, recorded PyPI wheel pairs,
-whole-object content addressing, fixed-chunk tokens, gzip, a verified zstd
-raw-content-dictionary round trip, and real rsync with exact tree-manifest
-verification. It also includes a 0.5 to 16 KiB chunk-size sweep with a
-byte-equivalent dictionary budget.
+- Complete analysis of the public IBM Docker Registry trace: 2,791 files and
+  40,872,024 records across seven availability zones. The result is a
+  same-client exact-blob LRU upper bound, not a measured client cache hit rate.
+- Immutable Redis, httpd, and Alpine linux/amd64 registry-layer pairs. Existing
+  whole-layer CAS hits are removed before testing changed compressed bytes at
+  1, 4, and 16 KiB.
+- Sixteen isolated Linux `tc/netem` path conditions with Reno, paired order,
+  symmetric client-clock completion and FIRST_BYTE timing, combined endpoint
+  CPU, exact reconstruction, and root-qdisc packet and byte deltas.
+- Same-connection QUIC multistream isolation using live exporter keying and
+  actual stream IDs 0, 4, 8, 12, and 16.
+- Synchronized raw/raw, ReduLink/ReduLink, and calibrated raw/ReduLink competing
+  flows with Jain fairness of encoded application goodput.
+- Paired local CPU, completion, byte, and TTFB scaling from 64 KiB through
+  32 MiB.
 
-The record HMAC is a defensive endpoint-state commitment. QUIC/TLS is the
-network-security boundary. The implementation is an application codec on a QUIC
-stream, not a custom QUIC frame. The native prototype now derives its record
-secret from the live TLS 1.3 exporter on both endpoints and checks that the
-outputs match. Because aioquic 1.3.0 has no public exporter API, the bridge is
-strictly version gated and hooks the audited post-Server-Finished 1-RTT stage.
-The exporter formula, label, context derivation, binary MAC transcripts, and
-public test vectors are fixed in `docs/protocol_summary.md` and
-`docs/protocol_test_vectors.json`.
+The record HMAC is defensive endpoint-state binding. QUIC/TLS is the network
+security boundary. ReduLink is an application codec, not a custom QUIC frame.
+The prototype uses a live TLS 1.3 exporter at both endpoints and aborts on
+disagreement. Because aioquic 1.3.0 has no public exporter API, the audited
+bridge is version gated.
 
-The package does not claim WAN latency, congestion fairness, production
-throughput, mutual endpoint authentication, on-wire dictionary negotiation, or
-superiority to rsync, ordinary compression, or HTTP Compression Dictionary
-Transport. Historical timing and path-emulation outputs are not packaged as
-submission evidence.
+## Claim boundary
 
-## Validation
+The evidence supports the measured single-stack, single-host conditions and
+the exact fixed artifacts. It does not establish Internet-wide latency,
+multi-host deployment, independent-stack interoperability, 0-RTT, migration,
+mutual application authentication, formal protocol composition, or an
+optimized native implementation. The IBM trace lacks payload bytes; registry
+alignment is therefore evaluated separately on pinned public blobs. The
+Redis-derived transport fixture is author constructed and remains labeled as
+such.
+
+## Environment and validation
 
 ```bash
 python3 -m venv .venv
@@ -53,57 +68,59 @@ python scripts/run_smoke_validation.py
 python scripts/run_full_validation.py
 ```
 
-The validators verify the committed manuscript and PDF claims, citations,
-result schemas, exact reconstruction checks, and test suite. The local full
-validator rebuilds figures and the normalized DOCX package in temporary paths. In CI, the benchmark
-commands also regenerate deterministic result tables before the evidence checker
-compares their load-bearing fields with the committed rows. External public
-archives are fetched separately:
+The validators check source ancestry, result schemas, exact reconstruction,
+live exporter agreement, stream IDs, queue counters, citation coverage,
+regenerated figures, normalized DOCX content, PDF claims, and manuscript
+hashes.
+
+## Regenerating the main v3.17 evidence
+
+The IBM trace archive is not redistributed. After verifying and extracting the
+published archive, run:
 
 ```bash
-python benchmarks/fetch_external_public_corpora.py
-python benchmarks/run_external_object_workload_suite.py
-python benchmarks/run_object_chunk_size_sensitivity.py
-python benchmarks/run_rsync_baseline_manifest.py \
-  --manifest benchmarks/external_public_manifest.csv \
-  --output results/rsync_baseline_external_public.csv
+python benchmarks/run_ibm_registry_trace_residency_v3_17.py \
+  --trace-root /path/to/extracted-trace \
+  --archive /path/to/DockerRegistryTraces.tar.gz
 ```
 
-The native QUIC evidence can be regenerated with:
+The public registry-layer study retrieves immutable blobs into `/tmp` and
+verifies their manifest digest, blob digest, and length:
 
 ```bash
-python benchmarks/run_quic_flow_comparison.py
-python benchmarks/run_protocol_stream_accounting.py
-python benchmarks/run_aioquic_workload_cases.py
-python benchmarks/run_aioquic_scaling_experiment.py
-python benchmarks/run_quic_miss_rate_sensitivity.py
-python benchmarks/derive_deployment_envelope.py
+python benchmarks/run_public_registry_layer_sensitivity_v3_17.py
 ```
 
-The container fixes Python 3.12.13, pins Python dependencies, and fails its
-build unless GNU rsync 3.2.7 is installed. The base-image digest and Debian OS
-packages are not content pinned, so rsync protocol totals are version-recorded
-measurements rather than a promise of byte-identical future container builds.
-The CI reproduction gate permits a 1.0% difference in aggregate rsync
-sent-plus-received protocol bytes. The maximum observed Ubuntu 24.04 difference
-from the frozen environment was 0.591%, confined to sender-side control
-overhead. Received bytes, literal and matched bytes, file-size counters, input
-sizes, manifests, entry counts, reconstruction, round count, rsync 3.2.7, and
-protocol version 31 remain exact. This tolerance is not statistical uncertainty
-on the frozen result.
-The pinned python-zstandard wheel reports libzstd 1.5.7 in the committed
-baseline. The headline dictionary comparator pins level 3 and window_log 21;
-every row also records a window_log 24 sensitivity result:
+The local implementation scaling study is:
 
 ```bash
-docker build -t redulink-artifact:v3.16 .
-docker run --rm redulink-artifact:v3.16
+python benchmarks/run_cpu_throughput_scaling_v3_17.py
 ```
 
-## Evaluation boundary
+The full privileged Linux path, multistream, and fairness experiments are
+registered in `.github/workflows/linux-netem-isolated.yml`. The frozen full run
+used the `full` profile, Reno, and source commit recorded in
+`SOURCE_COMMIT.txt`. Local Linux reproduction requires an isolated namespace or
+equivalent privileges:
 
-Public object pairs are reproducible test artifacts, not sampled production
-traffic. The Redis-derived layer case is author constructed and labeled as
-such. Each reported stateful baseline must reconstruct exact bytes or an exact
-ordered object/tree manifest. Multipliers always state their byte layer;
-application-stream bytes are not presented as IP, UDP, or link-layer bytes.
+```bash
+python benchmarks/run_linux_netem_quic_path.py
+python benchmarks/run_quic_multistream_experiment.py
+python benchmarks/run_quic_competing_fairness_v3_17.py
+```
+
+Existing public-object, rsync, dictionary, capacity, and miss evidence can be
+regenerated with the commands in `benchmarks/README.md`.
+
+## Document production
+
+```bash
+python scripts/make_submission_figures_v3_17.py
+python scripts/build_manuscript_v3_17.py
+python scripts/check_manuscript_citations.py
+python scripts/check_manuscript_hashes.py
+```
+
+The five figures are generated from committed results. Figure 1 uses separate
+orthogonal MISSING and repair lanes so its labels remain readable at manuscript
+size.

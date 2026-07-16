@@ -1,8 +1,69 @@
 # Reproducible benchmark guide
 
-The v3.16 manuscript uses exact reconstruction and byte accounting. Timing,
-throughput, userspace shaping, kernel shaping, and competing-flow files are not
-manuscript evidence.
+The v3.17 manuscript separates deterministic byte evidence from paired
+transport measurements. Current Linux kernel-path, multistream, fairness, and
+CPU files are manuscript evidence. Historical asymmetric-clock timing and
+userspace path-emulation files remain excluded.
+
+## IBM production registry trace
+
+Download the public archive linked by Anwar et al. (FAST 2018), verify its
+published SHA-1, extract it outside the repository, and run:
+
+```bash
+python benchmarks/run_ibm_registry_trace_residency_v3_17.py \
+  --trace-root /path/to/extracted-trace \
+  --archive /path/to/DockerRegistryTraces.tar.gz
+```
+
+The complete run merges daily shards by timestamp and applies a true
+byte-bounded LRU per anonymized client and availability zone. Production and
+nonproduction zones are kept separate according to the source paper. The
+result is an exact same-client full-blob residency upper bound because
+authorization changes and client-local deletion are not present. It does not
+measure within-blob alignment.
+
+## Pinned public registry layers
+
+```bash
+python benchmarks/run_public_registry_layer_sensitivity_v3_17.py
+```
+
+The pinned manifest resolves Redis, httpd, and Alpine update pairs to immutable
+index and linux/amd64 manifest digests. Every compressed blob is verified by
+digest and length. Identical layers are removed as ordinary whole-layer CAS
+hits before changed blobs are evaluated at 1, 4, and 16 KiB. Network caches are
+stored under `/tmp` and are not submission files.
+
+## Linux transport, streams, and fairness
+
+The registered privileged workflow is
+`.github/workflows/linux-netem-isolated.yml`. Its `full` profile runs:
+
+```bash
+python benchmarks/run_linux_netem_quic_path.py
+python benchmarks/run_quic_multistream_experiment.py
+python benchmarks/run_quic_competing_fairness_v3_17.py
+```
+
+The path matrix uses 5/20 Mbit/s, 20/80 ms RTT, 0/0.5% random loss, Reno, and
+20 paired order-alternated rounds for two positive fixtures. Completion and
+FIRST_BYTE use one client monotonic clock. Per-transfer root-qdisc counters
+include encrypted handshake, ACK, loss, close, and the 13-byte measurement
+acknowledgement. The multistream study uses one connection and actual stream
+IDs. Fairness starts both established connections at a post-preparation
+application barrier and computes Jain's index over encoded goodput.
+
+## CPU and TTFB scaling
+
+```bash
+python benchmarks/run_cpu_throughput_scaling_v3_17.py
+```
+
+The paired local study covers 64 KiB through 32 MiB with one warmup, ten
+order-alternated rounds, full garbage collection before each transfer, a fresh
+verified connection, and combined in-process client plus server CPU. It is
+Python implementation evidence, not a native-code throughput claim.
 
 ## Public release pairs
 
@@ -107,8 +168,8 @@ latency model or a workload-population estimate.
 ## Figures and validation
 
 ```bash
-python scripts/make_journal_figures_v3_16.py
-python scripts/build_manuscript_v3_16.py
+python scripts/make_submission_figures_v3_17.py
+python scripts/build_manuscript_v3_17.py
 python scripts/run_full_validation.py
 ```
 
@@ -116,5 +177,4 @@ The committed result files retain source versions, hashes, parameters, and
 method-specific byte layers where the producing tool exposes them. The local
 full validator rebuilds figures and a normalized DOCX in temporary paths and
 extracts the PDF to check its source revision and load-bearing claims. CI
-additionally regenerates benchmark tables and invokes the semantic comparison
-mode before accepting committed evidence.
+also validates the registered Linux result schemas and exact reconstruction.

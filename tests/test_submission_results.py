@@ -33,6 +33,13 @@ class SubmissionResultTests(unittest.TestCase):
             "cpu_throughput_scaling_v3_17.csv",
             "cpu_throughput_scaling_v3_17.json",
             "cpu_throughput_scaling_v3_17_summary.csv",
+            "linux_netem_quic_path_v3_17.csv",
+            "linux_netem_quic_path_v3_17.json",
+            "linux_netem_quic_path_v3_17_summary.csv",
+            "quic_multistream_experiment_v3_17.csv",
+            "quic_multistream_experiment_v3_17.json",
+            "quic_competing_fairness_v3_17.csv",
+            "quic_competing_fairness_v3_17.json",
             "deployment_envelope.csv", "deployment_envelope.json",
             "rsync_baseline_external_public.csv",
         }
@@ -96,6 +103,36 @@ class SubmissionResultTests(unittest.TestCase):
             data["redulink_forward_protocol_stream_bytes"] + data["redulink_reverse_repair_control_stream_bytes"],
         )
         self.assertGreater(data["redulink_diagnostic_stats_stream_bytes_excluded"], 0)
+
+    def test_full_v3_17_transport_evidence_is_committed(self):
+        netem = json.loads((RESULTS / "linux_netem_quic_path_v3_17.json").read_text())
+        self.assertEqual(len(netem["summary"]), 16)
+        self.assertEqual(len(netem["rows"]), 640)
+        self.assertTrue(all(item["paired_rounds"] == 20 for item in netem["summary"]))
+        self.assertTrue(all(row["reconstruction_ok"] for row in netem["rows"]))
+        self.assertTrue(all(
+            row["measurement_control_stream_bytes_excluded"] == 13
+            for row in netem["rows"]
+        ))
+
+        streams = json.loads(
+            (RESULTS / "quic_multistream_experiment_v3_17.json").read_text()
+        )
+        self.assertEqual(streams["aggregate"]["rounds"], 20)
+        self.assertTrue(streams["aggregate"]["all_reconstructed"])
+        self.assertTrue(all(
+            mode["actual_stream_ids"] == [0, 4, 8, 12, 16]
+            for mode in streams["modes"]
+        ))
+
+        fairness = json.loads(
+            (RESULTS / "quic_competing_fairness_v3_17.json").read_text()
+        )
+        self.assertEqual({item["case"] for item in fairness["summary"]}, {
+            "raw-raw", "redulink-redulink", "raw-redulink",
+        })
+        self.assertTrue(all(item["rounds"] == 20 for item in fairness["summary"]))
+        self.assertTrue(all(item["all_reconstructed"] for item in fairness["summary"]))
 
 
 if __name__ == "__main__":
