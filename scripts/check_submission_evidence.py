@@ -270,6 +270,19 @@ def compare_figure_visual(committed: Path, candidate: Path) -> None:
         )
 
 
+def normalize_docx_member(name: str, payload: bytes) -> bytes:
+    """Remove only platform-sensitive picture extents from document XML."""
+
+    if name != "word/document.xml":
+        return payload
+    return re.sub(
+        rb"<w:drawing>.*?</w:drawing>",
+        b"<w:drawing/>",
+        payload,
+        flags=re.DOTALL,
+    )
+
+
 def compare_figures_and_docx() -> None:
     with tempfile.TemporaryDirectory(prefix="redulink-submission-check-") as tmp_name:
         tmp = Path(tmp_name)
@@ -299,6 +312,17 @@ def compare_figures_and_docx() -> None:
             )
             if expected_media != committed_media:
                 raise ValueError("submitted DOCX does not embed the committed figures")
+            regenerated_media = Counter(
+                regenerated.read(name)
+                for name in regenerated.namelist()
+                if name.startswith("word/media/") and name.lower().endswith(".png")
+            )
+            candidate_media = Counter(
+                (generated_figures / name).read_bytes()
+                for name in SUBMISSION_FIGURE_NAMES
+            )
+            if candidate_media != regenerated_media:
+                raise ValueError("regenerated DOCX does not embed the regenerated figures")
             names = {
                 name for name in committed.namelist()
                 if (
@@ -309,7 +333,18 @@ def compare_figures_and_docx() -> None:
             if not names.issubset(regenerated.namelist()):
                 raise ValueError("regenerated DOCX package is incomplete")
             for name in names:
-                if committed.read(name) != regenerated.read(name):
+                expected = committed.read(name)
+                actual = regenerated.read(name)
+                if name == "word/document.xml":
+                    expected_relationships = re.findall(
+                        rb'<a:blip r:embed="([^"]+)"', expected,
+                    )
+                    actual_relationships = re.findall(
+                        rb'<a:blip r:embed="([^"]+)"', actual,
+                    )
+                    if expected_relationships != actual_relationships:
+                        raise ValueError("manuscript figure order changed")
+                if normalize_docx_member(name, expected) != normalize_docx_member(name, actual):
                     raise ValueError(f"manuscript is stale relative to evidence: {name}")
 
 
