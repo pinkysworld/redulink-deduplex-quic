@@ -29,6 +29,7 @@ MISSING = 3
 FINISH = 4
 STATS = 5
 ERROR = 6
+FIRST_BYTE = 7
 FRAME = 16
 KIND_FULL = 1
 KIND_REF = 2
@@ -41,6 +42,7 @@ _FRAME_FIXED = struct.Struct("!IBBHQQQQI16s16sI")
 _MISSING_HEADER = struct.Struct("!I")
 _MISSING_ITEM = struct.Struct("!I16sI")
 _HELLO_FIXED = struct.Struct("!HIIQ32s")
+_FIRST_BYTE_FIXED = struct.Struct("!Q")
 MAX_MISSING_ITEMS = (MAX_MESSAGE_BYTES - 1 - _MISSING_HEADER.size) // _MISSING_ITEM.size
 MAX_QUIC_STREAM_ID = (1 << 62) - 1
 MAX_QUIC_STREAM_OFFSET = (1 << 62) - 1
@@ -87,6 +89,10 @@ def encode_message(obj: dict[str, Any]) -> bytes:
         body = bytes([END_ROUND])
     elif t == "FINISH":
         body = bytes([FINISH])
+    elif t == "FIRST_BYTE":
+        body = bytes([FIRST_BYTE]) + _FIRST_BYTE_FIXED.pack(
+            _bounded_int("first-byte offset", obj.get("offset", 0), MAX_QUIC_STREAM_OFFSET),
+        )
     elif t == "FRAME":
         frame = obj["frame"]
         if not isinstance(frame, SecureFrame):
@@ -165,6 +171,11 @@ def decode_payload(body: bytes) -> DecodedMessage:
         if data:
             raise ValueError("invalid FINISH length")
         return DecodedMessage("FINISH", {"t": "FINISH"})
+    if mt == FIRST_BYTE:
+        if len(data) != _FIRST_BYTE_FIXED.size:
+            raise ValueError("invalid FIRST_BYTE length")
+        offset = _FIRST_BYTE_FIXED.unpack(data)[0]
+        return DecodedMessage("FIRST_BYTE", {"t": "FIRST_BYTE", "offset": offset})
     if mt == FRAME:
         fixed_len = _FRAME_FIXED.size
         if len(data) < fixed_len:

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import hmac
 import hashlib
+import heapq
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Iterable, List, Tuple
@@ -224,8 +225,11 @@ class NonceWindow:
 
     def __init__(self, size: int = 4096) -> None:
         self.size = int(size)
+        if self.size < 1:
+            raise ValueError("nonce window size must be positive")
         self.highest = 0
         self._seen: set[int] = set()
+        self._min_heap: list[int] = []
 
     def __contains__(self, nonce: int) -> bool:
         if self.highest and nonce <= self.highest - self.size:
@@ -233,12 +237,15 @@ class NonceWindow:
         return nonce in self._seen
 
     def add(self, nonce: int) -> None:
+        if nonce in self._seen:
+            return
         self._seen.add(nonce)
+        heapq.heappush(self._min_heap, nonce)
         if nonce > self.highest:
             self.highest = nonce
-            floor = self.highest - self.size
-            if floor > 0 and len(self._seen) > self.size:
-                self._seen = {n for n in self._seen if n > floor}
+        floor = self.highest - self.size
+        while self._min_heap and self._min_heap[0] <= floor:
+            self._seen.discard(heapq.heappop(self._min_heap))
 
     def __len__(self) -> int:
         return len(self._seen)

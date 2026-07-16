@@ -66,19 +66,49 @@ ALPN = ["redulink/1"]
 LEN_BYTES = 4
 WIRE_FORMAT = "binary"
 PROTOCOL_VERSION = 1
+SEND_DRAIN_BYTES = 64 * 1024
 
 
 def _json_bytes(obj: dict[str, Any]) -> bytes:
     return json.dumps(obj, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-async def send_msg(writer: asyncio.StreamWriter, obj: dict[str, Any]) -> int:
+def encode_msg(obj: dict[str, Any]) -> bytes:
     if WIRE_FORMAT == "binary":
-        return await wire.send_message(writer, obj)
+        return wire.encode_message(obj)
     payload = _json_bytes(obj)
-    writer.write(len(payload).to_bytes(LEN_BYTES, "big") + payload)
+    return len(payload).to_bytes(LEN_BYTES, "big") + payload
+
+
+async def send_msg(writer: asyncio.StreamWriter, obj: dict[str, Any]) -> int:
+    data = encode_msg(obj)
+    writer.write(data)
     await writer.drain()
-    return LEN_BYTES + len(payload)
+    return len(data)
+
+
+async def send_msgs_batched(
+    writer: asyncio.StreamWriter,
+    messages: Any,
+    *,
+    drain_bytes: int = SEND_DRAIN_BYTES,
+) -> int:
+    """Send length-delimited messages with bounded, transport-neutral batching."""
+    if drain_bytes < 1:
+        raise ValueError("drain_bytes must be positive")
+    total = 0
+    pending = 0
+    for obj in messages:
+        data = encode_msg(obj)
+        writer.write(data)
+        total += len(data)
+        pending += len(data)
+        if pending >= drain_bytes:
+            await writer.drain()
+            pending = 0
+    if pending:
+        await writer.drain()
+    return total
 
 
 async def read_msg(reader: asyncio.StreamReader) -> tuple[dict[str, Any], int]:
@@ -412,6 +442,8 @@ class QuicReduLinkServer:
         ref_frames = 0
         missing: list[dict[str, Any]] = []
         start = time.perf_counter()
+        first_reconstructed_byte_at: float | None = None
+        first_byte_measurement_sent = False
         try:
             msg, size = await read_msg(reader)
             client_to_server_bytes += size
@@ -443,6 +475,7 @@ class QuicReduLinkServer:
                     except ValueError as exc:
                         server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": str(exc)})
                         return
+                    completed_at = time.perf_counter()
                     stats = {
                         "experiment": "aioquic_native_stream_mapping",
                         "transport": "aioquic QUIC bidirectional stream over localhost UDP",
@@ -464,7 +497,17 @@ class QuicReduLinkServer:
                         "repair_full_frames": repair_full_frames,
                         "auth_failures": auth_failures,
                         "replay_rejections": replay_rejections,
-                        "elapsed_ms": round((time.perf_counter() - start) * 1000.0, 3),
+                        "elapsed_ms": round((completed_at - start) * 1000.0, 3),
+                        "server_completion_ms": round((completed_at - start) * 1000.0, 3),
+                        "server_time_to_first_reconstructed_byte_ms": round(
+                            ((first_reconstructed_byte_at or completed_at) - start) * 1000.0,
+                            3,
+                        ),
+                        "server_timing_definition": (
+                            "single server monotonic clock from stream-handler entry to availability "
+                            "of logical byte offset zero and exact completed reconstruction; no "
+                            "cross-host clock subtraction"
+                        ),
                     }
                     if self.tls_exporter_output_sha256 is not None:
                         stats["tls_exporter_output_sha256"] = self.tls_exporter_output_sha256
@@ -498,6 +541,13 @@ class QuicReduLinkServer:
                         semantic_misses += 1
                     elif outcome == "repair":
                         repair_full_frames += 1
+                    if first_reconstructed_byte_at is None and 0 in self.delivered:
+                        first_reconstructed_byte_at = time.perf_counter()
+                    if first_reconstructed_byte_at is not None and not first_byte_measurement_sent:
+                        server_to_client_bytes += await send_msg(
+                            writer, {"t": "FIRST_BYTE", "offset": 0},
+                        )
+                        first_byte_measurement_sent = True
                 else:
                     server_to_client_bytes += await send_msg(writer, {"t": "ERROR", "error": f"unknown message {t}"})
                     return
@@ -580,7 +630,9 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                     server_port: int = 0, exporter_secret: bytes | None = None,
                     connection_context: bytes | None = None,
                     application_session_id: bytes | None = None,
-                    expose_exporter_debug_hash: bool = False) -> dict[str, Any]:
+                    expose_exporter_debug_hash: bool = False,
+                    congestion_control_algorithm: str = "reno",
+                    start_barrier: Any = None) -> dict[str, Any]:
     end_to_end_started = time.perf_counter()
     global WIRE_FORMAT
     WIRE_FORMAT = wire_format
@@ -650,8 +702,10 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
     with tempfile.TemporaryDirectory(prefix="redulink-aioquic-") as tmp:
         cert_path, key_path = write_self_signed_cert(Path(tmp))
         server_conf = QuicConfiguration(is_client=False, alpn_protocols=ALPN)
+        server_conf.congestion_control_algorithm = congestion_control_algorithm
         server_conf.load_cert_chain(str(cert_path), str(key_path))
         client_conf = QuicConfiguration(is_client=True, alpn_protocols=ALPN)
+        client_conf.congestion_control_algorithm = congestion_control_algorithm
         client_conf.verify_mode = ssl.CERT_REQUIRED
         client_conf.cafile = str(cert_path)
 
@@ -705,12 +759,38 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         repaired = 0
         preparation_elapsed = 0.0
         diagnostic_stats_bytes = 0
+        measurement_control_bytes = 0
+        client_first_byte_at: float | None = None
         network_started = time.perf_counter()
+        process_cpu_started = time.process_time()
+        application_transfer_started = network_started
         application_completed = network_started
+        process_cpu_completed = process_cpu_started
         try:
             async with connect("127.0.0.1", port, configuration=client_conf, wait_connected=True) as protocol:
                 reader, writer = await protocol.create_stream()
                 stream_id = int(writer.get_extra_info("stream_id"))
+                response_queue: asyncio.Queue[tuple[dict[str, Any], int, float] | BaseException] = asyncio.Queue()
+
+                async def collect_responses() -> None:
+                    try:
+                        while True:
+                            response, response_size = await read_msg(reader)
+                            await response_queue.put(
+                                (response, response_size, time.perf_counter()),
+                            )
+                            if response.get("t") in {"STATS", "ERROR"}:
+                                return
+                    except BaseException as exc:
+                        await response_queue.put(exc)
+
+                async def next_response() -> tuple[dict[str, Any], int, float]:
+                    item = await response_queue.get()
+                    if isinstance(item, BaseException):
+                        raise item
+                    return item
+
+                response_task = asyncio.create_task(collect_responses())
                 client_exporter_output = (
                     bytes(exporter_secret)
                     if exporter_secret is not None
@@ -750,6 +830,9 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                     max_dict_chunks=sender_max_dict_chunks,
                 )
                 preparation_elapsed = (time.perf_counter() - preparation_started) * 1000.0
+                if start_barrier is not None:
+                    await start_barrier.wait()
+                application_transfer_started = time.perf_counter()
                 client_to_server_bytes += await send_msg(writer, {
                     "t": "HELLO",
                     "version": PROTOCOL_VERSION,
@@ -758,15 +841,29 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                     "chunk_size": chunk_size,
                     "frame_count": len(frames),
                 })
-                for seq, frame in enumerate(frames):
-                    client_to_server_bytes += await send_msg(writer, frame_to_msg(seq, frame))
+                client_to_server_bytes += await send_msgs_batched(
+                    writer,
+                    (frame_to_msg(seq, frame) for seq, frame in enumerate(frames)),
+                )
                 client_to_server_bytes += await send_msg(writer, {"t": "END_ROUND"})
-                reply, size = await read_msg(reader)
-                server_to_client_bytes += size
-                assert reply.get("t") == "MISSING", reply
-                missing_items = list(reply.get("items", []))
+                missing_items: list[dict[str, Any]] | None = None
+                while missing_items is None:
+                    reply, size, received_at = await next_response()
+                    server_to_client_bytes += size
+                    if reply.get("t") == "FIRST_BYTE":
+                        if int(reply.get("offset", -1)) != 0 or client_first_byte_at is not None:
+                            raise RuntimeError("invalid or duplicate FIRST_BYTE measurement")
+                        client_first_byte_at = received_at
+                        measurement_control_bytes += size
+                    elif reply.get("t") == "MISSING":
+                        missing_items = list(reply.get("items", []))
+                    elif reply.get("t") == "ERROR":
+                        raise RuntimeError(f"server rejected initial round: {reply.get('error', 'error')}")
+                    else:
+                        raise RuntimeError(f"unexpected server message before repair: {reply!r}")
                 next_nonce = max((frame.nonce for frame in frames), default=0) + 1
                 validated_repairs = validate_missing_items(missing_items, frames)
+                repair_messages = []
                 for seq, ref in validated_repairs:
                     payload = sender_dict.get(ref.cid)
                     if payload is None:
@@ -774,15 +871,28 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                     repair = make_full_repair(ref, payload, secret=secret, nonce=next_nonce)
                     next_nonce += 1
                     repaired += 1
-                    client_to_server_bytes += await send_msg(writer, frame_to_msg(seq, repair, repair=True))
+                    repair_messages.append(frame_to_msg(seq, repair, repair=True))
+                client_to_server_bytes += await send_msgs_batched(writer, repair_messages)
                 client_to_server_bytes += await send_msg(writer, {"t": "FINISH"})
-                reply, size = await read_msg(reader)
-                server_to_client_bytes += size
-                diagnostic_stats_bytes = size
-                if reply.get("t") == "ERROR":
-                    raise RuntimeError(f"server rejected FINISH: {reply.get('error', 'error')}")
-                assert reply.get("t") == "STATS", reply
-                stats = dict(reply["stats"])
+                stats: dict[str, Any] | None = None
+                while stats is None:
+                    reply, size, received_at = await next_response()
+                    server_to_client_bytes += size
+                    if reply.get("t") == "FIRST_BYTE":
+                        if int(reply.get("offset", -1)) != 0 or client_first_byte_at is not None:
+                            raise RuntimeError("invalid or duplicate FIRST_BYTE measurement")
+                        client_first_byte_at = received_at
+                        measurement_control_bytes += size
+                    elif reply.get("t") == "ERROR":
+                        raise RuntimeError(f"server rejected FINISH: {reply.get('error', 'error')}")
+                    elif reply.get("t") == "STATS":
+                        diagnostic_stats_bytes = size
+                        stats = dict(reply["stats"])
+                    else:
+                        raise RuntimeError(f"unexpected server message after repair: {reply!r}")
+                await response_task
+                if client_first_byte_at is None:
+                    raise RuntimeError("server never acknowledged logical byte zero")
                 server_exporter_output_sha256 = str(
                     stats.pop("tls_exporter_output_sha256", ""),
                 )
@@ -797,6 +907,7 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                 if int(stats.get("application_stream_id", -1)) != stream_id:
                     raise RuntimeError("client/server application stream context mismatch")
                 application_completed = time.perf_counter()
+                process_cpu_completed = time.process_time()
                 try:
                     writer.write_eof()
                     await writer.drain()
@@ -812,7 +923,10 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
     network_elapsed = round((application_completed - network_started) * 1000.0, 3)
     end_to_end_elapsed = round((application_completed - end_to_end_started) * 1000.0, 3)
     setup_elapsed = round((network_started - end_to_end_started) * 1000.0, 3)
-    protocol_reverse_bytes = server_to_client_bytes - diagnostic_stats_bytes
+    process_cpu_elapsed = round((process_cpu_completed - process_cpu_started) * 1000.0, 3)
+    protocol_reverse_bytes = (
+        server_to_client_bytes - diagnostic_stats_bytes - measurement_control_bytes
+    )
     protocol_stream_total = client_to_server_bytes + protocol_reverse_bytes
     stats.update({
         "input_bytes": len(data),
@@ -826,21 +940,51 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         "forward_protocol_stream_bytes": client_to_server_bytes,
         "reverse_repair_control_stream_bytes": protocol_reverse_bytes,
         "diagnostic_stats_stream_bytes": diagnostic_stats_bytes,
+        "measurement_control_stream_bytes_excluded": measurement_control_bytes,
         "protocol_stream_payload_total_bytes_excluding_diagnostics": protocol_stream_total,
         "quic_stream_payload_total_bytes": protocol_stream_total,
         "quic_stream_payload_multiplier_after_repair": round(len(data) / protocol_stream_total, 6) if protocol_stream_total else 0,
         "client_elapsed_ms": network_elapsed,
         "client_network_elapsed_ms": network_elapsed,
+        "client_time_to_first_reconstructed_byte_ms": round(
+            ((client_first_byte_at or application_completed) - network_started) * 1000.0,
+            3,
+        ),
+        "client_ttfb_definition": (
+            "single client monotonic clock from immediately before connect to receipt of "
+            "a byte-accounted application acknowledgement that logical offset zero is usable"
+        ),
         "client_end_to_end_elapsed_ms": end_to_end_elapsed,
+        "client_application_transfer_elapsed_ms": round(
+            (application_completed - application_transfer_started) * 1000.0, 3,
+        ),
+        "client_application_time_to_first_reconstructed_byte_ms": round(
+            ((client_first_byte_at or application_completed) - application_transfer_started) * 1000.0,
+            3,
+        ),
+        "application_transfer_timing_definition": (
+            "client monotonic clock from the first application-stream write boundary, after "
+            "exporter-based preparation and any optional synchronization barrier, to FIRST_BYTE "
+            "acknowledgement or completion"
+        ),
         "client_preparation_elapsed_ms": round(preparation_elapsed, 3),
         "environment_setup_elapsed_ms": setup_elapsed,
+        "combined_endpoint_process_cpu_ms": process_cpu_elapsed,
+        "combined_endpoint_process_cpu_ms_per_mib": round(
+            process_cpu_elapsed / (len(data) / (1024 * 1024)), 6,
+        ) if data else 0.0,
+        "process_cpu_definition": (
+            "process_time delta covering the in-process client and server from immediately "
+            "before connect through receipt of the final application result"
+        ),
         "client_timing_definition": (
             "connection-and-application timing starts immediately before connect and stops after decoding "
             "the diagnostic STATS message; preparation is the in-connection frame and dictionary construction time"
         ),
         "stream_accounting_definition": (
             "protocol stream bytes include HELLO, data frames, END_ROUND, MISSING, repairs, and FINISH; "
-            "the diagnostic STATS response is reported separately and excluded from the multiplier"
+            "the diagnostic STATS response and FIRST_BYTE measurement acknowledgement are reported "
+            "separately and excluded from the multiplier"
         ),
         "aioquic_version": __import__("aioquic").__version__,
         "wire_format": WIRE_FORMAT,
@@ -879,6 +1023,8 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         "receiver_dictionary_budget_chunks": receiver_max_dict_chunks,
         "receiver_dictionary_thinning_every": missing_every,
         "chunk_size_bytes": chunk_size,
+        "sender_drain_batch_bytes": SEND_DRAIN_BYTES,
+        "congestion_control_algorithm": congestion_control_algorithm,
     })
     if expose_exporter_debug_hash:
         stats["tls_exporter_output_sha256"] = client_exporter_output_sha256
@@ -903,7 +1049,8 @@ def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_forma
                    sender_max_dict_chunks: int | None = None,
                    receiver_max_dict_chunks: int | None = None,
                    server_port: int = 0,
-                   expose_exporter_debug_hash: bool = False) -> dict[str, Any]:
+                   expose_exporter_debug_hash: bool = False,
+                   congestion_control_algorithm: str = "reno") -> dict[str, Any]:
     warm, data = demo_payload(payload_blocks)
     return asyncio.run(run_async(
         warm=warm,
@@ -918,6 +1065,7 @@ def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_forma
         receiver_max_dict_chunks=receiver_max_dict_chunks,
         server_port=server_port,
         expose_exporter_debug_hash=expose_exporter_debug_hash,
+        congestion_control_algorithm=congestion_control_algorithm,
     ))
 
 

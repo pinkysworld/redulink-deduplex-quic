@@ -1,0 +1,609 @@
+{
+  "aggregate_by_chunk_size": [
+    {
+      "all_reconstructed": true,
+      "chunk_size_bytes": 1024,
+      "combined_cas_plus_redulink_total_update_multiplier": 1.237919,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.001265,
+      "matched_chunk_bytes_within_changed_layers": 98304,
+      "pairs": 3,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.908033,
+      "redulink_wire_bytes_for_changed_layers": 85576152,
+      "update_layer_bytes": 105936340,
+      "whole_layer_cas_changed_bytes": 77706006,
+      "whole_layer_cas_hit_byte_fraction": 0.266484
+    },
+    {
+      "all_reconstructed": true,
+      "chunk_size_bytes": 4096,
+      "combined_cas_plus_redulink_total_update_multiplier": 1.330645,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.001107,
+      "matched_chunk_bytes_within_changed_layers": 86016,
+      "pairs": 3,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.976049,
+      "redulink_wire_bytes_for_changed_layers": 79612785,
+      "update_layer_bytes": 105936340,
+      "whole_layer_cas_changed_bytes": 77706006,
+      "whole_layer_cas_hit_byte_fraction": 0.266484
+    },
+    {
+      "all_reconstructed": true,
+      "chunk_size_bytes": 16384,
+      "combined_cas_plus_redulink_total_update_multiplier": 1.354884,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.000211,
+      "matched_chunk_bytes_within_changed_layers": 16384,
+      "pairs": 3,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.993829,
+      "redulink_wire_bytes_for_changed_layers": 78188477,
+      "update_layer_bytes": 105936340,
+      "whole_layer_cas_changed_bytes": 77706006,
+      "whole_layer_cas_hit_byte_fraction": 0.266484
+    }
+  ],
+  "chunk_sizes_bytes": [
+    1024,
+    4096,
+    16384
+  ],
+  "component_provenance": [
+    {
+      "chunk_size_bytes": 1024,
+      "provenance": {
+        "cache_not_part_of_submission": "/tmp/redulink-public-registry-layer-cache-v3-17",
+        "manifest": "benchmarks/public_registry_layer_manifest_v3_17.csv",
+        "platform": "macOS-26.6-arm64-arm-64bit",
+        "python": "3.12.13 (main, Mar  3 2026, 15:35:03) [Clang 21.1.4 ]"
+      },
+      "retrieved_at_utc": "2026-07-16T11:33:31.245457+00:00"
+    },
+    {
+      "chunk_size_bytes": 4096,
+      "provenance": {
+        "cache_not_part_of_submission": "/tmp/redulink-public-registry-layer-cache-v3-17",
+        "manifest": "benchmarks/public_registry_layer_manifest_v3_17.csv",
+        "platform": "macOS-26.6-arm64-arm-64bit",
+        "python": "3.12.13 (main, Mar  3 2026, 15:35:03) [Clang 21.1.4 ]"
+      },
+      "retrieved_at_utc": "2026-07-16T11:33:37.117357+00:00"
+    },
+    {
+      "chunk_size_bytes": 16384,
+      "provenance": {
+        "cache_not_part_of_submission": "/tmp/redulink-public-registry-layer-cache-v3-17",
+        "manifest": "benchmarks/public_registry_layer_manifest_v3_17.csv",
+        "platform": "macOS-26.6-arm64-arm-64bit",
+        "python": "3.12.13 (main, Mar  3 2026, 15:35:03) [Clang 21.1.4 ]"
+      },
+      "retrieved_at_utc": "2026-07-16T11:33:43.061203+00:00"
+    }
+  ],
+  "experiment": "pinned_public_registry_layer_chunk_sensitivity_v3_17",
+  "pinned_manifests": [
+    {
+      "label": "redis-7.4.8-to-7.4.9-bookworm",
+      "update_manifest": {
+        "config": {
+          "digest": "sha256:bcb827524ebc711f3e8cab9303ee6deb8f154162704df3d5647d50f81d5b372e",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 5712
+        },
+        "content_type": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:5c30969bb0ecdf1b654e0e4d4124aac99013f0b0fe345e33aa380f6b1dab780b",
+        "layers": [
+          {
+            "digest": "sha256:597c6c618d36213af657a6a8444a5d87801f9a219682b206ad21ccb8f3e57bbd",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 28232643
+          },
+          {
+            "digest": "sha256:bf79261ef9dee1e64444c9b897fb53980fa6bc40e66315a0dbf92e36600d5375",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 1100
+          },
+          {
+            "digest": "sha256:042e9dc3ce1df845a644e8a899b491a762195f3b1385c4637319a6c27b155921",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 875
+          },
+          {
+            "digest": "sha256:36bb33a1f234c0c716dbe1bea8738e66bd08dbb4fc37c5d95e689073f18318e4",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 15349631
+          },
+          {
+            "digest": "sha256:538a06127621dacaa7f3dc2aa3b880f6241b2fb940001f1c13fd36976d73ee64",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 96
+          },
+          {
+            "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 32
+          },
+          {
+            "digest": "sha256:4b41d0b59c72628e1e77079f1f89c5d70570e028adac0a58cfa284558b9bc85f",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 601
+          }
+        ],
+        "raw_bytes": 2287,
+        "repository": "library/redis"
+      },
+      "warm_manifest": {
+        "config": {
+          "digest": "sha256:7ceda270a3137de18c0b3aff75fa0002faa1c2a87e2b25e86978a1c3f20b3b78",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 8747
+        },
+        "content_type": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:3a7a8bb1ea5c3a1d341c8631b23664b077448417e04f5d5803938a6d3a868797",
+        "layers": [
+          {
+            "digest": "sha256:ff86ea2e5edce334d19a34fbc65d1a511aa1fc823dba1110422f991aa56b44d4",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 28236252
+          },
+          {
+            "digest": "sha256:aa6270f3c16d6ed79f3dd0808f0cc57f7a6d38d7f378793464b2d5db044844a0",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 1100
+          },
+          {
+            "digest": "sha256:6789623e0cdc9c0a3497788f4e217cba8153f7b73c8179d52590d384792efd94",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 874
+          },
+          {
+            "digest": "sha256:4acdaa1c2fd45aa712a57bae18d7d88e0a57d362609b2ee55e03f7f7d3cc3160",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 1438014
+          },
+          {
+            "digest": "sha256:644ec7b8f887c5f478152ba349de6bd873b0b622986db9e99b06cbe0feed55f3",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 15348973
+          },
+          {
+            "digest": "sha256:5547517b698f5ae3dd409659623c796c0c87d6d507b822b108d48ec6a27a01ec",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 97
+          },
+          {
+            "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 32
+          },
+          {
+            "digest": "sha256:2cd1a6f9cda12b72acf3cbf4f093828c188182ea26821c6cf2b36853e9b75b15",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 572
+          }
+        ],
+        "raw_bytes": 2483,
+        "repository": "library/redis"
+      }
+    },
+    {
+      "label": "httpd-2.4.64-to-2.4.65-bookworm",
+      "update_manifest": {
+        "config": {
+          "digest": "sha256:5bdbc621ec089f8137cf0fdd49caa16748854c8c72739e794d1c2c9ab88dfed7",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 7883
+        },
+        "content_type": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:cc4c94eb4e9c3d94ac2147cb9ce8057096362de83fa12b7aeecd4c0c3d5d1f21",
+        "layers": [
+          {
+            "digest": "sha256:59e22667830bf04fb35e15ed9c70023e9d121719bb87f0db7f3159ee7c7e0b8d",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 28230270
+          },
+          {
+            "digest": "sha256:c02ce4e0ebb3594adf5979faef0f7a23c3ec1a1e8810d6395dc92927064550e0",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 146
+          },
+          {
+            "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 32
+          },
+          {
+            "digest": "sha256:fc61fad0f5407d576719977190667f34c33556d8e7b9a57acf4407d93e822e9b",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 4208310
+          },
+          {
+            "digest": "sha256:e7b83145b2097d99a6c7a096934f9ef9f7b6f2818863e20c2652b05f42c1bcb4",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 26067888
+          },
+          {
+            "digest": "sha256:644bfd3d7e686c06dc8c06f517c9aafd1e06867545b3b6d8737ff3a492ed9fb7",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 295
+          }
+        ],
+        "raw_bytes": 2095,
+        "repository": "library/httpd"
+      },
+      "warm_manifest": {
+        "config": {
+          "digest": "sha256:a0b4e9293753fd5ab8e016fb52a0ab1a21dd82b3558b677d74f7e9ccdfaa206d",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 7883
+        },
+        "content_type": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:2e98f8d23e2adc14b9e0364f27c2edf8dd7b5660b1c70eff1bf46bc3a5f48f8b",
+        "layers": [
+          {
+            "digest": "sha256:59e22667830bf04fb35e15ed9c70023e9d121719bb87f0db7f3159ee7c7e0b8d",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 28230270
+          },
+          {
+            "digest": "sha256:26d5e6e2540a95be34bbc2e0a5bc57cc5a141ef7fb7163c8aac3ce231819fec1",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 145
+          },
+          {
+            "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 32
+          },
+          {
+            "digest": "sha256:0b984e2fba058b8d3cbbaee5a6cec54b007488972b41d2c1d67416e557fafc03",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 4208362
+          },
+          {
+            "digest": "sha256:e544e7f2501393af2183ce09417a0c740238a42ea734a7e27656c995ba413b6f",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 26067726
+          },
+          {
+            "digest": "sha256:c5d18627bd393bcd046139067e918d1b0c20405e1f3f1dac70e26f3e82b4b885",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 293
+          }
+        ],
+        "raw_bytes": 2095,
+        "repository": "library/httpd"
+      }
+    },
+    {
+      "label": "alpine-3.23.4-to-3.23.5",
+      "update_manifest": {
+        "config": {
+          "digest": "sha256:0d3e09a185d997484a3ba1743b3223ed08d633b891cc05bc9a3dea5556f89ca2",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 611
+        },
+        "content_type": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:1beb0dc0a51de7ff38e3b5274078a2e0b81113ba5c7535e1a03d5913a5edbda3",
+        "layers": [
+          {
+            "digest": "sha256:e6f31ffc071e5560b82a8685fba8214954e5721e3e49269d00958316edbe89fe",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 3844421
+          }
+        ],
+        "raw_bytes": 1022,
+        "repository": "library/alpine"
+      },
+      "warm_manifest": {
+        "config": {
+          "digest": "sha256:3cb067eab609612d81b4d82ff8ad71d73482bb3059a87b642d7e14f0ed659cde",
+          "mediaType": "application/vnd.oci.image.config.v1+json",
+          "size": 611
+        },
+        "content_type": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:4d889c14e7d5a73929ab00be2ef8ff22437e7cbc545931e52554a7b00e123d8b",
+        "layers": [
+          {
+            "digest": "sha256:6a0ac1617861a677b045b7ff88545213ec31c0ff08763195a70a4a5adda577bb",
+            "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+            "size": 3864189
+          }
+        ],
+        "raw_bytes": 1022,
+        "repository": "library/alpine"
+      }
+    }
+  ],
+  "recorded_at_utc": "2026-07-16T11:33:43.323933+00:00",
+  "registry": "https://registry-1.docker.io",
+  "registry_api": "Docker Registry HTTP API V2",
+  "rows": [
+    {
+      "changed_layer_bytes": 43584946,
+      "chunk_size_bytes": 1024,
+      "combined_cas_plus_redulink_total_update_multiplier": 0.906993,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 42566,
+      "label": "redis-7.4.8-to-7.4.9-bookworm",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.0,
+      "matched_chunk_bytes_within_changed_layers": 0,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.906992,
+      "redulink_wire_bytes_for_changed_layers": 48054376,
+      "ref_frame_bytes": 105,
+      "ref_frames": 0,
+      "repository": "library/redis",
+      "update_index_digest": "sha256:a8f08480e1f88f2647fed492d1178c06abb0d0c1fbf02c682a61e2f483fb3954",
+      "update_layer_bytes": 43584978,
+      "update_layer_count": 7,
+      "update_manifest_digest": "sha256:5c30969bb0ecdf1b654e0e4d4124aac99013f0b0fe345e33aa380f6b1dab780b",
+      "update_tag_provenance_only": "7.4.9-bookworm",
+      "warm_dictionary_unique_chunks": 43976,
+      "warm_index_digest": "sha256:3e0669e42d4fe421c9dea0ba5fbc04d336b80b4f32a6c7d25bee3a1d089288a1",
+      "warm_layer_count": 8,
+      "warm_manifest_digest": "sha256:3a7a8bb1ea5c3a1d341c8631b23664b077448417e04f5d5803938a6d3a868797",
+      "warm_tag_provenance_only": "7.4.8-bookworm",
+      "whole_layer_cas_changed_bytes": 43584946,
+      "whole_layer_cas_hit_byte_fraction": 1e-06,
+      "whole_layer_cas_hit_bytes": 32,
+      "whole_layer_cas_hit_count": 1
+    },
+    {
+      "changed_layer_bytes": 30276639,
+      "chunk_size_bytes": 1024,
+      "combined_cas_plus_redulink_total_update_multiplier": 1.757858,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 29473,
+      "label": "httpd-2.4.64-to-2.4.65-bookworm",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.003247,
+      "matched_chunk_bytes_within_changed_layers": 98304,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.909671,
+      "redulink_wire_bytes_for_changed_layers": 33283080,
+      "ref_frame_bytes": 105,
+      "ref_frames": 96,
+      "repository": "library/httpd",
+      "update_index_digest": "sha256:fbc12199ccad031d8047e9c789d65aceee2d14f99ba90664cd3a3996867a5582",
+      "update_layer_bytes": 58506941,
+      "update_layer_count": 6,
+      "update_manifest_digest": "sha256:cc4c94eb4e9c3d94ac2147cb9ce8057096362de83fa12b7aeecd4c0c3d5d1f21",
+      "update_tag_provenance_only": "2.4.65-bookworm",
+      "warm_dictionary_unique_chunks": 57139,
+      "warm_index_digest": "sha256:ff7da4e158110cff0fdb0951a6859a971f9b4a1a7487427d1e039d640951a7f5",
+      "warm_layer_count": 6,
+      "warm_manifest_digest": "sha256:2e98f8d23e2adc14b9e0364f27c2edf8dd7b5660b1c70eff1bf46bc3a5f48f8b",
+      "warm_tag_provenance_only": "2.4.64-bookworm",
+      "whole_layer_cas_changed_bytes": 30276639,
+      "whole_layer_cas_hit_byte_fraction": 0.482512,
+      "whole_layer_cas_hit_bytes": 28230302,
+      "whole_layer_cas_hit_count": 2
+    },
+    {
+      "changed_layer_bytes": 3844421,
+      "chunk_size_bytes": 1024,
+      "combined_cas_plus_redulink_total_update_multiplier": 0.906982,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 3755,
+      "label": "alpine-3.23.4-to-3.23.5",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.0,
+      "matched_chunk_bytes_within_changed_layers": 0,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.906982,
+      "redulink_wire_bytes_for_changed_layers": 4238696,
+      "ref_frame_bytes": 105,
+      "ref_frames": 0,
+      "repository": "library/alpine",
+      "update_index_digest": "sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40",
+      "update_layer_bytes": 3844421,
+      "update_layer_count": 1,
+      "update_manifest_digest": "sha256:1beb0dc0a51de7ff38e3b5274078a2e0b81113ba5c7535e1a03d5913a5edbda3",
+      "update_tag_provenance_only": "3.23.5",
+      "warm_dictionary_unique_chunks": 3774,
+      "warm_index_digest": "sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11",
+      "warm_layer_count": 1,
+      "warm_manifest_digest": "sha256:4d889c14e7d5a73929ab00be2ef8ff22437e7cbc545931e52554a7b00e123d8b",
+      "warm_tag_provenance_only": "3.23.4",
+      "whole_layer_cas_changed_bytes": 3844421,
+      "whole_layer_cas_hit_byte_fraction": 0.0,
+      "whole_layer_cas_hit_bytes": 0,
+      "whole_layer_cas_hit_count": 0
+    },
+    {
+      "changed_layer_bytes": 43584946,
+      "chunk_size_bytes": 4096,
+      "combined_cas_plus_redulink_total_update_multiplier": 0.974997,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 10645,
+      "label": "redis-7.4.8-to-7.4.9-bookworm",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.0,
+      "matched_chunk_bytes_within_changed_layers": 0,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.974996,
+      "redulink_wire_bytes_for_changed_layers": 44702671,
+      "ref_frame_bytes": 105,
+      "ref_frames": 0,
+      "repository": "library/redis",
+      "update_index_digest": "sha256:a8f08480e1f88f2647fed492d1178c06abb0d0c1fbf02c682a61e2f483fb3954",
+      "update_layer_bytes": 43584978,
+      "update_layer_count": 7,
+      "update_manifest_digest": "sha256:5c30969bb0ecdf1b654e0e4d4124aac99013f0b0fe345e33aa380f6b1dab780b",
+      "update_tag_provenance_only": "7.4.9-bookworm",
+      "warm_dictionary_unique_chunks": 10999,
+      "warm_index_digest": "sha256:3e0669e42d4fe421c9dea0ba5fbc04d336b80b4f32a6c7d25bee3a1d089288a1",
+      "warm_layer_count": 8,
+      "warm_manifest_digest": "sha256:3a7a8bb1ea5c3a1d341c8631b23664b077448417e04f5d5803938a6d3a868797",
+      "warm_tag_provenance_only": "7.4.8-bookworm",
+      "whole_layer_cas_changed_bytes": 43584946,
+      "whole_layer_cas_hit_byte_fraction": 1e-06,
+      "whole_layer_cas_hit_bytes": 32,
+      "whole_layer_cas_hit_count": 1
+    },
+    {
+      "changed_layer_bytes": 30276639,
+      "chunk_size_bytes": 4096,
+      "combined_cas_plus_redulink_total_update_multiplier": 1.889326,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 7374,
+      "label": "httpd-2.4.64-to-2.4.65-bookworm",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.002841,
+      "matched_chunk_bytes_within_changed_layers": 86016,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.977703,
+      "redulink_wire_bytes_for_changed_layers": 30967098,
+      "ref_frame_bytes": 105,
+      "ref_frames": 21,
+      "repository": "library/httpd",
+      "update_index_digest": "sha256:fbc12199ccad031d8047e9c789d65aceee2d14f99ba90664cd3a3996867a5582",
+      "update_layer_bytes": 58506941,
+      "update_layer_count": 6,
+      "update_manifest_digest": "sha256:cc4c94eb4e9c3d94ac2147cb9ce8057096362de83fa12b7aeecd4c0c3d5d1f21",
+      "update_tag_provenance_only": "2.4.65-bookworm",
+      "warm_dictionary_unique_chunks": 14289,
+      "warm_index_digest": "sha256:ff7da4e158110cff0fdb0951a6859a971f9b4a1a7487427d1e039d640951a7f5",
+      "warm_layer_count": 6,
+      "warm_manifest_digest": "sha256:2e98f8d23e2adc14b9e0364f27c2edf8dd7b5660b1c70eff1bf46bc3a5f48f8b",
+      "warm_tag_provenance_only": "2.4.64-bookworm",
+      "whole_layer_cas_changed_bytes": 30276639,
+      "whole_layer_cas_hit_byte_fraction": 0.482512,
+      "whole_layer_cas_hit_bytes": 28230302,
+      "whole_layer_cas_hit_count": 2
+    },
+    {
+      "changed_layer_bytes": 3844421,
+      "chunk_size_bytes": 4096,
+      "combined_cas_plus_redulink_total_update_multiplier": 0.974995,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 939,
+      "label": "alpine-3.23.4-to-3.23.5",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.0,
+      "matched_chunk_bytes_within_changed_layers": 0,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.974995,
+      "redulink_wire_bytes_for_changed_layers": 3943016,
+      "ref_frame_bytes": 105,
+      "ref_frames": 0,
+      "repository": "library/alpine",
+      "update_index_digest": "sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40",
+      "update_layer_bytes": 3844421,
+      "update_layer_count": 1,
+      "update_manifest_digest": "sha256:1beb0dc0a51de7ff38e3b5274078a2e0b81113ba5c7535e1a03d5913a5edbda3",
+      "update_tag_provenance_only": "3.23.5",
+      "warm_dictionary_unique_chunks": 944,
+      "warm_index_digest": "sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11",
+      "warm_layer_count": 1,
+      "warm_manifest_digest": "sha256:4d889c14e7d5a73929ab00be2ef8ff22437e7cbc545931e52554a7b00e123d8b",
+      "warm_tag_provenance_only": "3.23.4",
+      "whole_layer_cas_changed_bytes": 3844421,
+      "whole_layer_cas_hit_byte_fraction": 0.0,
+      "whole_layer_cas_hit_bytes": 0,
+      "whole_layer_cas_hit_count": 0
+    },
+    {
+      "changed_layer_bytes": 43584946,
+      "chunk_size_bytes": 16384,
+      "combined_cas_plus_redulink_total_update_multiplier": 0.993621,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 2665,
+      "label": "redis-7.4.8-to-7.4.9-bookworm",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.0,
+      "matched_chunk_bytes_within_changed_layers": 0,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.993621,
+      "redulink_wire_bytes_for_changed_layers": 43864771,
+      "ref_frame_bytes": 105,
+      "ref_frames": 0,
+      "repository": "library/redis",
+      "update_index_digest": "sha256:a8f08480e1f88f2647fed492d1178c06abb0d0c1fbf02c682a61e2f483fb3954",
+      "update_layer_bytes": 43584978,
+      "update_layer_count": 7,
+      "update_manifest_digest": "sha256:5c30969bb0ecdf1b654e0e4d4124aac99013f0b0fe345e33aa380f6b1dab780b",
+      "update_tag_provenance_only": "7.4.9-bookworm",
+      "warm_dictionary_unique_chunks": 2754,
+      "warm_index_digest": "sha256:3e0669e42d4fe421c9dea0ba5fbc04d336b80b4f32a6c7d25bee3a1d089288a1",
+      "warm_layer_count": 8,
+      "warm_manifest_digest": "sha256:3a7a8bb1ea5c3a1d341c8631b23664b077448417e04f5d5803938a6d3a868797",
+      "warm_tag_provenance_only": "7.4.8-bookworm",
+      "whole_layer_cas_changed_bytes": 43584946,
+      "whole_layer_cas_hit_byte_fraction": 1e-06,
+      "whole_layer_cas_hit_bytes": 32,
+      "whole_layer_cas_hit_count": 1
+    },
+    {
+      "changed_layer_bytes": 30276639,
+      "chunk_size_bytes": 16384,
+      "combined_cas_plus_redulink_total_update_multiplier": 1.921119,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 1850,
+      "label": "httpd-2.4.64-to-2.4.65-bookworm",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.000541,
+      "matched_chunk_bytes_within_changed_layers": 16384,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.994156,
+      "redulink_wire_bytes_for_changed_layers": 30454610,
+      "ref_frame_bytes": 105,
+      "ref_frames": 1,
+      "repository": "library/httpd",
+      "update_index_digest": "sha256:fbc12199ccad031d8047e9c789d65aceee2d14f99ba90664cd3a3996867a5582",
+      "update_layer_bytes": 58506941,
+      "update_layer_count": 6,
+      "update_manifest_digest": "sha256:cc4c94eb4e9c3d94ac2147cb9ce8057096362de83fa12b7aeecd4c0c3d5d1f21",
+      "update_tag_provenance_only": "2.4.65-bookworm",
+      "warm_dictionary_unique_chunks": 3576,
+      "warm_index_digest": "sha256:ff7da4e158110cff0fdb0951a6859a971f9b4a1a7487427d1e039d640951a7f5",
+      "warm_layer_count": 6,
+      "warm_manifest_digest": "sha256:2e98f8d23e2adc14b9e0364f27c2edf8dd7b5660b1c70eff1bf46bc3a5f48f8b",
+      "warm_tag_provenance_only": "2.4.64-bookworm",
+      "whole_layer_cas_changed_bytes": 30276639,
+      "whole_layer_cas_hit_byte_fraction": 0.482512,
+      "whole_layer_cas_hit_bytes": 28230302,
+      "whole_layer_cas_hit_count": 2
+    },
+    {
+      "changed_layer_bytes": 3844421,
+      "chunk_size_bytes": 16384,
+      "combined_cas_plus_redulink_total_update_multiplier": 0.993623,
+      "full_frame_overhead_bytes": 105,
+      "full_frames": 235,
+      "label": "alpine-3.23.4-to-3.23.5",
+      "manifest_and_http_overhead_excluded": true,
+      "matched_chunk_byte_fraction_within_changed_layers": 0.0,
+      "matched_chunk_bytes_within_changed_layers": 0,
+      "platform": "linux/amd64",
+      "reconstruction_ok": true,
+      "redulink_multiplier_vs_whole_layer_cas_changed_bytes": 0.993623,
+      "redulink_wire_bytes_for_changed_layers": 3869096,
+      "ref_frame_bytes": 105,
+      "ref_frames": 0,
+      "repository": "library/alpine",
+      "update_index_digest": "sha256:fd791d74b68913cbb027c6546007b3f0d3bc45125f797758156952bc2d6daf40",
+      "update_layer_bytes": 3844421,
+      "update_layer_count": 1,
+      "update_manifest_digest": "sha256:1beb0dc0a51de7ff38e3b5274078a2e0b81113ba5c7535e1a03d5913a5edbda3",
+      "update_tag_provenance_only": "3.23.5",
+      "warm_dictionary_unique_chunks": 236,
+      "warm_index_digest": "sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11",
+      "warm_layer_count": 1,
+      "warm_manifest_digest": "sha256:4d889c14e7d5a73929ab00be2ef8ff22437e7cbc545931e52554a7b00e123d8b",
+      "warm_tag_provenance_only": "3.23.4",
+      "whole_layer_cas_changed_bytes": 3844421,
+      "whole_layer_cas_hit_byte_fraction": 0.0,
+      "whole_layer_cas_hit_bytes": 0,
+      "whole_layer_cas_hit_count": 0
+    }
+  ],
+  "scope": "compressed linux/amd64 registry layer blobs pinned by platform-manifest digest; whole-layer CAS hits removed before fixed-chunk ReduLink analysis"
+}

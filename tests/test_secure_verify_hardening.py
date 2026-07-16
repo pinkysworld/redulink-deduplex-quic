@@ -59,8 +59,18 @@ class VerifyHardeningTests(unittest.TestCase):
         window = secure.NonceWindow(size=4)
         for n in range(1, 20):
             window.add(n)
-        self.assertLessEqual(len(window), 8, "window memory must stay bounded")
+        self.assertEqual(len(window), 4, "window memory must stay bounded")
         self.assertIn(1, window, "nonce below the floor must read as replayed")
+
+    def test_window_expires_out_of_order_values_without_full_set_rebuilds(self):
+        window = secure.NonceWindow(size=4096)
+        for n in range(1, 100_001):
+            window.add(n)
+        self.assertEqual(len(window), 4096)
+        self.assertEqual(len(window._min_heap), 4096)
+        self.assertIn(95_904, window)
+        self.assertIn(95_905, window)
+        self.assertNotIn(100_001, window)
 
     def test_non_canonical_tag_or_cid_rejected(self):
         for field, value in [

@@ -1,0 +1,326 @@
+name: ReduLink v3.17 Linux netem evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Sweep size
+        required: true
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - full
+      congestion_control:
+        description: aioquic congestion controller
+        required: true
+        default: reno
+        type: choice
+        options:
+          - reno
+          - cubic
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-linux-kernel-path:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.13"
+          cache: pip
+      - name: Install pinned artifact dependencies and Linux network tools
+        run: |
+          python -m pip install --requirement requirements-lock.txt
+          sudo apt-get update
+          sudo apt-get install --yes iproute2 util-linux
+      - name: Run tested harness in an isolated network namespace
+        shell: bash
+        env:
+          PROFILE: ${{ inputs.profile }}
+          CONGESTION_CONTROL: ${{ inputs.congestion_control }}
+        run: |
+          mkdir -p workflow-artifacts
+          python_bin="$(command -v python)"
+          if unshare --user --map-root-user --net true 2>/dev/null; then
+            namespace=(unshare --user --map-root-user --net --mount-proc)
+            namespace_mode="rootless-user-network"
+          else
+            namespace=(sudo unshare --net --mount-proc)
+            namespace_mode="sudo-network"
+          fi
+          printf 'namespace_mode=%s\nprofile=%s\ncongestion_control=%s\n' \
+            "$namespace_mode" "$PROFILE" "$CONGESTION_CONTROL" \
+            | tee workflow-artifacts/workflow_environment.txt
+          if [[ "$PROFILE" == "full" ]]; then
+            sweep=(
+              --payload demo redis
+              --rate-mbps 5 20
+              --rtt-ms 20 80
+              --loss-percent 0 0.5
+              --rounds 20
+            )
+          else
+            sweep=(
+              --payload demo
+              --rate-mbps 5
+              --rtt-ms 20
+              --loss-percent 0
+              --rounds 2
+            )
+          fi
+          printf '%q ' "${sweep[@]}" > workflow-artifacts/sweep_arguments.txt
+          printf '\n' >> workflow-artifacts/sweep_arguments.txt
+          set +e
+          # Positional parameters are intentionally expanded by the namespace shell.
+          # shellcheck disable=SC2016
+          "${namespace[@]}" bash -euo pipefail -c '
+            ip link set lo up
+            exec "$1" benchmarks/run_linux_netem_quic_path.py \
+              --no-sudo \
+              --device lo \
+              --congestion-control "$2" \
+              --output-json workflow-artifacts/linux_netem_quic_path_v3_17.json \
+              --output-csv workflow-artifacts/linux_netem_quic_path_v3_17.csv \
+              --output-summary-csv workflow-artifacts/linux_netem_quic_path_v3_17_summary.csv \
+              "${@:3}"
+          ' bash "$python_bin" "$CONGESTION_CONTROL" "${sweep[@]}" \
+            2>&1 | tee workflow-artifacts/linux_netem_v3_17.log
+          status="${PIPESTATUS[0]}"
+          sudo chown -R "$(id -u):$(id -g)" workflow-artifacts
+          exit "$status"
+      - name: Verify exact reconstruction, pairing, counters, and timing fields
+        env:
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("workflow-artifacts/linux_netem_quic_path_v3_17.json")
+          result = json.loads(path.read_text(encoding="utf-8"))
+          expected_summaries = 16 if "${{ inputs.profile }}" == "full" else 1
+          expected_rounds = 20 if "${{ inputs.profile }}" == "full" else 2
+          assert result["experiment"] == "linux_netem_quic_path_v3_17"
+          assert len(result["summary"]) == expected_summaries
+          assert all(item["paired_rounds"] == expected_rounds for item in result["summary"])
+          assert all(item["all_reconstructed"] for item in result["summary"])
+          assert all(row["qdisc_packets"] > 0 and row["qdisc_bytes"] > 0 for row in result["rows"])
+          assert all(row["client_completion_ms"] > 0 and row["client_ttfb_ms"] > 0 for row in result["rows"])
+          assert all(row["measurement_control_stream_bytes_excluded"] == 13 for row in result["rows"])
+          assert all(item["client_completion_ratio_ci95_high"] > 0 for item in result["summary"])
+          PY
+      - name: Record runner and qdisc environment
+        if: always()
+        run: |
+          uname -a > workflow-artifacts/uname.txt
+          python --version > workflow-artifacts/python_version.txt
+          tc -V > workflow-artifacts/tc_version.txt
+          git rev-parse HEAD > workflow-artifacts/source_commit.txt
+      - name: Upload raw evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redulink-v3-17-netem-${{ inputs.profile }}-${{ inputs.congestion_control }}-${{ github.sha }}
+          path: workflow-artifacts/
+          if-no-files-found: error
+          retention-days: 90
+
+  quic-multistream-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.13"
+          cache: pip
+      - name: Install pinned artifact dependencies and Linux network tools
+        run: |
+          python -m pip install --requirement requirements-lock.txt
+          sudo apt-get update
+          sudo apt-get install --yes iproute2 util-linux
+      - name: Run same-connection multistream experiment on a shaped kernel path
+        shell: bash
+        env:
+          PROFILE: ${{ inputs.profile }}
+          CONGESTION_CONTROL: ${{ inputs.congestion_control }}
+        run: |
+          mkdir -p workflow-artifacts-multistream
+          python_bin="$(command -v python)"
+          if unshare --user --map-root-user --net true 2>/dev/null; then
+            namespace=(unshare --user --map-root-user --net --mount-proc)
+            namespace_mode="rootless-user-network"
+          else
+            namespace=(sudo unshare --net --mount-proc)
+            namespace_mode="sudo-network"
+          fi
+          if [[ "$PROFILE" == "full" ]]; then
+            rounds=20
+            blocker_blocks=2048
+          else
+            rounds=2
+            blocker_blocks=256
+          fi
+          printf 'namespace_mode=%s\nprofile=%s\ncongestion_control=%s\n' \
+            "$namespace_mode" "$PROFILE" "$CONGESTION_CONTROL" \
+            | tee workflow-artifacts-multistream/workflow_environment.txt
+          set +e
+          # Positional parameters are intentionally expanded by the namespace shell.
+          # shellcheck disable=SC2016
+          "${namespace[@]}" bash -euo pipefail -c '
+            ip link set lo up
+            tc qdisc replace dev lo root netem delay 20ms rate 10mbit limit 10000 loss 0.5%
+            trap '\''tc -j -s qdisc show dev lo > workflow-artifacts-multistream/qdisc_after.json; tc qdisc del dev lo root || true'\'' EXIT
+            tc -j -s qdisc show dev lo > workflow-artifacts-multistream/qdisc_before.json
+            "$1" benchmarks/run_quic_multistream_experiment.py \
+              --rounds "$3" \
+              --blocker-blocks "$4" \
+              --small-blocks 64 \
+              --small-count 4 \
+              --congestion-control "$2" \
+              --output-json workflow-artifacts-multistream/quic_multistream_experiment_v3_17.json \
+              --output-csv workflow-artifacts-multistream/quic_multistream_experiment_v3_17.csv
+          ' bash "$python_bin" "$CONGESTION_CONTROL" "$rounds" "$blocker_blocks" \
+            2>&1 | tee workflow-artifacts-multistream/quic_multistream_v3_17.log
+          status="${PIPESTATUS[0]}"
+          sudo chown -R "$(id -u):$(id -g)" workflow-artifacts-multistream
+          exit "$status"
+      - name: Verify multistream keying, reconstruction, and isolation fields
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path(
+              "workflow-artifacts-multistream/quic_multistream_experiment_v3_17.json"
+          ).read_text(encoding="utf-8"))
+          expected_rounds = 20 if "${{ inputs.profile }}" == "full" else 2
+          assert result["experiment"] == "live_quic_multistream_isolation_v3_17"
+          assert result["aggregate"]["rounds"] == expected_rounds
+          assert result["aggregate"]["all_reconstructed"]
+          assert all(mode["actual_stream_ids"] == [0, 4, 8, 12, 16] for mode in result["modes"])
+          assert all(mode["connection_contexts_match"] for mode in result["modes"])
+          rows = [row for mode in result["modes"] for row in mode["rows"]]
+          assert all(row["tls_exporter_live"] and row["tls_exporter_outputs_match"] for row in rows)
+          assert all(row["measurement_control_stream_bytes_excluded"] == 13 for row in rows)
+          assert 0 <= result["aggregate"]["fraction_of_multiplexed_small_streams_finishing_before_blocker"] <= 1
+          PY
+      - name: Record runner environment
+        if: always()
+        run: |
+          uname -a > workflow-artifacts-multistream/uname.txt
+          python --version > workflow-artifacts-multistream/python_version.txt
+          tc -V > workflow-artifacts-multistream/tc_version.txt
+          git rev-parse HEAD > workflow-artifacts-multistream/source_commit.txt
+      - name: Upload raw multistream evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redulink-v3-17-multistream-${{ inputs.profile }}-${{ inputs.congestion_control }}-${{ github.sha }}
+          path: workflow-artifacts-multistream/
+          if-no-files-found: error
+          retention-days: 90
+
+  competing-flow-fairness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.13"
+          cache: pip
+      - name: Install pinned artifact dependencies and Linux network tools
+        run: |
+          python -m pip install --requirement requirements-lock.txt
+          sudo apt-get update
+          sudo apt-get install --yes iproute2 util-linux
+      - name: Run synchronized competing Reno flows in an isolated namespace
+        shell: bash
+        env:
+          PROFILE: ${{ inputs.profile }}
+          CONGESTION_CONTROL: ${{ inputs.congestion_control }}
+        run: |
+          mkdir -p workflow-artifacts-fairness
+          python_bin="$(command -v python)"
+          if unshare --user --map-root-user --net true 2>/dev/null; then
+            namespace=(unshare --user --map-root-user --net --mount-proc)
+            namespace_mode="rootless-user-network"
+          else
+            namespace=(sudo unshare --net --mount-proc)
+            namespace_mode="sudo-network"
+          fi
+          if [[ "$PROFILE" == "full" ]]; then
+            rounds=20
+            raw_blocks=814
+            redulink_blocks=8192
+          else
+            rounds=2
+            raw_blocks=107
+            redulink_blocks=1024
+          fi
+          printf 'namespace_mode=%s\nprofile=%s\ncongestion_control=%s\n' \
+            "$namespace_mode" "$PROFILE" "$CONGESTION_CONTROL" \
+            | tee workflow-artifacts-fairness/workflow_environment.txt
+          set +e
+          # Positional parameters are intentionally expanded by the namespace shell.
+          # shellcheck disable=SC2016
+          "${namespace[@]}" bash -euo pipefail -c '
+            ip link set lo up
+            "$1" benchmarks/run_quic_competing_fairness_v3_17.py \
+              --no-sudo \
+              --device lo \
+              --rounds "$3" \
+              --raw-blocks "$4" \
+              --redulink-blocks "$5" \
+              --congestion-control "$2" \
+              --rate-mbps 10 \
+              --rtt-ms 40 \
+              --loss-percent 0.5 \
+              --output-json workflow-artifacts-fairness/quic_competing_fairness_v3_17.json \
+              --output-csv workflow-artifacts-fairness/quic_competing_fairness_v3_17.csv
+          ' bash "$python_bin" "$CONGESTION_CONTROL" "$rounds" "$raw_blocks" "$redulink_blocks" \
+            2>&1 | tee workflow-artifacts-fairness/quic_competing_fairness_v3_17.log
+          status="${PIPESTATUS[0]}"
+          sudo chown -R "$(id -u):$(id -g)" workflow-artifacts-fairness
+          exit "$status"
+      - name: Verify fairness evidence and shared qdisc counters
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path(
+              "workflow-artifacts-fairness/quic_competing_fairness_v3_17.json"
+          ).read_text(encoding="utf-8"))
+          expected_rounds = 20 if "${{ inputs.profile }}" == "full" else 2
+          assert result["experiment"] == "quic_competing_fairness_v3_17"
+          assert len(result["summary"]) == 3
+          assert all(item["rounds"] == expected_rounds for item in result["summary"])
+          assert all(item["all_reconstructed"] for item in result["summary"])
+          assert all(0 < item["encoded_goodput_jain_fairness_mean"] <= 1 for item in result["summary"])
+          assert all(item["qdisc_packets_total"] > 0 and item["qdisc_bytes_total"] > 0 for item in result["summary"])
+          assert all(pair["all_reconstructed"] for pair in result["pairs"])
+          mixed = next(item for item in result["summary"] if item["case"] == "raw-redulink")
+          assert mixed["encoded_work_max_to_min_ratio_mean"] < 1.05
+          PY
+      - name: Record runner environment
+        if: always()
+        run: |
+          uname -a > workflow-artifacts-fairness/uname.txt
+          python --version > workflow-artifacts-fairness/python_version.txt
+          tc -V > workflow-artifacts-fairness/tc_version.txt
+          git rev-parse HEAD > workflow-artifacts-fairness/source_commit.txt
+      - name: Upload raw fairness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redulink-v3-17-fairness-${{ inputs.profile }}-${{ inputs.congestion_control }}-${{ github.sha }}
+          path: workflow-artifacts-fairness/
+          if-no-files-found: error
+          retention-days: 90

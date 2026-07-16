@@ -79,14 +79,23 @@ def architecture(output: Path) -> None:
                                      linewidth=1.8, color=color))
     ax.add_patch(FancyArrowPatch((9.1, 2.65), (9.25, 1.4), arrowstyle="-|>",
                                  mutation_scale=14, linewidth=1.5, color=GRAY))
-    ax.add_patch(FancyArrowPatch((8.4, 2.9), (2.1, 1.1), arrowstyle="-|>",
-                                 connectionstyle="arc3,rad=-0.18", mutation_scale=14,
-                                 linewidth=1.7, color=VERMILLION))
-    ax.add_patch(FancyArrowPatch((2.1, 1.1), (8.4, 2.75), arrowstyle="-|>",
-                                 connectionstyle="arc3,rad=-0.12", mutation_scale=14,
-                                 linewidth=1.7, color=PURPLE))
-    ax.text(5.15, 1.35, "batched MISSING", color=VERMILLION, fontsize=10.5, ha="center")
-    ax.text(5.25, 0.55, "authenticated FULL repairs", color=PURPLE, fontsize=10.5, ha="center")
+    # Keep the reverse control and repair paths in separate orthogonal lanes.
+    # The earlier crossing Bezier curves obscured both labels near the receiver.
+    ax.plot([8.72, 8.72, 2.55], [2.65, 1.78, 1.78], color=VERMILLION,
+            linewidth=1.8, solid_capstyle="round")
+    ax.add_patch(FancyArrowPatch((2.55, 1.78), (2.08, 1.32), arrowstyle="-|>",
+                                 mutation_scale=14, linewidth=1.8,
+                                 color=VERMILLION))
+    ax.plot([2.16, 7.92, 7.92], [0.78, 0.78, 2.24], color=PURPLE,
+            linewidth=1.8, solid_capstyle="round")
+    ax.add_patch(FancyArrowPatch((7.92, 2.24), (8.43, 2.79), arrowstyle="-|>",
+                                 mutation_scale=14, linewidth=1.8,
+                                 color=PURPLE))
+    label_box = {"facecolor": "white", "edgecolor": "none", "alpha": 0.96, "pad": 1.8}
+    ax.text(5.15, 1.94, "batched MISSING", color=VERMILLION, fontsize=10.5,
+            ha="center", va="center", bbox=label_box)
+    ax.text(5.15, 0.94, "authenticated FULL repairs", color=PURPLE, fontsize=10.5,
+            ha="center", va="center", bbox=label_box)
     ax.text(7.9, 4.45, "Network attacker boundary\nQUIC/TLS", color=GREEN,
             fontsize=10.5, ha="center", va="center", weight="bold")
     ax.text(3.25, 4.45, "Defensive binding inside the endpoint\nnot a second network-security layer", color=ORANGE,

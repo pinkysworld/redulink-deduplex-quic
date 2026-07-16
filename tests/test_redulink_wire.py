@@ -84,6 +84,11 @@ class BinaryWireEncodingTests(unittest.TestCase):
         decoded = wire.decode_payload(body)
         self.assertEqual(decoded.obj, msg)
 
+    def test_first_byte_measurement_roundtrip(self):
+        msg = {"t": "FIRST_BYTE", "offset": 0}
+        body = wire.encode_message(msg)[4:]
+        self.assertEqual(wire.decode_payload(body).obj, msg)
+
     def test_missing_encoder_enforces_single_message_item_bound(self):
         items = [
             {"seq": 0, "cid": "ab" * 16, "length": 1024},
