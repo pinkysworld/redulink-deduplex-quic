@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import statistics
@@ -21,6 +22,30 @@ GREEN = "#009E73"
 VERMILLION = "#D55E00"
 PURPLE = "#CC79A7"
 GRAY = "#666666"
+
+FIGURE_INPUTS = (
+    "results/cpu_throughput_scaling_v3_17.csv",
+    "results/cpu_throughput_scaling_v3_17_summary.csv",
+    "results/ibm_registry_trace_residency_v3_17.csv",
+    "results/linux_netem_quic_path_v3_17_summary.csv",
+    "results/public_registry_layer_chunk_sensitivity_v3_17.json",
+    "results/quic_competing_fairness_v3_17.json",
+    "results/quic_multistream_experiment_v3_17.json",
+)
+
+
+def figure_provenance() -> str:
+    """Digest the figure builder and every load-bearing plotted input."""
+
+    digest = hashlib.sha256(b"ReduLink-v3.17-figure-provenance-v1\0")
+    sources = ((Path(__file__).resolve(), "scripts/make_submission_figures_v3_17.py"),)
+    sources += tuple((ROOT / relative, relative) for relative in FIGURE_INPUTS)
+    for path, label in sources:
+        digest.update(label.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -47,6 +72,15 @@ def save(fig: plt.Figure, output: Path) -> None:
                 options = {"bbox_inches": "tight", "facecolor": "white"}
                 if destination.suffix == ".png":
                     options["dpi"] = 320
+                    options["metadata"] = {
+                        "Software": "ReduLink v3.17 reproducible figure builder",
+                        "ReduLinkProvenance": figure_provenance(),
+                    }
+                else:
+                    options["metadata"] = {
+                        "Creator": "ReduLink v3.17 reproducible figure builder",
+                        "Subject": f"Figure provenance {figure_provenance()}",
+                    }
                 fig.savefig(temporary, **options)
                 temporary.replace(destination)
             finally:

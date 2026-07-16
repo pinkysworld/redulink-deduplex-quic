@@ -16,8 +16,10 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from collections import Counter
 from pathlib import Path
 
+from PIL import Image, ImageChops, ImageStat
 from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +34,8 @@ SUBMISSION_FIGURE_NAMES = (
     "quic_streams_and_fairness.png",
     "cpu_scaling.png",
 )
+FIGURE_PROVENANCE_KEY = "ReduLinkProvenance"
+FIGURE_VISUAL_RMS_TOLERANCE = 0.08
 
 # This is a CI reproduction gate, not uncertainty on the frozen result. With
 # identical rsync 3.2.7 capabilities and delta-plan counters, Ubuntu 24.04
@@ -231,6 +235,41 @@ def validate_pdf_claims() -> None:
         raise ValueError(f"submission PDF is missing load-bearing text: {missing}")
 
 
+def _flatten_to_rgb(path: Path) -> tuple[Image.Image, dict[str, object]]:
+    with Image.open(path) as source:
+        info = dict(source.info)
+        rgba = source.convert("RGBA")
+    background = Image.new("RGBA", rgba.size, "white")
+    return Image.alpha_composite(background, rgba).convert("RGB"), info
+
+
+def compare_figure_visual(committed: Path, candidate: Path) -> None:
+    """Compare rendered content while tolerating platform PNG encoding details."""
+
+    expected, expected_info = _flatten_to_rgb(committed)
+    actual, actual_info = _flatten_to_rgb(candidate)
+    expected_provenance = expected_info.get(FIGURE_PROVENANCE_KEY)
+    actual_provenance = actual_info.get(FIGURE_PROVENANCE_KEY)
+    if not expected_provenance or expected_provenance != actual_provenance:
+        raise ValueError(f"figure provenance is stale: {committed.name}")
+
+    expected_aspect = expected.width / expected.height
+    actual_aspect = actual.width / actual.height
+    if abs(expected_aspect - actual_aspect) / expected_aspect > 0.02:
+        raise ValueError(f"figure geometry changed: {committed.name}")
+
+    comparison_size = (512, 512)
+    expected = expected.resize(comparison_size, Image.Resampling.LANCZOS)
+    actual = actual.resize(comparison_size, Image.Resampling.LANCZOS)
+    difference = ImageChops.difference(expected, actual)
+    normalized_rms = sum(ImageStat.Stat(difference).rms) / (3 * 255)
+    if normalized_rms > FIGURE_VISUAL_RMS_TOLERANCE:
+        raise ValueError(
+            f"figure rendering changed materially: {committed.name} "
+            f"(normalized RMS {normalized_rms:.4f})"
+        )
+
+
 def compare_figures_and_docx() -> None:
     with tempfile.TemporaryDirectory(prefix="redulink-submission-check-") as tmp_name:
         tmp = Path(tmp_name)
@@ -243,17 +282,29 @@ def compare_figures_and_docx() -> None:
         for name in SUBMISSION_FIGURE_NAMES:
             committed = FIGURES / name
             candidate = generated_figures / name
-            if not committed.is_file() or candidate.read_bytes() != committed.read_bytes():
-                raise ValueError(f"figure is stale relative to evidence: {name}")
+            if not committed.is_file() or not candidate.is_file():
+                raise ValueError(f"figure is missing: {name}")
+            compare_figure_visual(committed, candidate)
         subprocess.run([
             sys.executable, "scripts/build_manuscript_v3_17.py",
             "--output", str(generated_docx),
             "--figures-dir", str(generated_figures),
         ], cwd=ROOT, check=True)
         with zipfile.ZipFile(MANUSCRIPT) as committed, zipfile.ZipFile(generated_docx) as regenerated:
+            expected_media = Counter((FIGURES / name).read_bytes() for name in SUBMISSION_FIGURE_NAMES)
+            committed_media = Counter(
+                committed.read(name)
+                for name in committed.namelist()
+                if name.startswith("word/media/") and name.lower().endswith(".png")
+            )
+            if expected_media != committed_media:
+                raise ValueError("submitted DOCX does not embed the committed figures")
             names = {
                 name for name in committed.namelist()
-                if name.startswith("word/") or name in {"[Content_Types].xml", "_rels/.rels"}
+                if (
+                    name.startswith("word/")
+                    and not name.startswith("word/media/")
+                ) or name in {"[Content_Types].xml", "_rels/.rels"}
             }
             if not names.issubset(regenerated.namelist()):
                 raise ValueError("regenerated DOCX package is incomplete")
