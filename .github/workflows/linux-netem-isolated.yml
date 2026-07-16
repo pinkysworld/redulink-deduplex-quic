@@ -1,4 +1,4 @@
-name: ReduLink v3.17 Linux netem evidence
+name: isolated Linux netem evidence
 
 on:
   workflow_dispatch:
