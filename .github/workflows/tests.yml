@@ -40,6 +40,7 @@ jobs:
           python benchmarks/run_aioquic_scaling_experiment.py --output-csv /tmp/aioquic_scaling_experiment.csv --output-json /tmp/aioquic_scaling_experiment.json
           python benchmarks/run_aioquic_workload_cases.py --output-csv /tmp/aioquic_workload_cases.csv --output-json /tmp/aioquic_workload_cases.json
           python benchmarks/run_quic_miss_rate_sensitivity.py --output-csv /tmp/quic_miss_rate_sensitivity.csv --output-json /tmp/quic_miss_rate_sensitivity.json
+          python benchmarks/derive_deployment_envelope.py --miss-csv /tmp/quic_miss_rate_sensitivity.csv --scaling-csv /tmp/aioquic_scaling_experiment.csv --output-csv /tmp/deployment_envelope.csv --output-json /tmp/deployment_envelope.json
       - name: Compare regenerated evidence with committed results
         run: python scripts/check_submission_evidence.py --generated-dir /tmp
       - name: Smoke commands do not rewrite committed evidence

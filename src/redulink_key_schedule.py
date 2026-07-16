@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Exporter-style ReduLink key schedule for artifact experiments.
-
-Production ReduLink should obtain per-connection keying material from the TLS
-1.3 exporter and then separate record keys by protocol context. The public
-artifact cannot depend on private QUIC-stack exporter hooks, so it exercises the
-same context-separation step over an explicit exporter surrogate.
-"""
+"""Context separation for ReduLink keys obtained from a TLS 1.3 exporter."""
 
 from __future__ import annotations
 
@@ -83,14 +77,13 @@ def derive_connection_context(*, alpn: str, application_session_id: bytes) -> by
 
 def tls_exporter_context(*, alpn: str, scope: str,
                          connection_context: bytes) -> bytes:
-    """Return the exact 32-byte context for the production TLS exporter call.
+    """Return the exact 32-byte context for the live TLS exporter call.
 
     The production invocation is TLS-Exporter with label
     ``EXPERIMENTAL-ReduLink-v1``, this function's return value as ``context``,
     and output length 32 bytes. The ``EXPERIMENTAL`` prefix permits private use
     without IANA registration under RFC 5705. A nonexperimental deployment
-    must register its label. The public aioquic artifact uses a fresh surrogate
-    for that 32-byte output because aioquic 1.3.0 has no public exporter API.
+    must register its label.
     """
 
     if not alpn:
@@ -141,10 +134,8 @@ def context_info(ctx: ReduLinkKeyContext, *, label: bytes = DEFAULT_LABEL) -> by
 def derive_redulink_secret(master_secret: bytes, ctx: ReduLinkKeyContext, *, length: int = 32) -> bytes:
     """Derive a ReduLink frame-authentication secret from transport context.
 
-    ``master_secret`` represents bytes returned by a TLS exporter. The native
-    artifact supplies a fresh surrogate because aioquic's public API does not
-    expose exporter bytes. This function is only the subsequent HKDF/context
-    separation step; it is not evidence of live exporter integration.
+    ``master_secret`` is the output of the live TLS exporter. This function is
+    the subsequent ReduLink-specific HKDF/context-separation step.
     """
     if not master_secret:
         raise ValueError("master_secret must not be empty")

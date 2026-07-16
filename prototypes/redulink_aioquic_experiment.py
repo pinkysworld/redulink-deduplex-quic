@@ -56,6 +56,11 @@ import redulink_model as redulink  # noqa: E402
 import redulink_secure as secure  # noqa: E402
 import redulink_wire as wire  # noqa: E402
 import redulink_key_schedule as key_schedule  # noqa: E402
+import redulink_tls_exporter as tls_exporter  # noqa: E402
+
+if tls_exporter.EXPORTER_LABEL != key_schedule.DEFAULT_LABEL:
+    raise RuntimeError("TLS exporter and ReduLink key-schedule labels differ")
+tls_exporter.install_aioquic_exporter_bridge()
 
 ALPN = ["redulink/1"]
 LEN_BYTES = 4
@@ -257,7 +262,8 @@ class QuicReduLinkServer:
                  secret: bytes, epoch: int, scope: str,
                  stream_id: int, chunker: str, chunk_size: int, missing_every: int,
                  max_dict_chunks: int | None = None,
-                 max_reconstructed_bytes: int = secure.DEFAULT_MAX_RECONSTRUCTED_BYTES):
+                 max_reconstructed_bytes: int = secure.DEFAULT_MAX_RECONSTRUCTED_BYTES,
+                 tls_exporter_output_sha256: str | None = None):
         self.max_dict_chunks = max_dict_chunks or redulink.MAX_DICT_CHUNKS
         full = build_secure_dictionary(warm, secret=secret, epoch=epoch, scope=scope, chunker=chunker, chunk_size=chunk_size, max_dict_chunks=self.max_dict_chunks)
         self.dictionary = thin_dictionary(full, missing_every=missing_every)
@@ -282,6 +288,7 @@ class QuicReduLinkServer:
         self.pending_repairs: dict[int, tuple[str, int, int]] = {}
         self.round_ended = False
         self.stats: dict[str, Any] = {}
+        self.tls_exporter_output_sha256 = tls_exporter_output_sha256
 
     def accept_hello(self, msg: dict[str, Any]) -> None:
         if int(msg.get("version", -1)) != PROTOCOL_VERSION:
@@ -459,6 +466,8 @@ class QuicReduLinkServer:
                         "replay_rejections": replay_rejections,
                         "elapsed_ms": round((time.perf_counter() - start) * 1000.0, 3),
                     }
+                    if self.tls_exporter_output_sha256 is not None:
+                        stats["tls_exporter_output_sha256"] = self.tls_exporter_output_sha256
                     self.stats = stats
                     server_to_client_bytes += await send_msg(writer, {"t": "STATS", "stats": stats})
                     try:
@@ -570,19 +579,15 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                     receiver_max_dict_chunks: int | None = None,
                     server_port: int = 0, exporter_secret: bytes | None = None,
                     connection_context: bytes | None = None,
-                    application_session_id: bytes | None = None) -> dict[str, Any]:
+                    application_session_id: bytes | None = None,
+                    expose_exporter_debug_hash: bool = False) -> dict[str, Any]:
     end_to_end_started = time.perf_counter()
     global WIRE_FORMAT
     WIRE_FORMAT = wire_format
-    # aioquic does not expose TLS exporter bytes through its public API. Use a
-    # fresh, private per-run surrogate so the artifact never reuses a hardcoded
-    # authentication key; production integration must supply real exporter bytes.
-    if exporter_secret is None:
-        exporter_secret = secrets.token_bytes(32)
+    if exporter_secret is not None and not exporter_secret:
+        raise ValueError("exporter secret override must not be empty")
     if connection_context is not None and application_session_id is not None:
         raise ValueError("provide connection_context or application_session_id, not both")
-    if not exporter_secret:
-        raise ValueError("exporter secret must not be empty")
     if max_dict_chunks is not None:
         if sender_max_dict_chunks is not None or receiver_max_dict_chunks is not None:
             raise ValueError("max_dict_chunks cannot be combined with endpoint-specific budgets")
@@ -623,11 +628,15 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         connection_context=client_connection_context,
     )
 
-    def stream_secret(stream_id: int, endpoint_connection_context: bytes) -> bytes:
+    def stream_secret(
+        stream_id: int,
+        endpoint_connection_context: bytes,
+        endpoint_exporter_output: bytes,
+    ) -> bytes:
         if stream_id < 0 or stream_id > wire.MAX_QUIC_STREAM_ID:
             raise ValueError("application stream id is outside the QUIC range")
         return key_schedule.derive_redulink_secret(
-            exporter_secret,
+            endpoint_exporter_output,
             key_schedule.ReduLinkKeyContext(
                 alpn=ALPN[0],
                 epoch=epoch,
@@ -648,11 +657,24 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
 
         def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
             actual_stream_id = int(writer.get_extra_info("stream_id"))
+            server_exporter_output = (
+                bytes(exporter_secret)
+                if exporter_secret is not None
+                else tls_exporter.export_keying_material(
+                    tls_exporter.tls_context_from_stream_writer(writer),
+                    context_value=exporter_context,
+                    length=key_schedule.HASH_LEN,
+                )
+            )
             server_state = QuicReduLinkServer(
                 warm=warm,
                 expected_sha256=hashlib.sha256(data).hexdigest(),
                 expected_length=len(data),
-                secret=stream_secret(actual_stream_id, server_connection_context),
+                secret=stream_secret(
+                    actual_stream_id,
+                    server_connection_context,
+                    server_exporter_output,
+                ),
                 epoch=epoch,
                 scope=scope,
                 stream_id=actual_stream_id,
@@ -660,6 +682,9 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                 chunk_size=chunk_size,
                 missing_every=missing_every,
                 max_dict_chunks=receiver_max_dict_chunks,
+                tls_exporter_output_sha256=hashlib.sha256(
+                    server_exporter_output,
+                ).hexdigest(),
             )
             asyncio.create_task(server_state.handle_stream(reader, writer))
 
@@ -686,7 +711,23 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
             async with connect("127.0.0.1", port, configuration=client_conf, wait_connected=True) as protocol:
                 reader, writer = await protocol.create_stream()
                 stream_id = int(writer.get_extra_info("stream_id"))
-                secret = stream_secret(stream_id, client_connection_context)
+                client_exporter_output = (
+                    bytes(exporter_secret)
+                    if exporter_secret is not None
+                    else tls_exporter.export_keying_material(
+                        tls_exporter.tls_context_from_protocol(protocol),
+                        context_value=exporter_context,
+                        length=key_schedule.HASH_LEN,
+                    )
+                )
+                client_exporter_output_sha256 = hashlib.sha256(
+                    client_exporter_output,
+                ).hexdigest()
+                secret = stream_secret(
+                    stream_id,
+                    client_connection_context,
+                    client_exporter_output,
+                )
                 preparation_started = time.perf_counter()
                 frames, initial = secure.encode(
                     data,
@@ -742,6 +783,15 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
                     raise RuntimeError(f"server rejected FINISH: {reply.get('error', 'error')}")
                 assert reply.get("t") == "STATS", reply
                 stats = dict(reply["stats"])
+                server_exporter_output_sha256 = str(
+                    stats.pop("tls_exporter_output_sha256", ""),
+                )
+                tls_exporter_outputs_match = hmac.compare_digest(
+                    client_exporter_output_sha256,
+                    server_exporter_output_sha256,
+                )
+                if not tls_exporter_outputs_match:
+                    raise RuntimeError("client and server TLS exporter outputs differ")
                 if not bool(stats.get("reconstruction_ok")):
                     raise RuntimeError("server did not confirm exact reconstruction")
                 if int(stats.get("application_stream_id", -1)) != stream_id:
@@ -806,6 +856,9 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
         "tls_exporter_label": key_schedule.DEFAULT_LABEL.decode("ascii"),
         "tls_exporter_context_sha256": hashlib.sha256(exporter_context).hexdigest(),
         "tls_exporter_output_bytes": key_schedule.HASH_LEN,
+        "tls_exporter_live": exporter_secret is None,
+        "tls_exporter_outputs_match": tls_exporter_outputs_match,
+        "tls_exporter_bridge": tls_exporter.bridge_description(),
         "tls_exporter_invocation": (
             "TLS-Exporter(label=EXPERIMENTAL-ReduLink-v1, "
             "context=SHA-256(versioned length-prefixed ALPN, scope, and connection context), "
@@ -816,15 +869,19 @@ async def run_async(*, warm: bytes, data: bytes, chunk_size: int, missing_every:
             "docs/protocol_test_vectors.json fixes bytes and outputs"
         ),
         "redulink_key_derivation": (
-            "fresh per-run exporter surrogate plus endpoint-independent connection context; "
-            "production profile invokes TLS-Exporter with the recorded label, canonical "
-            "32-byte context, and 32-byte output"
+            "live TLS 1.3 exporter output plus canonical endpoint-independent "
+            "connection, stream, direction, scope, and epoch context"
+            if exporter_secret is None else
+            "explicit test-only exporter override plus canonical endpoint-independent "
+            "connection, stream, direction, scope, and epoch context"
         ),
         "sender_dictionary_budget_chunks": sender_max_dict_chunks,
         "receiver_dictionary_budget_chunks": receiver_max_dict_chunks,
         "receiver_dictionary_thinning_every": missing_every,
         "chunk_size_bytes": chunk_size,
     })
+    if expose_exporter_debug_hash:
+        stats["tls_exporter_output_sha256"] = client_exporter_output_sha256
     if proxy_protocol is not None:
         stats.update(proxy_protocol.stats())
         c2s = stats["proxy_client_to_server_udp_payload_bytes_seen"]
@@ -845,7 +902,8 @@ def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_forma
                    account_datagrams: bool = False, max_dict_chunks: int | None = None,
                    sender_max_dict_chunks: int | None = None,
                    receiver_max_dict_chunks: int | None = None,
-                   server_port: int = 0) -> dict[str, Any]:
+                   server_port: int = 0,
+                   expose_exporter_debug_hash: bool = False) -> dict[str, Any]:
     warm, data = demo_payload(payload_blocks)
     return asyncio.run(run_async(
         warm=warm,
@@ -859,6 +917,7 @@ def run_experiment(*, chunk_size: int = 1024, missing_every: int = 7, wire_forma
         sender_max_dict_chunks=sender_max_dict_chunks,
         receiver_max_dict_chunks=receiver_max_dict_chunks,
         server_port=server_port,
+        expose_exporter_debug_hash=expose_exporter_debug_hash,
     ))
 
 

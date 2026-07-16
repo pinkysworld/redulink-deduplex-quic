@@ -13,6 +13,7 @@
 | Native workload controls | `results/aioquic_workload_cases.csv` and `.json` | `benchmarks/run_aioquic_workload_cases.py` |
 | Dictionary-capacity sweep | `results/aioquic_scaling_experiment.csv` and `.json` | `benchmarks/run_aioquic_scaling_experiment.py` |
 | Semantic-miss sweep | `results/quic_miss_rate_sensitivity.csv` and `.json` | `benchmarks/run_quic_miss_rate_sensitivity.py` |
+| Derived deployment envelope | `results/deployment_envelope.csv` and `.json` | `benchmarks/derive_deployment_envelope.py` |
 
 Every stateful method used by the manuscript reconstructs exact bytes or an
 exact ordered object/tree manifest. Diagnostic STATS responses are excluded

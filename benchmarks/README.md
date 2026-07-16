@@ -1,6 +1,6 @@
 # Reproducible benchmark guide
 
-The v3.15 manuscript uses exact reconstruction and byte accounting. Timing,
+The v3.16 manuscript uses exact reconstruction and byte accounting. Timing,
 throughput, userspace shaping, kernel shaping, and competing-flow files are not
 manuscript evidence.
 
@@ -87,6 +87,7 @@ python benchmarks/run_aioquic_workload_cases.py
 python benchmarks/run_object_chunk_size_sensitivity.py
 python benchmarks/run_aioquic_scaling_experiment.py
 python benchmarks/run_quic_miss_rate_sensitivity.py
+python benchmarks/derive_deployment_envelope.py
 ```
 
 The workload cases include a deterministic warm update, an independent
@@ -98,11 +99,16 @@ scaling sweep gives sender and receiver matched budgets and includes paired
 reference count fixed while thinning receiver state through the 100 percent-miss
 endpoint. Every row requires exact reconstruction.
 
+The final command derives, and then mechanically verifies against every miss
+row, the measured stream-byte equation and integer break-even. It also reports
+the paired 16 MiB capacity result as a separate residency gate. This is not a
+latency model or a workload-population estimate.
+
 ## Figures and validation
 
 ```bash
-python scripts/make_journal_figures_v3_15.py
-python scripts/build_manuscript_v3_15.py
+python scripts/make_journal_figures_v3_16.py
+python scripts/build_manuscript_v3_16.py
 python scripts/run_full_validation.py
 ```
 

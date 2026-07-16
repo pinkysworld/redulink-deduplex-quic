@@ -24,6 +24,8 @@ class NativeFlowEvidenceTests(unittest.TestCase):
             self.assertGreaterEqual(int(row["application_stream_id"]), 0)
         self.assertEqual(int(raw["stream_payload_bytes"]), int(raw["input_bytes"]))
         self.assertGreater(float(redulink["effective_multiplier"]), 1.0)
+        self.assertEqual(redulink["tls_exporter_live"], "True")
+        self.assertEqual(redulink["tls_exporter_outputs_match"], "True")
         evidence = json.loads(json_path.read_text(encoding="utf-8"))
         self.assertEqual(evidence["experiment"], "zero_loss_aioquic_protocol_stream_accounting")
         self.assertEqual(evidence["results"], rows)

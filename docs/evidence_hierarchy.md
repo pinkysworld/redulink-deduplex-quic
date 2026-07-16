@@ -1,4 +1,4 @@
-# Evidence hierarchy for v3.15
+# Evidence hierarchy for v3.16
 
 | Evidence | Controlled property | Supported inference | Excluded inference |
 |---|---|---|---|
@@ -10,8 +10,9 @@
 | Canonical raw-tree binary profile | Every encoded message is decoded before reconstruction and final digest comparison | Complete no-miss application-stream serialization bytes | Native QUIC packet behavior |
 | Native aioquic stream mapping | Actual encrypted stream, binary messages, exact digest | Protocol-stream bytes and receive-state behavior | WAN latency, congestion fairness, or throughput |
 | Chunk-size sweep | Three public object pairs and a byte-equivalent 64 MiB dictionary | Sensitivity to fixed chunk size on the named pairs | Universal optimal chunk size |
-| Capacity and miss sweeps | Deterministic workload and one changed state parameter | Break-even sensitivity to matched capacity and repair | Population statistics |
+| Capacity and miss sweeps | Deterministic workload and one changed state parameter | Sensitivity to matched capacity and repair | Population statistics |
+| Derived deployment envelope | Exact native stream-byte rows plus capacity rows | For the measured profile, the algebraic miss threshold and the separate warm-state residency gate | Latency, fairness, packet cost, or workload prevalence |
 | Independent compressed control | No warm semantic reuse | Expansion under record overhead | All compressed formats or workloads |
 
 Historical timing, userspace path-emulation, and kernel-path outputs are not
-part of the v3.15 submission artifact and do not support its conclusions.
+part of the v3.16 submission artifact and do not support its conclusions.

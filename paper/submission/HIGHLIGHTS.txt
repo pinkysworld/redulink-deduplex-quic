@@ -1,7 +1,7 @@
 Highlights
 
-- ReduLink maps authenticated warm-state references onto QUIC application streams.
-- Fixed binary transcripts and public vectors make commitments interoperable.
+- ReduLink identifies separate miss-cost and warm-state-residency deployment gates.
+- Both endpoints derive matching record secrets from the live TLS 1.3 exporter.
+- Fixed binary transcripts and public vectors make commitments reproducible.
 - Every stateful baseline verifies exact reconstruction before reporting savings.
 - Public object pairs save bytes, while raw source trees strongly favor rsync.
-- Dictionary capacity and semantic misses determine the protocol break-even point.

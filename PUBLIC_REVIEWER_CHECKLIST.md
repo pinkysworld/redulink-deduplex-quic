@@ -1,8 +1,8 @@
 # Artifact evaluation checklist
 
 - Repository: `https://github.com/pinkysworld/redulink-deduplex-quic`
-- Manuscript PDF: `paper/submission/ReduLink_journal_ready_v3_15.pdf`
-- Manuscript DOCX: `paper/submission/ReduLink_journal_ready_v3_15.docx`
+- Manuscript PDF: `paper/submission/ReduLink_journal_ready_v3_16.pdf`
+- Manuscript DOCX: `paper/submission/ReduLink_journal_ready_v3_16.docx`
 - Journal highlights: `paper/submission/HIGHLIGHTS.txt`
 - Evidence source revision: `SOURCE_COMMIT.txt`
 - Manuscript hashes: `MANUSCRIPT_SHA256.txt`
@@ -24,6 +24,10 @@ Expected properties:
   bytes, and excluded diagnostic STATS bytes.
 - Binary CID, frame, connection-context, exporter-context, and key-schedule
   vectors have an independently encoded test oracle.
+- Native client and server use matching live TLS 1.3 exporter outputs; the
+  private bridge fails closed outside pinned aioquic 1.3.0.
+- `results/deployment_envelope.*` verifies every miss row against
+  `B(m)=15914+1149m` and treats warm-state residency as a separate gate.
 - Raw-tree profile rows reconstruct from decoded binary messages.
 - zstd headline rows pin window_log 21 and include window_log 24 sensitivity.
 - The native code reads the actual aioquic application stream identifier.
@@ -41,7 +45,8 @@ Expected properties:
 
 - QUIC/TLS, not the record HMAC, is the on-path security boundary.
 - Stream-payload multipliers are not packet, IP, UDP, or link-layer metrics.
-- Single-host QUIC runs support byte and state-machine claims only.
+- Single-host QUIC runs support byte, exporter-binding, and state-machine claims
+  only.
 - Public releases and wheels are reproducible workloads, not production-trace
   samples.
 - The author-constructed Redis layer fixture is not represented as a captured

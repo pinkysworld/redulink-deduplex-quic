@@ -6,7 +6,9 @@ server-authenticated local QUIC connection, reads the actual application stream
 identifier, derives per-stream record state from fresh private inputs, performs
 batched semantic repair, and requires exact final length and SHA-256.
 
-The prototype uses a fresh exporter surrogate because aioquic 1.3.0 does not
-expose TLS exporter bytes through its public API. It does not authenticate a
-client certificate, negotiate warm dictionaries, add custom QUIC frames, or
-support latency, congestion-fairness, or production-throughput claims.
+The prototype derives matching endpoint secrets from the live TLS 1.3 exporter.
+Because aioquic 1.3.0 does not expose a public exporter API, the bridge is
+strictly version gated to the audited post-Server-Finished 1-RTT stage. It does
+not authenticate a client certificate, negotiate warm dictionaries, add custom
+QUIC frames, or support latency, congestion-fairness, interoperability, or
+production-throughput claims.

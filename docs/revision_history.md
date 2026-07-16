@@ -1,5 +1,23 @@
 # Revision history
 
+## v3.16
+
+- Replaced the per-run exporter surrogate with matching live TLS 1.3 exporter
+  outputs from both endpoints. The bridge is restricted to pinned aioquic 1.3.0,
+  captures the post-Server-Finished 1-RTT key-schedule state, retains only the
+  label-specific secret, and fails on version drift or endpoint disagreement.
+- Added public TLS-exporter vectors and an independent RFC 9846 formula check.
+- Derived and mechanically verified the fixed-profile deployment equation
+  `B(m)=15914+1149m`; strict byte benefit holds through 71 of 90 misses and
+  first fails at 72.
+- Separated miss-cost break-even from the warm-working-set residency gate and
+  recorded initial REF/FULL counts in the matched-capacity sweep.
+- Rewrote the abstract, introduction, discussion, and conclusion around that
+  two-gate deployment condition; reduced the manuscript from twelve tables to
+  seven by moving detailed evidence rows to the artifact.
+- Added an explicit peer-review response and retained transport timing,
+  production traces, mechanized proof, and optimized performance as open work.
+
 ## v3.15
 
 - Reframed novelty around a bounded QUIC application-stream mapping rather than
@@ -44,4 +62,4 @@
 - Rebuilt the manuscript and figures from the corrected result schema.
 
 Earlier tagged versions remain available in Git history. Their timing and
-path-emulation outputs are not evidence for the v3.15 manuscript.
+path-emulation outputs are not evidence for the v3.16 manuscript.

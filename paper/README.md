@@ -2,14 +2,14 @@
 
 The active submission files are:
 
-- `paper/submission/ReduLink_journal_ready_v3_15.docx`
-- `paper/submission/ReduLink_journal_ready_v3_15.pdf`
+- `paper/submission/ReduLink_journal_ready_v3_16.docx`
+- `paper/submission/ReduLink_journal_ready_v3_16.pdf`
 
 Regenerate the figures and manuscript after regenerating the committed results:
 
 ```bash
-python scripts/make_journal_figures_v3_15.py
-python scripts/build_manuscript_v3_15.py
+python scripts/make_journal_figures_v3_16.py
+python scripts/build_manuscript_v3_16.py
 ```
 
 Validate references, file hashes, and layout before distribution:

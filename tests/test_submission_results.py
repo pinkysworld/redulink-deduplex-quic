@@ -24,6 +24,7 @@ class SubmissionResultTests(unittest.TestCase):
             "pypi_version_pair_object_study.csv", "pypi_version_pair_object_study.json",
             "quic_flow_comparison.csv", "quic_flow_comparison.json",
             "quic_miss_rate_sensitivity.csv", "quic_miss_rate_sensitivity.json",
+            "deployment_envelope.csv", "deployment_envelope.json",
             "rsync_baseline_external_public.csv",
         }
         self.assertEqual({path.name for path in RESULTS.iterdir() if path.is_file()}, expected)
@@ -42,12 +43,20 @@ class SubmissionResultTests(unittest.TestCase):
                 self.assertFalse(any(fragment in column for column in columns), (name, fragment, columns))
             self.assertTrue(all(row["reconstruction_ok"] == "True" for row in result_rows))
             self.assertTrue(all(
-                "exporter surrogate" in row["redulink_key_derivation"]
+                "live TLS 1.3 exporter" in row["redulink_key_derivation"]
                 or "not applicable to raw QUIC" in row["redulink_key_derivation"]
                 for row in result_rows
             ))
             self.assertTrue(any(
-                "exporter surrogate" in row["redulink_key_derivation"]
+                "live TLS 1.3 exporter" in row["redulink_key_derivation"]
+                for row in result_rows
+            ))
+            self.assertTrue(all(
+                row["tls_exporter_live"] in {"True", "not_applicable"}
+                for row in result_rows
+            ))
+            self.assertTrue(all(
+                row["tls_exporter_outputs_match"] in {"True", "not_applicable"}
                 for row in result_rows
             ))
             self.assertTrue(all(

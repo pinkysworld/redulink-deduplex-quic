@@ -26,6 +26,13 @@ class AioquicScalingEvidenceTests(unittest.TestCase):
         self.assertGreater(float(by_budget[24576]["stream_payload_multiplier"]), 1.0)
         self.assertEqual(int(by_budget[8192]["semantic_misses"]), 0)
         self.assertEqual(int(by_budget[24576]["semantic_misses"]), 0)
+        self.assertEqual(int(by_budget[8192]["initial_ref_frames"]), 0)
+        self.assertGreater(int(by_budget[8192]["initial_full_frames"]), 0)
+        self.assertGreater(int(by_budget[24576]["initial_ref_frames"]), 0)
+        self.assertGreater(
+            int(by_budget[24576]["initial_ref_frames"]),
+            int(by_budget[24576]["initial_full_frames"]),
+        )
 
 
 if __name__ == "__main__":

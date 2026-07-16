@@ -173,6 +173,13 @@ def row(method: str, loss: int, stats: dict) -> dict[str, str]:
         "application_stream_id": str(stats.get("application_stream_id", "")),
         "tls_server_certificate_verified": str(stats.get("tls_server_certificate_verified", False)),
         "tls_client_certificate_used": str(stats.get("tls_client_certificate_used", False)),
+        "tls_exporter_live": str(stats.get("tls_exporter_live", "not_applicable")),
+        "tls_exporter_outputs_match": str(stats.get(
+            "tls_exporter_outputs_match", "not_applicable",
+        )),
+        "tls_exporter_bridge": str(stats.get(
+            "tls_exporter_bridge", "not applicable to raw QUIC stream",
+        )),
         "redulink_key_derivation": str(stats.get(
             "redulink_key_derivation",
             "not applicable to raw QUIC stream; QUIC/TLS provides transport protection",

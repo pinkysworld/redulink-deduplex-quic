@@ -1,6 +1,6 @@
 # Reference audit
 
-The v3.15 manuscript contains 32 numbered references and cites every reference
+The v3.16 manuscript contains 32 numbered references and cites every reference
 before the reference list. Verify numbering with:
 
 ```bash

@@ -9,8 +9,14 @@ class AioquicNativeExperimentTests(unittest.TestCase):
     def test_native_runs_use_fresh_connection_key_context(self):
         from prototypes.redulink_aioquic_experiment import run_experiment
 
-        first = run_experiment(payload_blocks=16, missing_every=7)
-        second = run_experiment(payload_blocks=16, missing_every=7)
+        first = run_experiment(
+            payload_blocks=16, missing_every=7,
+            expose_exporter_debug_hash=True,
+        )
+        second = run_experiment(
+            payload_blocks=16, missing_every=7,
+            expose_exporter_debug_hash=True,
+        )
         self.assertNotEqual(
             first["connection_context_sha256"], second["connection_context_sha256"],
         )
@@ -18,7 +24,14 @@ class AioquicNativeExperimentTests(unittest.TestCase):
         self.assertEqual(first["tls_exporter_label"], "EXPERIMENTAL-ReduLink-v1")
         self.assertEqual(first["tls_exporter_output_bytes"], 32)
         self.assertEqual(len(first["tls_exporter_context_sha256"]), 64)
-        self.assertIn("fresh per-run", first["redulink_key_derivation"])
+        self.assertTrue(first["tls_exporter_live"])
+        self.assertTrue(first["tls_exporter_outputs_match"])
+        self.assertIn("post-Server-Finished", first["tls_exporter_bridge"])
+        self.assertIn("live TLS 1.3 exporter", first["redulink_key_derivation"])
+        self.assertNotEqual(
+            first["tls_exporter_output_sha256"],
+            second["tls_exporter_output_sha256"],
+        )
 
     @unittest.skipIf(importlib.util.find_spec("aioquic") is None, "aioquic not installed")
     def test_native_quic_stream_mapping_reconstructs_and_repairs(self):
@@ -34,6 +47,8 @@ class AioquicNativeExperimentTests(unittest.TestCase):
         self.assertEqual(stats["auth_failures"], 0)
         self.assertTrue(stats["tls_server_certificate_verified"])
         self.assertFalse(stats["tls_client_certificate_used"])
+        self.assertTrue(stats["tls_exporter_live"])
+        self.assertTrue(stats["tls_exporter_outputs_match"])
         self.assertEqual(len(stats["connection_context_sha256"]), 64)
         self.assertGreater(stats["quic_stream_payload_multiplier_after_repair"], 3.0)
         self.assertEqual(stats["server_reconstructed_bytes"], stats["input_bytes"])

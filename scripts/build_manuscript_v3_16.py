@@ -13,14 +13,14 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parents[1]
-PARSER = argparse.ArgumentParser(description="Build the ReduLink v3.15 DOCX manuscript.")
+PARSER = argparse.ArgumentParser(description="Build the ReduLink v3.16 DOCX manuscript.")
 PARSER.add_argument(
     "--output", type=Path,
-    default=ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_15.docx",
+    default=ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_16.docx",
 )
 PARSER.add_argument(
     "--figures-dir", type=Path,
-    default=ROOT / "figures" / "journal_v3_15",
+    default=ROOT / "figures" / "journal_v3_16",
 )
 ARGS = PARSER.parse_args()
 OUT = ARGS.output
@@ -183,6 +183,7 @@ scaling = read_csv("aioquic_scaling_experiment.csv")
 miss = read_csv("quic_miss_rate_sensitivity.csv")
 workload_cases = read_csv("aioquic_workload_cases.csv")
 chunk_sensitivity = read_csv("object_chunk_size_sensitivity.csv")
+envelope = read_json("deployment_envelope.json")
 source_commit = (ROOT / "SOURCE_COMMIT.txt").read_text(encoding="utf-8").strip()
 
 scale_by = {
@@ -234,21 +235,13 @@ author.add_run(
 
 heading(doc, "Abstract")
 paragraph(doc,
-    "Endpoint redundancy elimination predates QUIC, but encrypted transports make its placement and state discipline newly important. "
-    "ReduLink is an application-stream representation for cooperating QUIC endpoints that replaces a repeated chunk with a reference to "
-    "preprovisioned receiver state. Its contribution is not a new matching algorithm. It is a concrete QUIC mapping with canonical, "
-    "context-bound record commitments, bounded true-LRU state, declared reconstruction limits, and batched miss repair. QUIC/TLS remains "
-    "the network-security boundary; the record HMAC is a defensive commitment against stale-state and cross-context confusion inside an endpoint. "
-    "We implement the mapping with aioquic and evaluate only byte accounting and exact reconstruction, excluding diagnostic messages and avoiding "
-    "latency or fairness claims. On three hash-pinned public release pairs transferred as named objects, a binary HMAC-frame profile under a deterministic "
-    "public artifact key reconstructs "
-    "exactly at 1.81x, 7.48x, and 3.92x. A whole-object content-addressed baseline reaches 1.65x, 5.52x, and 3.16x, while a prior-stream zstd dictionary "
-    "wins on two pairs and loses on one. Real rsync dominates the corresponding raw source-tree updates. In native QUIC tests, a 98,304-byte warm update "
-    f"uses {fmt_n(accounting['redulink_protocol_stream_bytes'])} protocol-stream bytes after repair, or {fmt_x(accounting['redulink_protocol_multiplier'])}, whereas an independent "
-    f"compressed control expands to {fmt_x(case_by['independent-compressed-negative']['stream_payload_multiplier'])}. With matched sender and receiver "
-    f"budgets, an 8 MiB run reaches {fmt_x(scale_8m['stream_payload_multiplier'])}; a 16 MiB run falls below break-even at 8,192 chunks and recovers to "
-    f"{fmt_x(scale_16m_retained['stream_payload_multiplier'])} at 24,576 chunks. These results delimit ReduLink as a scoped "
-    "object-stream mechanism, not a universal compressor or a replacement for rsync or HTTP dictionary transport.")
+    "ReduLink asks when explicit chunk references inside encrypted QUIC application streams reduce bytes without weakening endpoint state discipline. "
+    "The central result is a two-gate deployment condition: avoided literals must exceed record, control, and repair bytes, and the referenced warm working set must remain resident. "
+    "We implement this condition as a binary FULL/REF mapping with matching live TLS 1.3 exporter derivation, canonical context-bound commitments, bounded true-LRU state, declared reconstruction limits, and batched miss repair. "
+    "QUIC/TLS remains the network-security boundary. On three hash-pinned named-object updates, the mapping reconstructs exactly with reductions from 1.81x to 7.48x; raw source trees instead favor rsync, and an independent compressed control expands. "
+    f"For the deterministic 98,304-byte native profile, every measured point follows B(m) = {envelope['zero_miss_protocol_bytes']} + {envelope['marginal_total_bytes_per_miss']}m protocol-stream bytes, so strict byte benefit holds through {envelope['max_integer_beneficial_misses']} of 90 misses but not at {envelope['first_nonbeneficial_misses']}. "
+    "A paired 16 MiB capacity experiment independently changes the outcome from expansion to reduction by retaining the warm set. "
+    "These exact byte and state-machine results define a scoped object-stream mechanism; they do not establish WAN latency, congestion fairness, workload prevalence, or production throughput.")
 keywords = doc.add_paragraph()
 keywords.paragraph_format.space_after = Pt(4)
 kw = keywords.add_run("Keywords: ")
@@ -278,10 +271,10 @@ bullet(doc, "RQ1: Can a QUIC application-stream mapping make warm-state referenc
 bullet(doc, "RQ2: On which public object-update workloads does the mapping reduce bytes, and when do rsync, whole-object content addressing, chunk tokens, gzip, or zstd dictionaries perform better?")
 bullet(doc, "RQ3: How do matched endpoint capacity and semantic reference misses change protocol-stream bytes and the break-even point?")
 paragraph(doc,
-    "The main contribution is a reproducible answer to these questions. The artifact provides a binary mapping, an implemented receive-state machine, exact "
-    "reconstruction checks, same-layer directional accounting, hash-pinned corpora, explicit negative controls, and tests for malformed context encoding, stale "
-    "dictionary state, replay, length expansion, and quota violations [27,28]. The paper intentionally does not infer WAN latency, congestion fairness, or "
-    "production throughput from single-host experiments.")
+    "The main contribution is a reproducible answer to these questions and a deployment rule that separates two failure modes. Reference substitution is useful only "
+    "when avoided literal bytes exceed commitment plus repair/control bytes; independently, the warm working set must survive the endpoint admission and eviction policy. "
+    "The artifact provides a binary mapping, live exporter binding, an implemented receive-state machine, exact reconstruction checks, same-layer directional accounting, "
+    "hash-pinned corpora, explicit negative controls, and tests for malformed context encoding, stale dictionary state, replay, length expansion, and quota violations [27,28].")
 
 heading(doc, "2. Related Work and Novelty Boundary")
 heading(doc, "2.1 Network and endpoint redundancy elimination", 2)
@@ -390,10 +383,10 @@ heading(doc, "4.1 Attacker boundary", 2)
 paragraph(doc,
     "QUIC uses TLS to protect application streams, and QUIC loss recovery and congestion control operate on encrypted transport data [14-16]. The on-path attacker is "
     "therefore handled by QUIC/TLS, not by ReduLink. TLS 1.3 exporters derive application keying material from an exporter master secret and explicit label and context [19,32]. "
-    "The artifact call is TLS-Exporter with the RFC 5705 private-use label EXPERIMENTAL-ReduLink-v1, a canonical 32-byte context, and a 32-byte output. A nonexperimental deployment must register its exporter label [32]. The context is SHA-256 over a versioned, "
-    "length-prefixed ALPN, scope, and endpoint-independent connection context. The latter is derived from the ALPN and an authenticated application-session identifier. "
-    "aioquic 1.3.0 does not expose the required exporter through its public API, so the artifact supplies a fresh random exporter surrogate and per-run shared session identifier. "
-    "Client and server invoke the connection-context derivation separately and reject disagreement. This validates context agreement but remains short of live TLS-exporter integration [27].")
+    "The artifact invokes TLS-Exporter independently at both endpoints with the RFC 5705 private-use label EXPERIMENTAL-ReduLink-v1, a canonical 32-byte context, and a 32-byte output; unequal endpoint outputs abort the run. "
+    "The context is SHA-256 over a versioned, length-prefixed ALPN, scope, and endpoint-independent connection context derived from the ALPN and an authenticated application-session identifier. "
+    "aioquic 1.3.0 has no public exporter API, so a strict version-gated bridge captures the key schedule at its post-Server-Finished 1-RTT stage and immediately narrows the exporter master secret to the ReduLink label. "
+    "Only that label-specific secret is retained. This closes the artifact's prior surrogate gap, but the private hook and shared per-run application-session fixture are not independent-stack interoperability or on-wire session-binding evidence [19,27,32].")
 paragraph(doc,
     "The ReduLink HMAC is a defensive context commitment. It detects a valid record replayed into the wrong epoch, scope, connection, direction, stream context, or "
     "reconstructed offset, and it prevents stale or corrupted dictionary bytes from being accepted as the referenced chunk. It is not an independent barrier against "
@@ -438,7 +431,7 @@ paragraph(doc,
 heading(doc, "5. Implementation")
 paragraph(doc,
     "The artifact is written in Python and pins aioquic 1.3.0 and python-zstandard 0.25.0 with libzstd 1.5.7 [25-28,31]. The native experiment creates a server-authenticated "
-    "localhost QUIC connection, reads the actual application stream ID at both endpoints, derives a per-stream secret from fresh per-run inputs, serializes binary messages, "
+    "localhost QUIC connection, reads the actual application stream ID at both endpoints, derives matching record secrets from each live TLS context, serializes binary messages, "
     "forces receiver dictionary misses, sends batched repair, and verifies exact reconstruction. Server certificate generation and diagnostic timing remain implementation "
     "details; no timing result is used in this paper.")
 paragraph(doc,
@@ -456,17 +449,8 @@ heading(doc, "6.1 Evidence layers", 2)
 paragraph(doc,
     "The evaluation separates representation evidence from transport diagnostics. Input bytes are the exact bytes to reconstruct. Protocol-stream bytes are the FULL, REF, "
     "HELLO, END_ROUND, MISSING, repair, and FINISH messages written to QUIC streams. The final STATS response is reported separately and excluded. UDP proxy observations "
-    "are retained in the artifact but are not mixed with stream bytes. No packet-level or link-level multiplier is claimed.")
-caption(doc, "Table 4. Evidence hierarchy and supported inference.")
-add_table(doc,
-    ["Evidence", "What is controlled", "Supported inference", "Not supported"],
-    [
-        ["Hash-pinned public releases", "Exact archive hashes and ordered object extraction", "Object reuse and baseline byte counts", "Production traffic prevalence"],
-        ["PyPI wheel pairs", "Exact wheel hashes and member names/content", "Package-object reuse on the four recorded pairs", "All package ecosystems"],
-        ["Native aioquic mapping", "Actual encrypted stream, binary messages, exact digest", "Protocol-stream bytes and state behavior", "WAN latency or throughput"],
-        ["Capacity, chunk, and miss sweeps", "One deterministic byte workload per point", "Sensitivity to state, chunk size, and repair", "Population statistics"],
-        ["Security tests", "Malformed fields and state transitions", "Implemented fail-closed behavior", "Formal verification or endpoint-compromise security"],
-    ], font_size=7.0)
+    "are retained in the artifact but are not mixed with stream bytes. Hash-pinned public pairs support exact byte claims on those pairs; the native aioquic runs support encrypted stream-byte, exporter-binding, and receive-state claims; malformed-input tests support only the enumerated fail-closed behavior. "
+    "No layer supports packet cost, WAN timing, traffic prevalence, or formal security. The complete evidence-to-claim map remains in the artifact.")
 
 heading(doc, "6.2 Workloads", 2)
 paragraph(doc,
@@ -505,14 +489,14 @@ paragraph(doc,
 heading(doc, "7. Results")
 heading(doc, "7.1 Named public objects", 2)
 paragraph(doc,
-    "Figure 2 and Table 5 show that no method dominates. ReduLink's binary HMAC-frame profile under the deterministic artifact key reduces bytes on all three named-object pairs, reaching 1.81x for Click, "
+    "Figure 2 and Table 4 show that no method dominates. ReduLink's binary HMAC-frame profile under the deterministic artifact key reduces bytes on all three named-object pairs, reaching 1.81x for Click, "
     "7.48x for Redis, and 3.92x for Nginx. The simpler 4 KiB token baseline is consistently smaller because it has less metadata. Whole-object CAS remains competitive when many "
     "complete files are unchanged. The zstd prior-stream dictionary is strongest on Click and substantially stronger than ReduLink on Nginx, but it is weaker than ReduLink on Redis. "
     "gzip operates without prior state and is strongest on Nginx among the non-dictionary rows. The zstd window sensitivity leaves Click unchanged at 58.11x, changes Redis from 4.62x to 4.60x, and "
     "improves Nginx from 6.01x to 6.95x at window_log 24. The headline table retains the pinned window_log 21 results; the qualitative comparison is unchanged.")
 picture(doc, "public_object_baselines.png", 7.0,
         "Figure 2. Public named-object pairs at each method's stated byte layer; zstd uses pinned window_log 21. The log axis and break-even line show gains and negative comparisons.")
-caption(doc, "Table 5. Public named-object results. Every stateful method shown completed exact reconstruction.")
+caption(doc, "Table 4. Public named-object results. Every stateful method shown completed exact reconstruction.")
 object_rows = []
 zstd_by_label = {row["label"].removeprefix("object-"): row for row in zstd_rows if row["label"].startswith("object-")}
 for row in objects:
@@ -542,7 +526,7 @@ paragraph(doc,
     "The ReduLink multiplier uses the canonical serialized-tree byte length, whereas rsync uses regular-file payload bytes divided by the median total bytes sent plus received. "
     "The table exposes both numerators because these cross-tool values describe the same release pairs but are not identical accounting layers. The result supports choosing rsync rather than "
     "ReduLink for file-tree synchronization.")
-caption(doc, "Table 6. Raw source-tree transfer is a negative case for ReduLink and a strong case for rsync; numerators are shown explicitly.")
+caption(doc, "Table 5. Raw source-tree transfer is a negative case for ReduLink and a strong case for rsync; numerators are shown explicitly.")
 raw_rows = []
 for row in raw_public:
     rr = rsync[row["label"]]
@@ -558,17 +542,7 @@ heading(doc, "7.4 PyPI object pairs", 2)
 paragraph(doc,
     "The four wheel pairs broaden the object result without changing its interpretation. The binary HMAC-frame ReduLink multiplier ranges from 1.06x to 9.26x. Whole-object CAS "
     "ranges from 1.07x to 10.87x and beats ReduLink on rich while trailing it on Click and Werkzeug. gzip wins on the low-reuse Jinja2 pair. These rows show why unchanged-object "
-    "fraction and intra-object compressibility must be reported alongside a ReduLink result.")
-caption(doc, "Table 7. Hash-pinned PyPI wheel member sequences.")
-pypi_rows = []
-for row in pypi:
-    pypi_rows.append([
-        f"{row['package']} {row['old_version']} to {row['new_version']}",
-        f"{row['unchanged_file_count']}/{row['new_file_count']}", fmt_n(row["input_bytes"]),
-        fmt_x(row["secure_multiplier"]), fmt_x(row["whole_object_cas_multiplier"]),
-        fmt_x(row["gzip_new_object_stream_multiplier"]),
-    ])
-add_table(doc, ["Pair", "Unchanged/new", "Input bytes", "ReduLink HMAC", "Whole-object CAS", "gzip"], pypi_rows, font_size=7.2)
+    "fraction and intra-object compressibility must be reported alongside a ReduLink result. Package versions, wheel hashes, member counts, byte totals, and exactness checks are retained in the artifact evidence table rather than repeated here.")
 
 heading(doc, "7.5 Native QUIC accounting", 2)
 paragraph(doc,
@@ -577,7 +551,7 @@ paragraph(doc,
     f"for {fmt_n(accounting['redulink_protocol_stream_bytes'])} total and {fmt_x(accounting['redulink_protocol_multiplier'])}. Both diagnostic STATS responses are excluded. "
     "Their serialized size is deliberately omitted because it is not protocol evidence and can vary with diagnostic JSON formatting. This result is same-layer accounting, "
     "not a congestion fairness experiment.")
-caption(doc, "Table 8. Same-layer zero-loss native QUIC stream accounting.")
+caption(doc, "Table 6. Same-layer zero-loss native QUIC stream accounting.")
 add_table(doc,
     ["Method", "Input bytes", "Forward protocol", "Reverse repair/control", "Protocol total", "Multiplier"],
     [
@@ -591,15 +565,7 @@ paragraph(doc,
     f"The workload controls confirm conditionality. The deterministic warm update reaches {fmt_x(case_by['demo-positive']['stream_payload_multiplier'])}. The independent compressed control "
     f"has no semantic misses and expands to {fmt_x(case_by['independent-compressed-negative']['stream_payload_multiplier'])} because record metadata exceeds any reuse. The author-constructed "
     f"Redis-derived layer fixture reaches {fmt_x(case_by['external-positive-redis-layered']['stream_payload_multiplier'])} after "
-    f"{case_by['external-positive-redis-layered']['semantic_misses']} semantic repairs. All three SHA-256 checks pass.")
-caption(doc, "Table 9. Native QUIC positive and negative workload controls.")
-case_rows = []
-for row in workload_cases:
-    case_rows.append([
-        row["label"], fmt_n(row["input_bytes"]), fmt_n(row["stream_payload_bytes"]),
-        fmt_x(row["stream_payload_multiplier"]), row["semantic_misses"], "yes" if row["reconstruction_ok"] == "True" else "no",
-    ])
-add_table(doc, ["Case", "Input bytes", "Protocol bytes", "Multiplier", "Misses", "Exact"], case_rows, font_size=7.2)
+    f"{case_by['external-positive-redis-layered']['semantic_misses']} semantic repairs. All three SHA-256 checks pass; their complete directional rows remain in the artifact.")
 
 heading(doc, "7.6 Matched endpoint dictionary capacity", 2)
 paragraph(doc,
@@ -610,14 +576,6 @@ paragraph(doc,
     f"{fmt_x(scale_16m_retained['stream_payload_multiplier'])}. Exact reconstruction passes in every row.")
 picture(doc, "dictionary_capacity_scaling.png", 6.8,
         "Figure 4. Native QUIC scaling with bounded true LRU. The paired 16 MiB rows isolate matched sender and receiver capacity.")
-caption(doc, "Table 10. Native QUIC capacity sweep. Diagnostic STATS bytes are excluded.")
-scale_rows = []
-for row in scaling:
-    scale_rows.append([
-        fmt_n(row["input_bytes"]), fmt_n(row["endpoint_dictionary_budget_chunks"]), fmt_n(row["stream_payload_bytes"]),
-        row["semantic_misses"], fmt_x(row["stream_payload_multiplier"]), "yes" if row["reconstruction_ok"] == "True" else "no",
-    ])
-add_table(doc, ["Input bytes", "Chunks per endpoint", "Protocol bytes", "Misses", "Multiplier", "Exact"], scale_rows, font_size=7.1)
 
 heading(doc, "7.7 Semantic miss cost", 2)
 paragraph(doc,
@@ -625,26 +583,20 @@ paragraph(doc,
     f"{fmt_x(miss_none['protocol_stream_multiplier'])}. At {fmt_pct(miss_half['miss_fraction'])} misses, {miss_half['semantic_misses']} batched FULL repairs raise forward bytes "
     f"from {fmt_n(miss_none['forward_protocol_stream_bytes'])} to {fmt_n(miss_half['forward_protocol_stream_bytes'])} and reverse repair/control bytes from "
     f"{fmt_n(miss_none['reverse_repair_control_stream_bytes'])} to {fmt_n(miss_half['reverse_repair_control_stream_bytes'])}, reducing the multiplier to "
-    f"{fmt_x(miss_half['protocol_stream_multiplier'])}. At the measured 100 percent-miss endpoint it is {fmt_x(miss_all['protocol_stream_multiplier'])}. The discrete sweep "
-    "therefore brackets break-even between 48.9 and 100 percent misses; it does not claim a more precise crossing. The curve is monotonic for this deterministic workload and "
-    "makes the repair cost visible without converting it into a timing claim.")
+    f"{fmt_x(miss_half['protocol_stream_multiplier'])}. Across every measured point, each miss adds exactly {envelope['marginal_forward_bytes_per_miss']} forward bytes and "
+    f"{envelope['marginal_reverse_bytes_per_miss']} reverse bytes. Therefore B(m) = {envelope['zero_miss_protocol_bytes']} + {envelope['marginal_total_bytes_per_miss']}m for this fixed profile. "
+    f"The continuous crossing is {envelope['continuous_break_even_misses']:.3f} misses ({100 * envelope['continuous_break_even_miss_fraction']:.1f}%); integer byte benefit holds through "
+    f"{envelope['max_integer_beneficial_misses']}/90 misses and first fails at {envelope['first_nonbeneficial_misses']}/90, where the protocol uses {fmt_n(envelope['first_nonbeneficial_protocol_bytes'])} bytes. "
+    "This exact algebra generalizes the accounting rule, not the measured coefficients: other chunk sizes, scopes, or repair encodings require their own constants.")
 picture(doc, "semantic_miss_sensitivity.png", 6.7,
         "Figure 5. Native QUIC byte sensitivity to semantic reference misses. Each point is one deterministic accounting run.")
-caption(doc, "Table 11. Semantic miss and repair byte sensitivity.")
-miss_rows = []
-for row in miss:
-    miss_rows.append([
-        fmt_pct(row["miss_fraction"]), row["semantic_misses"], fmt_n(row["forward_protocol_stream_bytes"]),
-        fmt_n(row["reverse_repair_control_stream_bytes"]), fmt_n(row["protocol_stream_bytes"]), fmt_x(row["protocol_stream_multiplier"]),
-    ])
-add_table(doc, ["Miss fraction", "Misses", "Forward bytes", "Reverse bytes", "Protocol total", "Multiplier"], miss_rows, font_size=7.3)
 
 heading(doc, "8. Discussion")
 heading(doc, "8.1 Answers to the research questions", 2)
 paragraph(doc,
     "RQ1 is answered for the implemented application-stream profile. The prototype uses actual aioquic stream IDs, fixed binary key and record transcripts with public vectors, authenticated FULL/REF records, ordered "
-    "offsets, bounded nonces, true LRU, a QUIC/TLS-protected declaration checked against server-configured expectations, reconstruction quota, exact completion digest, and validated batched repair. This establishes executable "
-    "state behavior, not a complete production protocol. Live TLS exporter integration, client authorization, and on-wire warm-state admission remain absent.")
+    "offsets, bounded nonces, true LRU, matching secrets from each endpoint's live TLS 1.3 context, a QUIC/TLS-protected declaration checked against server-configured expectations, reconstruction quota, exact completion digest, and validated batched repair. "
+    "This establishes executable state and exporter-binding behavior in pinned aioquic, not a complete production protocol. A public exporter API, independent-stack interoperability, client authorization, and on-wire warm-state admission remain absent.")
 paragraph(doc,
     "RQ2 has a workload-dependent answer. ReduLink reduces bytes on the three public named-object pairs and four recorded wheel pairs. It fails on raw source trees where rsync "
     "is far stronger, and it expands an independent compressed control. Whole-object CAS and 4 KiB tokens often approach or exceed it with lower metadata. zstd dictionary compression "
@@ -652,11 +604,11 @@ paragraph(doc,
     "chunk resolution with scoped record commitments and a semantic repair path.")
 paragraph(doc,
     "RQ3 shows two independent break-even mechanisms. Insufficient matched endpoint capacity can cause LRU thrashing even when both endpoints initially hold useful bytes. Semantic misses "
-    "add both reverse control and forward literals. A deployment must therefore estimate working-set size and miss probability before enabling ReduLink. A sender should fall back to raw "
-    "or compressed transfer when predicted protocol bytes approach the input size.")
+    f"add both reverse control and forward literals. In the fixed native profile, B(m) = {envelope['zero_miss_protocol_bytes']} + {envelope['marginal_total_bytes_per_miss']}m converts this second condition into an exact preflight check, with strict byte benefit only through {envelope['max_integer_beneficial_misses']} of 90 misses. "
+    "A deployment must first establish warm-set residency and then estimate the protocol constants and miss probability. A sender should fall back to raw or compressed transfer when either gate fails.")
 
 heading(doc, "8.2 Choosing the appropriate mechanism", 2)
-caption(doc, "Table 12. Deployment decision guide.")
+caption(doc, "Table 7. Deployment decision guide.")
 add_table(doc,
     ["Workload and state", "Preferred mechanism", "Reason"],
     [
@@ -673,20 +625,19 @@ paragraph(doc,
 
 heading(doc, "9. Limitations and Threats to Validity")
 paragraph(doc,
-    "Several limits constrain the contribution. First, endpoint redundancy elimination, content-addressed chunks, and cache-miss repair are established ideas [4-10,30]. The novelty is "
-    "the bounded QUIC mapping and its evaluation, not reference substitution itself. Second, the native code uses an exporter surrogate and server-only TLS certificate authentication. "
-    "Application-level client authorization is assumed, not implemented. Third, warm state is preprovisioned; discovery, admission, revocation, and synchronization protocols are outside scope. "
-    "Fourth, repair is batched and reconstructed output is buffered until FINISH, so the paper makes no incremental delivery or time-to-first-byte claim. Reconstructed bytes are not "
+    "The main limits are empirical and integration-related. The live TLS exporter bridge is private and version-specific because aioquic 1.3.0 has no public API; only the server certificate is authenticated, and the per-run application-session identifier is a shared fixture. "
+    "Application-level client authorization is assumed, not implemented. Warm state is preprovisioned; discovery, admission, revocation, and synchronization protocols are outside scope. "
+    "Repair is batched and reconstructed output is buffered until FINISH, so the paper makes no incremental delivery or time-to-first-byte claim. Reconstructed bytes are not "
     "coupled to QUIC flow-control credit; only encoded stream bytes consume transport credit in the prototype.")
 paragraph(doc,
-    "Fifth, 0-RTT behavior is undefined and disabled, and connection-migration dictionary policy is not implemented. A production design must bind state to the accepted TLS session and "
-    "define whether migration retains or invalidates that state. Sixth, all live QUIC experiments are single-host aioquic runs. They validate encrypted stream behavior and byte counts, not WAN latency, congestion fairness, kernel queueing, CPU "
-    "scalability, or interoperability. Historical timing files are excluded from the submission evidence. Seventh, public releases and wheels are reproducible "
-    "artifacts rather than sampled production traces, and the Redis layer fixture is explicitly author constructed. Eighth, the main chunker is fixed-size. The included rolling-hash CDC "
+    "0-RTT behavior is undefined and disabled, and connection-migration dictionary policy is not implemented. A production design must bind state to the accepted TLS session and "
+    "define whether migration retains or invalidates that state. All live QUIC experiments are single-host aioquic runs. They validate encrypted stream behavior and byte counts, not WAN latency, time to first byte, congestion fairness, kernel queueing, CPU "
+    "scalability, or interoperability. Historical timing files are excluded from the submission evidence. Public releases and wheels are reproducible artifacts rather than sampled production traces, and the Redis layer fixture is explicitly author constructed. "
+    "Consequently, neither the measured coefficients nor warm-state hit rates are estimates of production behavior. The main chunker is fixed-size. The included rolling-hash CDC "
     "prototype is not presented as FastCDC or used for headline claims [22].")
 paragraph(doc,
-    "The 128-bit tag argument relies on standard assumptions and is not machine checked. The tests demonstrate implementation behavior for enumerated malformed inputs; they are not a "
-    "proof of memory safety or endpoint security. Python performance is not representative of an optimized implementation. Dictionary content can create compression and deduplication "
+    "The 128-bit tag argument relies on standard assumptions and is not machine checked. The tests demonstrate implementation behavior for enumerated malformed inputs; they are not a mechanized protocol-composition proof, "
+    "a proof of memory safety, or endpoint security. Python performance is not representative of an optimized implementation. Dictionary content can create compression and deduplication "
     "side channels even when every record is authentic [13,23,24].")
 
 heading(doc, "10. Reproducibility and Artifact Scope")
@@ -706,11 +657,10 @@ paragraph(doc,
 
 heading(doc, "11. Conclusion")
 paragraph(doc,
-    "ReduLink is a bounded representation profile for a specific endpoint condition: a QUIC receiver already holds authorized warm object state, and the application values explicit chunk "
-    "resolution and fail-closed state handling. The implementation binds records to canonical connection and stream context, enforces true-LRU and reconstruction quotas, validates batched "
-    "repair, and separates forward protocol, reverse control, and diagnostic bytes. Public object pairs show useful but non-universal savings. Direct baselines show where whole-object CAS, gzip, "
-    "zstd dictionaries, or rsync are preferable. Capacity overflow and miss sweeps expose the two main break-even risks. The resulting claim is narrower than a general QUIC accelerator, but it is "
-    "supported by exact reconstruction, same-layer accounting, negative controls, chunk-size and state sensitivity, and a reproducible artifact.")
+    "ReduLink is useful only when two independently checkable conditions hold: authorized warm state remains resident, and avoided literals exceed commitment plus repair/control bytes. "
+    "The implementation realizes this rule as a bounded QUIC application-stream profile with live TLS exporter binding, canonical connection and stream context, true-LRU and reconstruction quotas, validated batched repair, and separate forward and reverse accounting. "
+    "Public object pairs show useful but non-universal savings; direct baselines identify where whole-object CAS, gzip, zstd dictionaries, or rsync are preferable. The exact miss equation and paired capacity case turn the paper's central claim into a preflight decision rather than a universal acceleration promise. "
+    "Transport timing, production traces, independent-stack interoperability, and mechanized security remain necessary before a top-tier deployment claim.")
 
 heading(doc, "Data and Code Availability")
 paragraph(doc,
@@ -764,6 +714,6 @@ OUT.parent.mkdir(parents=True, exist_ok=True)
 doc.core_properties.author = "Michél Nguyen"
 doc.core_properties.last_modified_by = "Michél Nguyen"
 doc.core_properties.subject = "Context-bound reference substitution over encrypted QUIC streams"
-doc.core_properties.comments = "ReduLink journal manuscript v3.15"
+doc.core_properties.comments = "ReduLink journal manuscript v3.16"
 doc.save(OUT)
 print(f"saved {OUT}")

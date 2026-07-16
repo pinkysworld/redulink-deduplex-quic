@@ -15,12 +15,13 @@ inside the endpoints. It is not an independent network-security boundary.
   or signed manifest. Dictionary negotiation is not implemented.
 - Per-connection or per-origin dictionaries are the conservative default.
   Private global cross-user dictionaries are excluded.
-- A production implementation derives ReduLink keying material from a TLS
-  exporter. The artifact uses a fresh private exporter surrogate because
-  aioquic 1.3.0 does not expose exporter bytes through its public API. The
-  artifact invocation uses the RFC 5705 private-use label
-  `EXPERIMENTAL-ReduLink-v1`, a canonical 32-byte context, and a 32-byte
-  output. A nonexperimental deployment must register its exporter label.
+- The artifact derives ReduLink keying material from the live TLS 1.3 exporter
+  independently at both endpoints and rejects unequal outputs. The invocation
+  uses the private-use label `EXPERIMENTAL-ReduLink-v1`, a canonical 32-byte
+  context, and a 32-byte output. Since aioquic 1.3.0 has no public exporter API,
+  the artifact uses a strict version-gated private bridge and retains only its
+  label-specific secret. A production implementation should use a public API
+  and a registered nonexperimental label.
 - Endpoint compromise and malicious code running with access to plaintext or
   ReduLink secrets are outside the protection boundary.
 
@@ -29,7 +30,7 @@ inside the endpoints. It is not an independent network-security boundary.
 | Property | Required behavior | Artifact evidence | Residual limitation |
 |---|---|---|---|
 | Exact output | Accept only the complete declared byte sequence and digest | Length, sequence, offset, and SHA-256 completion checks | Tests are not a formal proof |
-| Context binding | Reject records from another epoch, scope, connection, direction, stream context, or offset | Canonical key context and record-tag tests | Live TLS exporter integration is absent |
+| Context binding | Reject records from another epoch, scope, connection, direction, stream context, or offset | Live endpoint TLS exporter agreement, canonical key context, public vectors, and record-tag tests | Private aioquic hook, server-only certificate authentication, and shared application-session fixture |
 | Replay control | Reject duplicate or sufficiently old nonces with bounded memory | Bounded `NonceWindow` tests | Production policy for long-lived connections is unspecified |
 | Dictionary integrity | Recompute a keyed identifier over referenced bytes before acceptance | Corrupted-entry and wrong-scope tests | Manifest admission policy is outside the protocol |
 | Expansion bound | Enforce per-record, declared-transfer, and global reconstruction limits | HELLO length and quota tests | QUIC delivery credit is not coupled to reconstructed bytes |
@@ -71,7 +72,8 @@ sequence set, length, and digest match.
 
 ## Deliberately unimplemented security work
 
-- TLS exporter integration and mutual client authentication.
+- Public-API exporter integration, independent-stack interoperability, and
+  mutual client authentication.
 - On-wire dictionary discovery, admission, revocation, and synchronization.
 - Cross-tenant policy enforcement.
 - 0-RTT reference semantics and connection-migration state policy.

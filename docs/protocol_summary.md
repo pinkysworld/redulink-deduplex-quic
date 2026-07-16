@@ -12,12 +12,14 @@ QUIC frame types or transport parameters.
   implemented by the artifact.
 - Receiver state is provisioned out of band or agreed by a trusted manifest.
 - The prototype authenticates the server certificate only.
-- aioquic 1.3.0 does not expose a TLS exporter through its public API, so the
-  artifact uses a fresh private exporter surrogate per run. A production
-  integration must call TLS-Exporter with the private-use label
-  `EXPERIMENTAL-ReduLink-v1`, the canonical 32-byte context described below,
-  and a 32-byte output. RFC 5705 permits labels beginning with `EXPERIMENTAL`
-  without registration. A nonexperimental deployment must register its label.
+- The artifact calls the live TLS 1.3 exporter at both endpoints with the
+  private-use label `EXPERIMENTAL-ReduLink-v1`, the canonical 32-byte context
+  described below, and a 32-byte output. aioquic 1.3.0 has no public exporter
+  API, so `src/redulink_tls_exporter.py` installs a strict version-gated bridge
+  at the post-Server-Finished 1-RTT key-schedule stage. It retains only the
+  label-specific secret, not the general exporter master secret. A production
+  integration should use a public exporter API and register a nonexperimental
+  label.
 - Cross-user global dictionaries are outside the supported deployment model.
 
 ## Message sequence
@@ -60,10 +62,11 @@ bytes before a FULL payload.
 Both endpoints derive a connection context as SHA-256 over the versioned,
 length-prefixed ALPN and an authenticated application-session identifier. The
 TLS-exporter context is SHA-256 over a separate versioned encoding of ALPN,
-scope, and that connection context. In the artifact, client and server call the
-connection-context derivation separately over one per-run shared identifier.
-This checks endpoint-independent agreement but does not substitute for a live
-TLS exporter.
+scope, and that connection context. Client and server derive the connection
+context independently over the same per-run identifier, invoke the live TLS
+exporter in their own TLS contexts, and fail if the exporter outputs differ.
+The shared application-session identifier remains an artifact fixture rather
+than an on-wire authenticated negotiation.
 
 The subsequent key schedule canonically length-prefixes the protocol label,
 ALPN, scope, connection context, application-stream context, direction, and
@@ -119,8 +122,9 @@ Protocol-stream accounting includes HELLO, initial records, END_ROUND, MISSING,
 repair records, and FINISH in both directions. It excludes STATS diagnostics.
 QUIC packet headers, ACKs, UDP/IP headers, and link-layer bytes are outside this
 metric. The current single-host runs support exact reconstruction, state-machine,
-and stream-byte claims. They do not support WAN latency, congestion-fairness,
-or production-throughput conclusions.
+stream-byte, and exporter-binding claims. They do not support WAN latency,
+congestion-fairness, or production-throughput conclusions. The private bridge
+is specific to pinned aioquic 1.3.0 and is not interoperability evidence.
 
 HELLO, MISSING, END_ROUND, and FINISH rely on QUIC/TLS transport protection and
 do not carry the per-record HMAC. Reconstructed bytes are buffered until FINISH;

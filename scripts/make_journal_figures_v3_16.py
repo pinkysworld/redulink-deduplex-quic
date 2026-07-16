@@ -222,7 +222,7 @@ def miss_sensitivity(results: Path, output: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results-dir", type=Path, default=ROOT / "results")
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "figures" / "journal_v3_15")
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "figures" / "journal_v3_16")
     args = parser.parse_args()
     architecture(args.output_dir / "architecture.png")
     object_comparison(args.results_dir, args.output_dir / "public_object_baselines.png")

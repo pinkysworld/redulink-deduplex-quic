@@ -21,9 +21,9 @@ from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
-MANUSCRIPT = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_15.docx"
-PDF = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_15.pdf"
-FIGURES = ROOT / "figures" / "journal_v3_15"
+MANUSCRIPT = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_16.docx"
+PDF = ROOT / "paper" / "submission" / "ReduLink_journal_ready_v3_16.pdf"
+FIGURES = ROOT / "figures" / "journal_v3_16"
 SUBMISSION_FIGURE_NAMES = (
     "architecture.png",
     "dictionary_capacity_scaling.png",
@@ -50,6 +50,7 @@ CSV_KEYS = {
     "aioquic_workload_cases.csv": "label",
     "aioquic_scaling_experiment.csv": ("payload_blocks", "endpoint_dictionary_budget_chunks"),
     "quic_miss_rate_sensitivity.csv": "missing_every",
+    "deployment_envelope.csv": "experiment",
 }
 
 EXCLUDED_COLUMNS = {
@@ -173,7 +174,8 @@ def validate_pdf_claims() -> None:
         "ReduLink: Context-Bound Reference Substitution over Encrypted QUIC Streams",
         source_commit,
         "10.10x at 24,576 chunks",
-        "100 percent-miss endpoint it is 0.82x",
+        "B(m) = 15914 + 1149m",
+        "live TLS exporter binding",
         "Declaration of Generative AI and AI-Assisted Technologies",
     )
     missing = [claim for claim in required if claim not in text]
@@ -187,7 +189,7 @@ def compare_figures_and_docx() -> None:
         generated_figures = tmp / "figures"
         generated_docx = tmp / "manuscript.docx"
         subprocess.run([
-            sys.executable, "scripts/make_journal_figures_v3_15.py",
+            sys.executable, "scripts/make_journal_figures_v3_16.py",
             "--output-dir", str(generated_figures),
         ], cwd=ROOT, check=True)
         for name in SUBMISSION_FIGURE_NAMES:
@@ -196,7 +198,7 @@ def compare_figures_and_docx() -> None:
             if not committed.is_file() or candidate.read_bytes() != committed.read_bytes():
                 raise ValueError(f"figure is stale relative to evidence: {name}")
         subprocess.run([
-            sys.executable, "scripts/build_manuscript_v3_15.py",
+            sys.executable, "scripts/build_manuscript_v3_16.py",
             "--output", str(generated_docx),
             "--figures-dir", str(generated_figures),
         ], cwd=ROOT, check=True)

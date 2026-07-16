@@ -1,4 +1,4 @@
-# ReduLink v3.15 research artifact
+# ReduLink v3.16 research artifact
 
 ReduLink is a bounded application-stream representation for cooperating QUIC
 endpoints with preprovisioned receiver state. It replaces repeated chunks with
@@ -9,10 +9,10 @@ content-addressed substitution are established ideas.
 
 ## Submission files
 
-- Manuscript: `paper/submission/ReduLink_journal_ready_v3_15.pdf` and `.docx`
+- Manuscript: `paper/submission/ReduLink_journal_ready_v3_16.pdf` and `.docx`
 - Journal highlights: `paper/submission/HIGHLIGHTS.txt`
-- Manuscript builder: `scripts/build_manuscript_v3_15.py`
-- Figure builder: `scripts/make_journal_figures_v3_15.py`
+- Manuscript builder: `scripts/build_manuscript_v3_16.py`
+- Figure builder: `scripts/make_journal_figures_v3_16.py`
 - Manuscript hashes: `MANUSCRIPT_SHA256.txt`
 - Source revision used for evidence: `SOURCE_COMMIT.txt`
 - Artifact checklist: `PUBLIC_REVIEWER_CHECKLIST.md`
@@ -29,11 +29,13 @@ byte-equivalent dictionary budget.
 
 The record HMAC is a defensive endpoint-state commitment. QUIC/TLS is the
 network-security boundary. The implementation is an application codec on a QUIC
-stream, not a custom QUIC frame. The current prototype uses a fresh per-run
-exporter surrogate because aioquic 1.3.0 does not expose TLS exporter bytes
-through its public API. The production exporter label, context derivation,
-binary MAC transcripts, and public test vectors are fixed in
-`docs/protocol_summary.md` and `docs/protocol_test_vectors.json`.
+stream, not a custom QUIC frame. The native prototype now derives its record
+secret from the live TLS 1.3 exporter on both endpoints and checks that the
+outputs match. Because aioquic 1.3.0 has no public exporter API, the bridge is
+strictly version gated and hooks the audited post-Server-Finished 1-RTT stage.
+The exporter formula, label, context derivation, binary MAC transcripts, and
+public test vectors are fixed in `docs/protocol_summary.md` and
+`docs/protocol_test_vectors.json`.
 
 The package does not claim WAN latency, congestion fairness, production
 throughput, mutual endpoint authentication, on-wire dictionary negotiation, or
@@ -75,6 +77,7 @@ python benchmarks/run_protocol_stream_accounting.py
 python benchmarks/run_aioquic_workload_cases.py
 python benchmarks/run_aioquic_scaling_experiment.py
 python benchmarks/run_quic_miss_rate_sensitivity.py
+python benchmarks/derive_deployment_envelope.py
 ```
 
 The container fixes Python 3.12.13, pins Python dependencies, and fails its
@@ -93,8 +96,8 @@ baseline. The headline dictionary comparator pins level 3 and window_log 21;
 every row also records a window_log 24 sensitivity result:
 
 ```bash
-docker build -t redulink-artifact:v3.15 .
-docker run --rm redulink-artifact:v3.15
+docker build -t redulink-artifact:v3.16 .
+docker run --rm redulink-artifact:v3.16
 ```
 
 ## Evaluation boundary
