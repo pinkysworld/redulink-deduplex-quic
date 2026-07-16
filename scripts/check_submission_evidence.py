@@ -173,7 +173,7 @@ def validate_pdf_claims() -> None:
     required = (
         "ReduLink: Context-Bound Reference Substitution over Encrypted QUIC Streams",
         source_commit,
-        "10.10x at 24,576 chunks",
+        "recovers 10.10x",
         "B(m) = 15914 + 1149m",
         "live TLS exporter binding",
         "Declaration of Generative AI and AI-Assisted Technologies",
